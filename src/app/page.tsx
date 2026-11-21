@@ -1,69 +1,95 @@
-import Image from "next/image";
+"use client";
+import Link from "next/link";
+import { ChevronLeft, RotateCcw, ShoppingBag, Store as StoreIcon, Bike } from "lucide-react";
+import { toast } from "sonner";
+import { Wordmark } from "@/components/ui/wordmark";
+import { Receipt, Row, Perf } from "@/components/ui/receipt";
+import { Stamp } from "@/components/ui/stamp";
+import { BRAND } from "@/lib/brand";
+import { useCustomer } from "@/lib/store/customer";
+import { usePartner } from "@/lib/store/partner";
+import { useRider } from "@/lib/store/rider";
 
-export default function Home() {
+const APPS = [
+  { href: "/app", icon: ShoppingBag, title: "تطبيق العميل", body: "اطلب أكل، ماركت، صيدلية، أو ابعت أي حاجة، وتابع طلبك لحظة بلحظة", tag: "ابدأ هنا" },
+  { href: "/partner", icon: StoreIcon, title: "تطبيق المحلات", body: "استقبل الطلبات، تحكم في المنيو، وشوف مبيعاتك", tag: "للشركاء" },
+  { href: "/rider", icon: Bike, title: "تطبيق الطيارين", body: "مشاوير جديدة، خريطة الطريق، وأرباح اليوم", tag: "للتوصيل" },
+];
+
+export default function Hub() {
+  const reset = () => {
+    useCustomer.getState().resetDemo();
+    usePartner.getState().reset();
+    useRider.getState().reset();
+    toast.success("رجعنا الديمو لأوله");
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-dvh pb-10">
+      <div className="bg-pen px-5 pb-16 pt-12 text-white">
+        <Wordmark className="text-[44px]" blink />
+        <p className="mt-4 max-w-[26ch] text-[20px] font-medium leading-snug">{BRAND.tagline}</p>
+        <p className="mt-2 text-[14px] text-white/75">توصيل في {BRAND.city}: مطاعم، ماركت، صيدليات، ومشاوير.</p>
+      </div>
+
+      <div className="relative -mt-10 px-4">
+        <Receipt>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[13px] text-ink-3">فاتورة وعد لمحة</p>
+              <h2 className="text-[18px] font-semibold">اللي بيفرق عن أي تطبيق تاني</h2>
+            </div>
+            <Stamp tone="stamp" animate className="mt-1">مضمون</Stamp>
+          </div>
+          <Perf />
+          <div className="text-[14.5px]">
+            <Row label="رسوم مخفية" amount={0} note="كل قرش مكتوب قبل ما تأكد الطلب، والتوصيل المجاني مجاني بجد" />
+            <Row label="إلغاء الطلب">
+              <span className="font-semibold text-stamp">مجاناً قبل التأكيد</span>
+            </Row>
+            <Row label="تعديل الطلب">
+              <span className="font-semibold text-stamp">قبل ما المحل يبدأ</span>
+            </Row>
+            <Row label="صنف غلط أو ناقص">
+              <span className="font-semibold text-stamp">فلوسه ترجع فوراً</span>
+            </Row>
+            <Row label="خدمة العملاء">
+              <span className="font-semibold text-stamp">شات مباشر</span>
+            </Row>
+            <Row label="تسجيل المحلات">
+              <span className="font-semibold text-stamp">من الموبايل</span>
+            </Row>
+          </div>
+        </Receipt>
+      </div>
+
+      <section className="mt-8 px-4" aria-labelledby="apps">
+        <h2 id="apps" className="mb-3 text-[18px] font-semibold">افتح الديمو</h2>
+        <div className="space-y-3">
+          {APPS.map((a) => (
+            <Link key={a.href} href={a.href} className="tap flex items-center gap-4 rounded-[18px] bg-sheet p-4 shadow-sheet">
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-pen-50 text-pen">
+                <a.icon className="size-6" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="text-[16px] font-semibold">{a.title}</span>
+                  <span className="rounded-full bg-marker-soft px-2 py-0.5 text-[11.5px] font-medium text-ink">{a.tag}</span>
+                </span>
+                <span className="mt-0.5 block text-[13.5px] leading-snug text-ink-2">{a.body}</span>
+              </span>
+              <ChevronLeft className="size-5 shrink-0 text-ink-3" />
+            </Link>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+
+      <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
+        <button onClick={reset} className="tap inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-ink-2 hover:bg-pen-50">
+          <RotateCcw className="size-4" /> ابدأ الديمو من الأول
+        </button>
+        <p className="text-[12px] text-ink-3">نسخة عرض: كل المحلات والأسعار والتقييمات بيانات تجريبية</p>
+      </div>
+    </main>
   );
 }

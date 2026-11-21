@@ -1,26 +1,260 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-paper: #f2f4fa;
+  --color-desk: #e4e8f3;
+  --color-sheet: #ffffff;
+  --color-ink: #121838;
+  --color-ink-2: #444d72;
+  --color-ink-3: #636b8c;
+  --color-rule: #dfe3ee;
+  --color-leader: #c3c9dc;
+  --color-pen: #1c2fa8;
+  --color-pen-700: #14217d;
+  --color-pen-900: #0d1659;
+  --color-pen-100: #e6e9fb;
+  --color-pen-50: #f1f3fd;
+  --color-stamp: #0b8a5f;
+  --color-stamp-50: #e3f6ee;
+  --color-void: #cf2f45;
+  --color-void-50: #fdecee;
+  --color-marker: #ffe45c;
+  --color-marker-soft: #fff6bf;
+
+  --font-sans: var(--font-readex), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-ruqaa), var(--font-readex), serif;
+
+  --radius-card: 14px;
+  --shadow-sheet: 0 1px 2px rgb(18 24 56 / 0.06), 0 8px 24px -12px rgb(18 24 56 / 0.18);
+  --shadow-lift: 0 2px 6px rgb(18 24 56 / 0.08), 0 18px 40px -18px rgb(18 24 56 / 0.35);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html,
+  body {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+    overscroll-behavior-x: none;
+  }
+  body {
+    background: var(--color-desk);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1;
+  }
+  ::selection {
+    background: var(--color-marker);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2.5px solid var(--color-pen);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+  input,
+  textarea {
+    caret-color: var(--color-pen);
+    font-size: 16px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* The phone-width column the whole product lives in */
+  .app-column {
+    width: 100%;
+    max-width: 440px;
+    min-height: 100dvh;
+    margin-inline: auto;
+    background: var(--color-paper);
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+  }
+  @media (min-width: 480px) {
+    .app-column {
+      box-shadow: 0 0 0 1px rgb(18 24 56 / 0.06), 0 30px 80px -30px rgb(18 24 56 / 0.35);
+    }
+  }
+
+  /* Receipt sheet with a torn zigzag bottom edge */
+  .receipt {
+    --z: 7px;
+    background: var(--color-sheet);
+    padding-bottom: calc(var(--z) + 12px);
+    mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - var(--z)) no-repeat,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--z)) var(--z) repeat-x;
+  }
+  /* Torn on both edges: a sheet ripped from the roll */
+  .receipt-top {
+    --z: 7px;
+    background: var(--color-sheet);
+    padding-top: calc(var(--z) + 12px);
+    padding-bottom: calc(var(--z) + 12px);
+    mask:
+      linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--z)) no-repeat,
+      conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--z)) var(--z) repeat-x,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--z)) var(--z) repeat-x;
+  }
+  .receipt-shadow {
+    filter: drop-shadow(0 1px 1px rgb(18 24 56 / 0.08)) drop-shadow(0 10px 18px rgb(18 24 56 / 0.12));
+  }
+
+  /* Dotted leader between a label and its amount */
+  .leader {
+    flex: 1;
+    min-width: 12px;
+    border-bottom: 2px dotted var(--color-leader);
+    transform: translateY(-5px);
+    margin-inline: 8px;
+  }
+
+  /* Perforation between receipt sections */
+  .perf {
+    height: 0;
+    border-top: 2px dashed var(--color-rule);
+    margin-block: 14px;
+  }
+
+  /* Highlighter stroke for totals */
+  .marked {
+    background: linear-gradient(transparent 52%, var(--color-marker) 52% 92%, transparent 92%);
+    padding-inline: 4px;
+    margin-inline: -4px;
+  }
+
+  /* Rubber stamp */
+  .stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-hand);
+    font-weight: 700;
+    line-height: 1;
+    padding: 6px 12px 8px;
+    border: 2.5px solid currentColor;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 2px var(--color-sheet), inset 0 0 0 3.5px currentColor;
+    transform: rotate(-7deg);
+    opacity: 0.92;
+    white-space: nowrap;
+    mix-blend-mode: multiply;
+  }
+  .stamp-in {
+    animation: stamp-in 420ms var(--ease-out-expo) both;
+  }
+
+  /* Rails are positioned so absolutely-placed descendants (sr-only labels, badges) stay clipped inside them */
+  .no-scrollbar {
+    scrollbar-width: none;
+    position: relative;
+  }
+
+  .tap {
+    transition: transform 160ms var(--ease-out-expo), background-color 160ms ease;
+  }
+  .tap:active {
+    transform: scale(0.97);
+  }
+
+  .pb-safe {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes stamp-in {
+  0% {
+    transform: scale(1.9) rotate(-16deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(-6deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1) rotate(-7deg);
+    opacity: 0.92;
+  }
+}
+
+@keyframes flip-in {
+  0% {
+    transform: rotateX(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ink-blink {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  45%,
+  55% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(28 47 168 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(28 47 168 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Leaflet map chrome in the world's palette */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #e9edf6;
+}
+.leaflet-tile-pane {
+  filter: saturate(0.55) brightness(1.04) hue-rotate(-8deg);
+}
+.leaflet-control-attribution {
+  font-size: 9px;
+  background: rgb(255 255 255 / 0.7) !important;
 }

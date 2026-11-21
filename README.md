@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# لمحة · Lamha: delivery super-app demo (Fayoum)
 
-## Getting Started
-
-First, run the development server:
+A frontend-only client demo (Next.js 16, static data, no backend). The layout is mobile-only; on a laptop it shows in a phone-width column. Everything is simulated in the browser and saved in localStorage.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build (deploys as-is to Vercel)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Demo map
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Route | What it is |
+|---|---|
+| `/` | Hub: the "honest bill" promise + entry to the 3 apps + reset demo |
+| `/app` | Customer app (onboarding → home → store → receipt/cart → live tracking) |
+| `/partner` | Store app: incoming orders with chime, orders board, menu control, sales |
+| `/rider` | Rider app: go online, job offers, pickup checklist, cash, earnings |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Presenter script (5 minutes)
 
-## Learn More
+1. **Hub** (`/`): read the receipt: zero hidden fees, free cancel, instant refunds.
+2. **Customer** → onboarding (OTP auto-fills) → home → *سماش لاب* → *كلاسيك سماش*: required options must be chosen, then add it.
+3. **Receipt**: tap *LAMHA20*, toggle wallet/points, add a tip. Every line updates live and the total is final.
+4. **Confirm** → stamp moment → tracking. Show **cancel/edit** during the countdown, then tap *تقديم الحالة (للعرض)* to fast-forward: rider moves on the map, ETA flips.
+5. After delivery: **في مشكلة؟** → pick an item → money lands in the wallet instantly, and the receipt line gets stamped *مسترد*.
+6. **Partner** (`/partner`): tap *طلب تجريبي* (chime + countdown), accept with prep time. In **المنيو**, switch off an item, then open *شاورما الساقية* in the customer app: it shows as sold out.
+7. **Rider** (`/rider`): *ابدأ الشغل* → offer shows the exact fare → pickup checklist → collect cash → earnings.
 
-To learn more about Next.js, take a look at the following resources:
+## Rebrand
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Change the name in `src/lib/brand.ts` and colors in `src/app/globals.css` (`@theme`). See `DESIGN.md`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All stores, menus, prices, ratings and reviews are synthetic demo data.
