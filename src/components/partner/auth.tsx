@@ -17,7 +17,7 @@ export function PartnerAuth() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   return (
     <main className="min-h-dvh bg-paper">
-      <div className="bg-ink px-2 pb-12 pt-3 text-white">
+      <div className="bg-cocoa px-2 pb-12 pt-3 text-white">
         <Link href="/" aria-label="رجوع" className="tap grid size-10 place-items-center rounded-full hover:bg-white/10"><ChevronRight className="size-6" /></Link>
         <div className="px-4 pt-3">
           <Wordmark className="text-[32px]" />

@@ -292,7 +292,7 @@ function StoreView({ id }: { id: string }) {
               {RATING_BARS.map((p, i) => (
                 <div key={i} className="flex items-center gap-2 text-[12px] text-ink-3">
                   <span className="w-3 tabular-nums">{5 - i}</span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-rule"><div className="h-full rounded-full bg-[#e0b400]" style={{ width: `${p}%` }} /></div>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-rule"><div className="h-full rounded-full bg-[#eaa407]" style={{ width: `${p}%` }} /></div>
                 </div>
               ))}
             </div>
@@ -303,7 +303,7 @@ function StoreView({ id }: { id: string }) {
               <li key={i} className="py-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[14.5px] font-semibold">{r.name}</span>
-                  <span className="flex" aria-label={`${r.stars} نجوم`}>{Array.from({ length: 5 }, (_, k) => <Star key={k} className={cx("size-3.5", k < r.stars ? "fill-marker text-[#e0b400]" : "text-rule")} />)}</span>
+                  <span className="flex" aria-label={`${r.stars} نجوم`}>{Array.from({ length: 5 }, (_, k) => <Star key={k} className={cx("size-3.5", k < r.stars ? "fill-marker text-[#eaa407]" : "text-rule")} />)}</span>
                 </div>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-ink-2">{r.text}</p>
                 <p className="mt-1 text-[12px] text-ink-3">من {r.days} يوم{r.item ? ` • طلب ${r.item}` : ""}</p>

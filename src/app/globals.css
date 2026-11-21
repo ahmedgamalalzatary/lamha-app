@@ -1,32 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #f2f4fa;
-  --color-desk: #e4e8f3;
+  --color-paper: #f5f5f5;
+  --color-desk: #f4ede3;
   --color-sheet: #ffffff;
-  --color-ink: #121838;
-  --color-ink-2: #444d72;
-  --color-ink-3: #636b8c;
-  --color-rule: #dfe3ee;
-  --color-leader: #c3c9dc;
-  --color-pen: #1c2fa8;
-  --color-pen-700: #14217d;
-  --color-pen-900: #0d1659;
-  --color-pen-100: #e6e9fb;
-  --color-pen-50: #f1f3fd;
-  --color-stamp: #0b8a5f;
-  --color-stamp-50: #e3f6ee;
-  --color-void: #cf2f45;
-  --color-void-50: #fdecee;
-  --color-marker: #ffe45c;
-  --color-marker-soft: #fff6bf;
+  --color-ink: #262626;
+  --color-ink-2: #6b6b6b;
+  --color-ink-3: #767675;
+  --color-rule: #e5e5e5;
+  --color-leader: #bfbfbf;
+  --color-pen: #f55905;
+  --color-pen-700: #d24803;
+  --color-pen-900: #ab3601;
+  --color-pen-100: #fdc3a4;
+  --color-pen-50: #fee9dd;
+  --color-stamp: #05a437;
+  --color-stamp-50: #ebf4e5;
+  --color-void: #c01b21;
+  --color-void-50: #faebe9;
+  --color-marker: #cfff00;
+  --color-marker-soft: #fef2d7;
+  --color-cocoa: #411517;
+  --color-cream: #f4ede3;
+  --color-gold: #eaa407;
 
-  --font-sans: var(--font-readex), ui-sans-serif, system-ui, sans-serif;
-  --font-hand: var(--font-ruqaa), var(--font-readex), serif;
+  --font-sans: var(--font-noto-latin), var(--font-noto-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-noto-latin), var(--font-noto-arabic), sans-serif;
 
   --radius-card: 14px;
-  --shadow-sheet: 0 1px 2px rgb(18 24 56 / 0.06), 0 8px 24px -12px rgb(18 24 56 / 0.18);
-  --shadow-lift: 0 2px 6px rgb(18 24 56 / 0.08), 0 18px 40px -18px rgb(18 24 56 / 0.35);
+  --shadow-sheet: 0 1px 2px rgb(38 38 38 / 0.06), 0 8px 24px -12px rgb(38 38 38 / 0.18);
+  --shadow-lift: 0 2px 6px rgb(38 38 38 / 0.08), 0 18px 40px -18px rgb(38 38 38 / 0.35);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -89,7 +92,7 @@
   }
   @media (min-width: 480px) {
     .app-column {
-      box-shadow: 0 0 0 1px rgb(18 24 56 / 0.06), 0 30px 80px -30px rgb(18 24 56 / 0.35);
+      box-shadow: 0 0 0 1px rgb(38 38 38 / 0.06), 0 30px 80px -30px rgb(38 38 38 / 0.35);
     }
   }
 
@@ -114,7 +117,7 @@
       conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--z)) var(--z) repeat-x;
   }
   .receipt-shadow {
-    filter: drop-shadow(0 1px 1px rgb(18 24 56 / 0.08)) drop-shadow(0 10px 18px rgb(18 24 56 / 0.12));
+    filter: drop-shadow(0 1px 1px rgb(38 38 38 / 0.08)) drop-shadow(0 10px 18px rgb(38 38 38 / 0.12));
   }
 
   /* Dotted leader between a label and its amount */
@@ -252,7 +255,7 @@
   background: #e9edf6;
 }
 .leaflet-tile-pane {
-  filter: saturate(0.55) brightness(1.04) hue-rotate(-8deg);
+  filter: saturate(0.7) brightness(1.03);
 }
 .leaflet-control-attribution {
   font-size: 9px;

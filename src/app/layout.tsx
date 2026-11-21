@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Readex_Pro, Aref_Ruqaa } from "next/font/google";
+import { Noto_Sans, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { BRAND } from "@/lib/brand";
 
-const readex = Readex_Pro({ variable: "--font-readex", subsets: ["arabic", "latin"], weight: ["300", "400", "500", "600", "700"] });
-const ruqaa = Aref_Ruqaa({ variable: "--font-ruqaa", subsets: ["arabic"], weight: ["400", "700"] });
+/* talabat.com ships Noto Sans Arabic for Arabic text; Noto Sans covers Latin and digits */
+const notoArabic = Noto_Sans_Arabic({ variable: "--font-noto-arabic", subsets: ["arabic"], weight: ["300", "400", "500", "600", "700", "800"] });
+const notoLatin = Noto_Sans({ variable: "--font-noto-latin", subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
   title: `${BRAND.nameAr} · ${BRAND.nameEn}`,
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1c2fa8",
+  themeColor: "#f55905",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${readex.variable} ${ruqaa.variable} antialiased`}>
+    <html lang="ar" dir="rtl" className={`${notoArabic.variable} ${notoLatin.variable} antialiased`}>
       <body>
         <div className="app-column">
           <Providers>{children}</Providers>

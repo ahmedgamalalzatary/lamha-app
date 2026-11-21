@@ -28,13 +28,13 @@ export function pointAt(path: LatLng[], t: number): LatLng {
 const icon = (html: string, size: number) => L.divIcon({ html, className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
 
 const storeIcon = (letter: string, bg: string, fg: string) =>
-  icon(`<div style="width:40px;height:40px;border-radius:12px;background:${bg};color:${fg};display:grid;place-items:center;font:700 20px var(--font-ruqaa);border:3px solid #fff;box-shadow:0 6px 16px -6px rgba(18,24,56,.5)">${letter}</div>`, 40);
+  icon(`<div style="width:40px;height:40px;border-radius:12px;background:${bg};color:${fg};display:grid;place-items:center;font:700 20px var(--font-noto-arabic);border:3px solid #fff;box-shadow:0 6px 16px -6px rgba(18,24,56,.5)">${letter}</div>`, 40);
 const homeIcon = icon(
-  `<div style="width:40px;height:40px;border-radius:999px;background:#1c2fa8;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 6px 16px -6px rgba(18,24,56,.5)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></div>`,
+  `<div style="width:40px;height:40px;border-radius:999px;background:#f55905;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 6px 16px -6px rgba(18,24,56,.5)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></div>`,
   40,
 );
 const riderIcon = icon(
-  `<div style="width:46px;height:46px;border-radius:999px;background:#ffe45c;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 0 0 6px rgba(28,47,168,.18),0 8px 18px -6px rgba(18,24,56,.55)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#121838" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg></div>`,
+  `<div style="width:46px;height:46px;border-radius:999px;background:#cfff00;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 0 0 6px rgba(28,47,168,.18),0 8px 18px -6px rgba(18,24,56,.55)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg></div>`,
   46,
 );
 
@@ -71,8 +71,8 @@ export default function OrderMap({
       <MapContainer center={store} zoom={15} zoomControl={false} attributionControl={true} className="h-full w-full" scrollWheelZoom={false}>
         <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
         <Fit points={[store, home]} padBottom={padBottom} />
-        <Polyline positions={path} pathOptions={{ color: "#1c2fa8", weight: 5, opacity: 0.35, dashArray: "2 10", lineCap: "round" }} />
-        {donePath.length > 1 && <Polyline positions={donePath} pathOptions={{ color: "#1c2fa8", weight: 5, opacity: 0.95, lineCap: "round" }} />}
+        <Polyline positions={path} pathOptions={{ color: "#f55905", weight: 5, opacity: 0.35, dashArray: "2 10", lineCap: "round" }} />
+        {donePath.length > 1 && <Polyline positions={donePath} pathOptions={{ color: "#f55905", weight: 5, opacity: 0.95, lineCap: "round" }} />}
         <Marker position={store} icon={storeIcon(mono.letter, mono.bg, mono.fg)} />
         <Marker position={home} icon={homeIcon} />
         {rider && <Marker position={rider} icon={riderIcon} zIndexOffset={1000} />}

@@ -33,8 +33,13 @@ export default function RiderHome() {
 
   useEffect(() => {
     if (job?.stage !== "offer") return;
-    setLeft(Math.max(0, OFFER_S - Math.floor((Date.now() - job.offeredAt) / 1000)));
-    const t = setInterval(() => setLeft((l) => (l <= 1 ? (decline(), 0) : l - 1)), 1000);
+    const tick = () => {
+      const l = Math.max(0, OFFER_S - Math.floor((Date.now() - job.offeredAt) / 1000));
+      setLeft(l);
+      if (l === 0) decline();
+    };
+    tick();
+    const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [job?.stage, job?.offeredAt, decline]);
 
@@ -55,7 +60,7 @@ export default function RiderHome() {
         {job && store ? (
           <OrderMap key={job.id} store={job.from} home={job.to} progress={leg} phase={phase as never} mono={store.mono} height="100%" padBottom={330} />
         ) : (
-          <OrderMap key="idle" store={IDLE} home={[IDLE[0] + 0.004, IDLE[1] + 0.006]} progress={0} phase="hidden" mono={{ letter: "ل", bg: "#1c2fa8", fg: "#fff" }} height="100%" padBottom={330} />
+          <OrderMap key="idle" store={IDLE} home={[IDLE[0] + 0.004, IDLE[1] + 0.006]} progress={0} phase="hidden" mono={{ letter: "ل", bg: "#f55905", fg: "#fff" }} height="100%" padBottom={330} />
         )}
       </div>
 

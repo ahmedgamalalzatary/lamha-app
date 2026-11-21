@@ -31,7 +31,7 @@ export default function PartnerOrders() {
 
   return (
     <main className="min-h-dvh">
-      <header className="bg-ink px-4 pb-4 pt-4 text-white">
+      <header className="bg-cocoa px-4 pb-4 pt-4 text-white">
         <div className="flex items-center gap-3">
           <StoreLogo store={store} size={44} />
           <div className="min-w-0 flex-1">
@@ -41,7 +41,7 @@ export default function PartnerOrders() {
           <button onClick={() => { const o = incoming(); if (sound) ring(); toast(`طلب جديد #${o.number}`); }} className="tap inline-flex h-9 items-center gap-1 rounded-xl bg-white/12 px-3 text-[12.5px]"><Plus className="size-4" /> طلب تجريبي</button>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-white/10 p-1" role="radiogroup" aria-label="حالة المحل">
-          {([["open", "مفتوح", "bg-stamp"], ["busy", "زحمة +15 د", "bg-[#e0a100]"], ["closed", "مقفول", "bg-void"]] as const).map(([k, l, c]) => (
+          {([["open", "مفتوح", "bg-stamp"], ["busy", "زحمة +15 د", "bg-[#eaa407]"], ["closed", "مقفول", "bg-void"]] as const).map(([k, l, c]) => (
             <button key={k} role="radio" aria-checked={status === k} onClick={() => { setStatus(k); toast(k === "open" ? "المحل مفتوح ويستقبل طلبات" : k === "busy" ? "العملاء هيشوفوا وقت توصيل أطول بـ 15 دقيقة" : "المحل مقفول ومش هيظهر في الطلبات"); }} className={cx("tap flex h-10 items-center justify-center gap-1.5 rounded-xl text-[13.5px] font-medium", status === k ? "bg-sheet text-ink" : "text-white/80")}>
               <span className={cx("size-2 rounded-full", c)} /> {l}
             </button>

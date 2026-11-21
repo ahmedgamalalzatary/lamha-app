@@ -6,22 +6,28 @@ Arabic RTL, mobile-only (440px column). Every screen is a working delivery app f
 
 | Token | Hex | Job |
 |---|---|---|
-| `paper` | `#f2f4fa` | App ground |
-| `desk` | `#e4e8f3` | Outside the phone column |
-| `sheet` | `#ffffff` | Receipts, cards, sheets |
-| `ink` / `ink-2` / `ink-3` | `#121838` / `#444d72` / `#636b8c` | Text: primary, secondary, meta |
-| `rule` / `leader` | `#dfe3ee` / `#c3c9dc` | Dividers / dotted leaders |
-| `pen` (+`700`,`900`,`100`,`50`) | `#1c2fa8` | Ballpoint blue: shell, primary actions, selection, ETA |
-| `stamp` (+`50`) | `#0b8a5f` | Approved, paid, refunded-to-you, free delivery |
-| `void` (+`50`) | `#cf2f45` | Cancel, reject, late, sold out, errors |
-| `marker` / `marker-soft` | `#ffe45c` / `#fff6bf` | Highlighter: only the total, promos, notes |
+Values are copied from talabat.com's published CSS variables (Tawsilty uses the same orange family, `#f16e02`–`#ff851d`).
 
-Partner app shell uses `ink` instead of `pen` so the store side reads as a back-office tool of the same family.
+| Token | Hex | Source variable | Job |
+|---|---|---|---|
+| `paper` | `#f5f5f5` | neutral4 | App ground |
+| `desk` / `cream` | `#f4ede3` | tertiary100 | Outside the phone column |
+| `sheet` | `#ffffff` | neutral-white | Receipts, cards, sheets |
+| `ink` / `ink-2` / `ink-3` | `#262626` / `#6b6b6b` / `#767675` | neutral100 / neutral70 / muted | Text: primary, secondary, meta |
+| `rule` / `leader` | `#e5e5e5` / `#bfbfbf` | neutral10 / neutral35 | Dividers / dotted leaders |
+| `pen` (+`700`,`900`,`100`,`50`) | `#f55905` (`#d24803`, `#ab3601`, `#fdc3a4`, `#fee9dd`) | primary100… | Brand orange: shell, primary actions, selection, ETA |
+| `cocoa` | `#411517` | secondary100 | Partner app shell |
+| `stamp` (+`50`) | `#05a437` (`#ebf4e5`) | success | Approved, paid, refunded-to-you, free delivery |
+| `void` (+`50`) | `#c01b21` (`#faebe9`) | danger | Cancel, reject, late, sold out, errors |
+| `marker` / `marker-soft` | `#cfff00` / `#fef2d7` | promo100 / alert10 | Highlighter: only the total, promos, notes |
+| `gold` | `#eaa407` | alert100 | Rating stars, "busy" state |
+
+Partner app shell uses `cocoa` instead of `pen` so the store side reads as a back-office tool of the same family.
 
 ## Type
 
-- **Readex Pro** (300–700) for all UI, `tnum` on globally; prices use `tabular-nums`.
-- **Aref Ruqaa** (Egyptian handwriting script) only for the wordmark, rubber stamps, store monograms, and the live ETA number.
+- **Noto Sans Arabic** for Arabic (the font talabat.com ships) and **Noto Sans** for Latin and digits, 300–800, `tnum` on globally; prices use `tabular-nums`. Talabat's Latin face, TT Commons, is a paid font, so Noto Sans stands in for it.
+- The wordmark, stamps, store monograms and the live ETA use the same family in bold (`font-hand` now points at Noto).
 - Western digits everywhere (`ar-EG-u-nu-latn` for dates), so prose and receipts match.
 - Scale: 11.5 / 12.5 / 13.5 / 14.5 / 15 / 16 / 18 / 20–22 / 26–28 / 32–40 / 64 (ETA).
 

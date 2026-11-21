@@ -50,7 +50,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
 
   const store = storeById(order.storeId);
   const courier = order.kind === "courier";
-  const mono = store?.mono ?? { letter: "م", bg: "#1c2fa8", fg: "#fff" };
+  const mono = store?.mono ?? { letter: "م", bg: "#f55905", fg: "#fff" };
   const addr = s.addresses.find((a) => a.label === order.addressLabel);
   const home = (addr?.coords ?? (courier ? AREAS[order.courier!.to.split("،")[0]] : undefined) ?? [29.3168, 30.8402]) as [number, number];
   const from = (store?.coords ?? (courier ? AREAS[order.courier!.from.split("،")[0]] : undefined) ?? [29.306, 30.843]) as [number, number];
@@ -159,7 +159,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             <Photo src="/img/scooter1.jpg" alt="" className="size-12 shrink-0 rounded-full" sizes="48px" />
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-semibold">{RIDER.name}</p>
-              <p className="flex items-center gap-1 whitespace-nowrap text-[12.5px] text-ink-2"><Star className="size-3.5 fill-marker text-[#e0b400]" /> {RIDER.rating} • <span className="rounded bg-paper px-1.5 font-medium text-ink">{RIDER.plate}</span></p>
+              <p className="flex items-center gap-1 whitespace-nowrap text-[12.5px] text-ink-2"><Star className="size-3.5 fill-marker text-[#eaa407]" /> {RIDER.rating} • <span className="rounded bg-paper px-1.5 font-medium text-ink">{RIDER.plate}</span></p>
             </div>
             <button onClick={() => setChat("rider")} aria-label="كلّم الطيار شات" className="tap grid size-11 place-items-center rounded-full bg-pen-50 text-pen"><MessageCircle className="size-5" /></button>
             <a href="tel:0000" onClick={(e) => { e.preventDefault(); toast("بنوصلك بالطيار برقم مخفي عشان خصوصيتك"); }} aria-label="اتصل بالطيار" className="tap grid size-11 place-items-center rounded-full bg-stamp text-white"><Phone className="size-5" /></a>
@@ -348,7 +348,7 @@ function Stars({ label, value, onChange }: { label: string; value: number; onCha
       <div className="mt-2 flex gap-2" role="radiogroup" aria-label={label}>
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} role="radio" aria-checked={value === n} aria-label={`${n} نجوم`} onClick={() => onChange(n)} className="tap">
-            <motion.span animate={{ scale: value >= n ? 1.1 : 1 }} className="block"><Star className={cx("size-10", value >= n ? "fill-marker text-[#e0b400]" : "text-rule")} /></motion.span>
+            <motion.span animate={{ scale: value >= n ? 1.1 : 1 }} className="block"><Star className={cx("size-10", value >= n ? "fill-marker text-[#eaa407]" : "text-rule")} /></motion.span>
           </button>
         ))}
       </div>

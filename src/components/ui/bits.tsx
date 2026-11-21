@@ -29,7 +29,7 @@ export function StoreLogo({ store, size = 44, className }: { store: Pick<Store, 
 export function Rating({ value, count, className }: { value: number; count?: number; className?: string }) {
   return (
     <span className={cx("inline-flex items-center gap-1 tabular-nums", className)}>
-      <Star className="size-3.5 fill-marker text-[#e0b400]" aria-hidden />
+      <Star className="size-3.5 fill-marker text-[#eaa407]" aria-hidden />
       <span className="font-medium text-ink">{value.toFixed(1)}</span>
       {count !== undefined && <span className="text-ink-3">({count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count})</span>}
       <span className="sr-only">تقييم {value} من 5</span>

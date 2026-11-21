@@ -96,14 +96,14 @@ export default function Reports() {
       <section className="mx-4 mt-4 rounded-[18px] bg-sheet p-4 shadow-sheet">
         <div className="flex items-baseline justify-between">
           <h2 className="text-[15px] font-semibold">آراء العملاء</h2>
-          <span className="flex items-center gap-1 text-[14px] font-semibold"><Star className="size-4 fill-marker text-[#e0b400]" /> 4.8</span>
+          <span className="flex items-center gap-1 text-[14px] font-semibold"><Star className="size-4 fill-marker text-[#eaa407]" /> 4.8</span>
         </div>
         <ul className="mt-2 divide-y divide-rule">
           {reviews.map((r) => (
             <li key={r.id} className="py-3">
               <div className="flex items-center justify-between">
                 <span className="text-[14.5px] font-medium">{r.name}</span>
-                <span className="flex">{Array.from({ length: 5 }, (_, k) => <Star key={k} className={cx("size-3.5", k < r.stars ? "fill-marker text-[#e0b400]" : "text-rule")} />)}</span>
+                <span className="flex">{Array.from({ length: 5 }, (_, k) => <Star key={k} className={cx("size-3.5", k < r.stars ? "fill-marker text-[#eaa407]" : "text-rule")} />)}</span>
               </div>
               <p className="mt-1 text-[14px] text-ink-2">{r.text}</p>
               <p className="text-[12px] text-ink-3">{ago(r.at)}</p>

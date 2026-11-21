@@ -65,7 +65,7 @@ export default function Earnings() {
           </li>
         ))}
       </ul>
-      <p className="mt-4 flex items-center justify-center gap-1 text-[13px] text-ink-3"><Star className="size-4 fill-marker text-[#e0b400]" /> تقييمك 4.9 من 1,240 مشوار</p>
+      <p className="mt-4 flex items-center justify-center gap-1 text-[13px] text-ink-3"><Star className="size-4 fill-marker text-[#eaa407]" /> تقييمك 4.9 من 1,240 مشوار</p>
 
       <Sheet open={settle} onOpenChange={setSettle} title="ورّد الكاش" description="ادفع المبلغ ده في أي فرع فوري بالكود.">
         <div className="flex flex-col items-center px-5 pb-8">
