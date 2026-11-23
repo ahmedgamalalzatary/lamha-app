@@ -27,7 +27,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 0 | Foundation | ⬜ | none |
 | 1 | Accounts: phone, OTP and password | ⬜ | 1 |
 | 2 | Production server and deploys | ⬜ | 6 |
-| 3 | Dashboard shell and admin sign-in | ⬜ | |
+| 3 | Dashboard shell and sign-in (admin and partner areas) | ⬜ | |
 | 4 | Catalog: verticals, stores, categories, products | ⬜ | |
 | 5 | Customer home | ⬜ | |
 | 6 | Store lists, filters and search | ⬜ | |
@@ -35,7 +35,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 8 | Addresses, zones and the map picker | ⬜ | |
 | 9 | Cart | ⬜ | |
 | 10 | Checkout and placing an order | ⬜ | 2, 3, 9 |
-| 11 | Partner: orders and products | ⬜ | 9 |
+| 11 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 |
 | 12 | Driver: shifts, offers and skips | ⬜ | 5, 9 |
 | 13 | Live tracking and the delivered view | ⬜ | 9 |
 | 14 | Ratings, complaints and support | ⬜ | |
@@ -59,7 +59,7 @@ The skeleton every feature plugs into. The only visible result is that the apps 
 
 - **API:** `@nestjs/config` loads the root `.env` and validates it; Drizzle MySQL module; `/v1` prefix, validation pipe, one error shape, CORS; Swagger at `/docs`; `GET /v1/health` checks the API and the database.
 - **Shared:** enums and labels for roles, verticals, order statuses, address types; money, phone and time formatters (contract §7).
-- **Mobile:** Expo Router root layout; Alexandria font; Tawsilty theme tokens (contract §6.1); i18n with Arabic default and RTL; API client using `EXPO_PUBLIC_API_URL` from the root `.env`; React Query; splash; empty role-based tab layouts (customer, partner, driver); toast, bottom sheet, empty state and confirm dialog components (contract §6.3).
+- **Mobile:** Expo Router root layout; Alexandria font; Tawsilty theme tokens (contract §6.1); i18n with Arabic default and RTL; API client using `EXPO_PUBLIC_API_URL` from the root `.env`; React Query; splash; empty role-based tab layouts (customer, partner, driver, admin); toast, bottom sheet, empty state and confirm dialog components (contract §6.3).
 - **Dashboard:** RTL layout with the sidebar from contract §11, Alexandria, theme tokens, API client.
 - **Tests:** health e2e; formatter unit tests.
 
@@ -70,17 +70,17 @@ The skeleton every feature plugs into. The only visible result is that the apps 
 Contract §2, §8.1, §8.14 (profile), §9 and §10 (sign-in).
 
 - **Database:** `users`, `otp_codes`, `refresh_tokens`.
-- **API:** request OTP, verify OTP, complete profile (with optional invite code), sign in with phone + password, refresh, sign out, forgot password by OTP; `GET/PATCH/DELETE /me`; role guard; rate limits. Seed: an admin, a partner and a driver.
-- **Mobile:** phone, OTP, personal details and sign-in screens; after sign-in the tab bar matches the role; profile screen; sign out; delete account.
-- **Tests:** OTP expiry and attempts; each role's guard; refresh; deletion.
+- **API:** request OTP, verify OTP, complete profile (with optional invite code), sign in with phone + password, refresh, sign out, forgot password by OTP (customers only); `GET/PATCH/DELETE /me`; role guard; rate limits. Partner and driver accounts cannot sign up or use forgot password: they only sign in with admin-generated credentials (contract §2). Seed: an admin, a partner and a driver.
+- **Mobile:** phone, OTP, personal details and sign-in screens for customers; one sign-in screen (phone + password) for partners, drivers and admins; after sign-in the tab bar matches the role; profile screen; sign out; delete account (customers).
+- **Tests:** OTP expiry and attempts; each role's guard; partners and drivers refused on sign-up and forgot password; refresh; deletion.
 
 ## Phase 2: Production server and deploys
 
 Docker Compose (API + MySQL), nginx, Let's Encrypt, the dashboard build, backups before each deploy, migrations on deploy. Same pattern as the owner's other servers.
 
-## Phase 3: Dashboard shell and admin sign-in
+## Phase 3: Dashboard shell and sign-in
 
-Sidebar sections from contract §11 (empty pages), admin sign-in, admin users.
+Contract §11 and §11.1. One sign-in page; the role decides the area: admins land in the admin area (sidebar from §11, empty pages), partners in `/partner` (its own sidebar, empty pages). A partner can never open an admin page or another store's data (guard on every `/v1/partner/*` route by the account's store). Admin users (A23).
 
 ## Phase 4: Catalog
 
@@ -89,6 +89,7 @@ Contract §8.3–§8.5, §11 (الموردين, المنتجات والكتال�
 - **Database:** `verticals`, `stores`, `store_categories`, `products`, `cuisines`, `zones`.
 - **API:** public catalog reads; admin CRUD with image upload (`sharp`).
 - **Dashboard:** stores (type, layout, pickup allowed, fees, minimum order, hours, cover), categories, products, inactive products, cuisines, home tiles (order and images).
+- **Partner accounts:** creating a store generates its partner account; the password is shown once with a copy button; reset password and disable (contract §2, §11). The same actions in the mobile app for admins (contract §11.2, M2).
 - Seed from the demo's data.
 
 ## Phase 5: Customer home
@@ -117,11 +118,11 @@ Contract §8.6–§8.7: confirm the location on a map, delivery fee, payment met
 
 ## Phase 11: Partner: orders and products
 
-Contract §9: incoming orders live (socket), accept/prepare/ready, past orders with counts, product availability toggles, notifications, account with the orders-made count.
+Contract §9 and §11.1: incoming orders live (socket), accept/prepare/ready, past orders with counts, product availability toggles, notifications, account with the orders-made count. Built twice on the same API: in the mobile app and in the web dashboard's partner area (`/partner`: orders, products, store settings the partner may edit). The partner edits only what contract §11.1 allows.
 
 ## Phase 12: Driver: shifts, offers and skips
 
-Contract §10: shift schedule from the admin, start unlocks 30 min before, end and extend, offers with details, accept/skip with warning and suspension, order steps to delivered; dispatch from the dashboard (assign driver, "بدون كابتن" flag).
+Contract §10: driver accounts generated from the dashboard or the admin's mobile app (password shown once, reset, disable); shift schedule from the admin, start unlocks 30 min before, end and extend, offers with details, accept/skip with warning and suspension, order steps to delivered; dispatch from the dashboard (assign driver, "بدون كابتن" flag).
 
 ## Phase 13: Live tracking and the delivered view
 

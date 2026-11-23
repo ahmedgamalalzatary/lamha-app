@@ -9,7 +9,7 @@ A delivery app for Egypt (restaurants, desserts, markets, pharmacies, send anyth
 
 | Path | What | Dev port |
 |---|---|---|
-| `apps/web` | Admin dashboard (Next.js) | 3000 |
+| `apps/web` | Web dashboard: admin area and partner area `/partner` (Next.js) | 3000 |
 | `apps/demo` | Clickable web demo | 3001 |
 | `apps/mobile` | Mobile app (Expo) | 3002 |
 | `apps/api` | Backend (NestJS + MySQL) | 4000 |
