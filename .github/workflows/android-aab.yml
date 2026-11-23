@@ -1,0 +1,81 @@
+# Builds the signed Android App Bundle (.aab) for Google Play.
+# Runs only when started by hand, for a release. A push never builds.
+#
+# Needs the upload key secrets (same as Android APK) and the repo variable EXPO_PUBLIC_API_URL
+# set to the production API: a store build must never point at a local address.
+name: Android AAB
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: android-aab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - name: Check the release settings
+        run: |
+          test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable to the production API"; exit 1; }
+          case "$EXPO_PUBLIC_API_URL" in https://*) ;; *) echo "::error::A store build needs an https API URL"; exit 1 ;; esac
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set the build number
+        run: echo "APP_BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the shared package
+        run: pnpm --filter @tawsela/shared build
+
+      - name: Generate the Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Unpack the upload key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "::error::Add the ANDROID_UPLOAD_KEYSTORE_BASE64 secret first"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_UPLOAD_STORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build the bundle
+        working-directory: apps/mobile/android
+        env:
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Name the bundle
+        run: |
+          mkdir -p out
+          cp apps/mobile/android/app/build/outputs/bundle/release/app-release.aab "out/tawsela-${APP_BUILD_NUMBER}.aab"
+          echo "Built AAB #${APP_BUILD_NUMBER} for ${EXPO_PUBLIC_API_URL}" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tawsela-android-aab
+          path: out/*.aab
+          retention-days: 30
