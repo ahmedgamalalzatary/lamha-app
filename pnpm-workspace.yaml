@@ -1,3 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+allowBuilds:
+  # Native install scripts pnpm may run. Anything not listed stops the install.
+  esbuild: true
+  sharp: false
+  unrs-resolver: false

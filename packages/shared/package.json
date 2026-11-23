@@ -1,0 +1,26 @@
+{
+  "name": "@tawsela/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Types, enums, constants and formatters shared by the API, the dashboard and the mobile apps.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@tawsela/tsconfig": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}
