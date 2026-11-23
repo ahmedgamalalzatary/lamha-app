@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ChevronLeft, RotateCcw, ShoppingBag, Store as StoreIcon, Bike } from "lucide-react";
+import { ChevronLeft, LayoutDashboard, RotateCcw, ShoppingBag, Store as StoreIcon, Bike } from "lucide-react";
 import { toast } from "sonner";
 import { Wordmark } from "@/components/ui/wordmark";
 import { Receipt, Row, Perf } from "@/components/ui/receipt";
@@ -14,6 +14,7 @@ const APPS = [
   { href: "/app", icon: ShoppingBag, title: "تطبيق العميل", body: "اطلب أكل، ماركت، صيدلية، أو ابعت أي حاجة، وتابع طلبك لحظة بلحظة", tag: "ابدأ هنا" },
   { href: "/partner", icon: StoreIcon, title: "تطبيق المحلات", body: "استقبل الطلبات، تحكم في المنيو، وشوف مبيعاتك", tag: "للشركاء" },
   { href: "/rider", icon: Bike, title: "تطبيق الطيارين", body: "مشاوير جديدة، خريطة الطريق، وأرباح اليوم", tag: "للتوصيل" },
+  { href: "/admin", icon: LayoutDashboard, title: "لوحة التحكم", body: "الطلبات بالحالة، تعيين الكابتن، والتنبيهات (افتحها على شاشة كمبيوتر)", tag: "للإدارة" },
 ];
 
 export default function Hub() {

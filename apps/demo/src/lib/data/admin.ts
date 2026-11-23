@@ -62,6 +62,21 @@ export const SHIFT_RULES = {
   extendMin: 60,
 };
 
+/**
+ * Money on a store's order (Tawsilty partner app). The store gets the items total minus the
+ * platform commission, handed over by the driver ("استلم من المندوب"): 205 → 184.5, 95 → 85.5.
+ */
+export const ORDER_MONEY = {
+  commission: 0.1,
+  serviceFee: 10,
+  /** e-wallet and card orders pay this share of the items total as "رسوم طريقة الدفع" */
+  paymentFeeRate: 0.02,
+  deliveryFees: [13, 17],
+};
+
+/** The store must press "تم التجهيز" this many minutes before the captain's pickup. */
+export const PREP_BEFORE_PICKUP_MIN = 5;
+
 /** Lucky wheel prizes (one spin per day). */
 export type Prize = { id: string; label: string; kind: "points" | "promo" | "none"; value: number; code?: string };
 export const WHEEL_PRIZES: Prize[] = [

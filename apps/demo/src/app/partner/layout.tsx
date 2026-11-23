@@ -1,72 +1,75 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
-import { BarChart3, ClipboardList, Store as StoreIcon, UtensilsCrossed } from "lucide-react";
+import { House, LayoutList, Rows2, User } from "lucide-react";
 import { usePartner } from "@/lib/store/partner";
 import { PartnerAuth } from "@/components/partner/auth";
-import { IncomingSheet } from "@/components/partner/incoming";
+import { NewOrderModal, tabCx, useOrderPopup } from "@/components/partner/tw";
 import { cx } from "@/lib/format";
 import { ring } from "@/lib/sound";
 
+/* Tawsilty partner tab bar: الرئيسية · طلباتى · منتجات · حسابي */
 const TABS = [
-  { href: "/partner", label: "الطلبات", icon: ClipboardList },
-  { href: "/partner/menu", label: "المنيو", icon: UtensilsCrossed },
-  { href: "/partner/reports", label: "المبيعات", icon: BarChart3 },
-  { href: "/partner/account", label: "المحل", icon: StoreIcon },
+  { href: "/partner", label: "الرئيسية", icon: House },
+  { href: "/partner/orders", label: "طلباتى", icon: Rows2 },
+  { href: "/partner/menu", label: "منتجات", icon: LayoutList },
+  { href: "/partner/account", label: "حسابي", icon: User },
 ];
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  const { signedIn, status, orders, sound, incoming } = usePartner();
-  const [incomingId, setIncomingId] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { signedIn, status, orders, incoming, tick } = usePartner();
+  const { id: popupId, open, close } = useOrderPopup();
 
+  // A new order opens the accept/reject popup on its own.
   useEffect(() => {
     const pending = orders.find((o) => o.status === "new");
-    if (pending && !incomingId) setIncomingId(pending.id);
-  }, [orders, incomingId]);
+    if (pending && !popupId) open(pending.id);
+  }, [orders, popupId, open]);
 
+  // Demo: a new order every 40s while open (70s when busy), and the captain moves ready orders on.
   useEffect(() => {
-    if (!signedIn || status === "closed") return;
+    if (!signedIn) return;
     const every = status === "busy" ? 70_000 : 40_000;
-    timer.current = setInterval(() => {
-      if (usePartner.getState().orders.some((o) => o.status === "new")) return;
-      const o = incoming();
-      if (usePartner.getState().sound) ring();
-      setIncomingId(o.id);
-    }, every);
-    return () => { if (timer.current) clearInterval(timer.current); };
-  }, [signedIn, status, incoming]);
+    let last = Date.now();
+    const t = setInterval(() => {
+      const now = Date.now();
+      tick(now);
+      if (status === "closed" || usePartner.getState().orders.some((o) => o.status === "new")) { last = now; return; }
+      if (now - last >= every) {
+        last = now;
+        const o = incoming();
+        if (usePartner.getState().sound) ring();
+        open(o.id);
+      }
+    }, 5_000);
+    return () => clearInterval(t);
+  }, [signedIn, status, incoming, tick, open]);
 
   if (!signedIn) return <PartnerAuth />;
 
-  const newCount = orders.filter((o) => o.status === "new").length;
+  const popup = orders.find((o) => o.id === popupId && o.status === "new");
 
   return (
-    <>
+    <div className="min-h-dvh bg-white font-tw">
       <div className="pb-24">{children}</div>
-      <IncomingSheet id={incomingId} onDone={() => setIncomingId(null)} sound={sound} />
-      <nav aria-label="تطبيق المحل" className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[440px] border-t border-rule bg-sheet/95 backdrop-blur-md">
+      {popup && <NewOrderModal o={popup} onClose={close} />}
+      {!path.startsWith("/partner/order/") && <nav aria-label="تطبيق المحل" className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[440px] border-t border-tw-line bg-white">
         <ul className="grid grid-cols-4">
           {TABS.map((t) => {
             const on = t.href === "/partner" ? path === "/partner" : path.startsWith(t.href);
             return (
               <li key={t.href}>
-                <Link href={t.href} aria-current={on ? "page" : undefined} className="tap relative flex h-15 flex-col items-center justify-center gap-1 pt-1.5">
-                  {on && <motion.span layoutId="ptab" className="absolute top-0 h-[3px] w-10 rounded-b-full bg-pen" />}
-                  <span className="relative">
-                    <t.icon className={cx("size-[22px]", on ? "text-pen" : "text-ink-3")} strokeWidth={on ? 2.3 : 1.8} />
-                    {t.href === "/partner" && newCount > 0 && <span className="absolute -end-2 -top-1 grid size-4.5 place-items-center rounded-full bg-void text-[10.5px] font-bold text-white">{newCount}</span>}
-                  </span>
-                  <span className={cx("text-[11.5px]", on ? "font-semibold text-pen" : "text-ink-3")}>{t.label}</span>
+                <Link href={t.href} aria-current={on ? "page" : undefined} className="tap flex h-17 flex-col items-center justify-center gap-1">
+                  <t.icon className={cx("size-7", on ? cx("text-tw-700", t.icon === House && "fill-tw-700") : "text-tw-ink-2")} strokeWidth={1.8} />
+                  <span className={tabCx(on)}>{t.label}</span>
                 </Link>
               </li>
             );
           })}
         </ul>
-      </nav>
-    </>
+      </nav>}
+    </div>
   );
 }

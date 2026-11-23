@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans, Noto_Sans_Arabic } from "next/font/google";
+import { Alexandria, Noto_Sans, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { BRAND } from "@/lib/brand";
@@ -7,6 +7,8 @@ import { BRAND } from "@/lib/brand";
 /* talabat.com ships Noto Sans Arabic for Arabic text; Noto Sans covers Latin and digits */
 const notoArabic = Noto_Sans_Arabic({ variable: "--font-noto-arabic", subsets: ["arabic"], weight: ["300", "400", "500", "600", "700", "800"] });
 const notoLatin = Noto_Sans({ variable: "--font-noto-latin", subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800"] });
+/* Tawsilty's typeface, used by the screens rebuilt from the reference screenshots */
+const alexandria = Alexandria({ variable: "--font-alexandria", subsets: ["arabic", "latin"], weight: ["300", "400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: `${BRAND.nameAr} · ${BRAND.nameEn}`,
@@ -24,7 +26,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${notoArabic.variable} ${notoLatin.variable} antialiased`}>
+    <html lang="ar" dir="rtl" className={`${notoArabic.variable} ${notoLatin.variable} ${alexandria.variable} antialiased`}>
       <body>
         <div className="app-column">
           <Providers>{children}</Providers>

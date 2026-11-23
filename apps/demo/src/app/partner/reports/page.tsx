@@ -32,7 +32,7 @@ export default function Reports() {
 
   return (
     <main className="min-h-dvh pb-6">
-      <TopBar title="المبيعات" subtitle="شاورما الساقية" back={false} />
+      <TopBar title="التقارير والتقييمات" subtitle="شاورما الساقية" back="/partner/account" />
       <div className="px-4">
         <Segmented value={range} onChange={(v) => { setRange(v); setSel(null); }} options={[{ value: "week", label: "الأسبوع" }, { value: "month", label: "الشهر" }]} />
       </div>

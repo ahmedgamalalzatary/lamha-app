@@ -24,6 +24,23 @@
   --color-cream: #f4ede3;
   --color-gold: #eaa407;
 
+  /* Tawsilty reference tokens (measured from .impeccable/phone). New and rebuilt screens use these, not the demo palette. */
+  --color-tw: #f68b1d;
+  --color-tw-700: #db760f;
+  --color-tw-400: #f8a24a;
+  --color-tw-100: #fde6d0;
+  --color-tw-50: #fef3e8;
+  --color-tw-ink: #1f1f1f;
+  --color-tw-ink-2: #8a8a8a;
+  --color-tw-line: #ececec;
+  --color-tw-surface: #f9fafb;
+  --color-tw-input: #f2f3f7;
+  --color-tw-ok: #46b66f;
+  --color-tw-ok-50: #e8f6ed;
+  --color-tw-accept: #4caf50;
+  --color-tw-danger: #f44336;
+  --font-tw: var(--font-alexandria), ui-sans-serif, system-ui, sans-serif;
+
   --font-sans: var(--font-noto-latin), var(--font-noto-arabic), ui-sans-serif, system-ui, sans-serif;
   --font-hand: var(--font-noto-latin), var(--font-noto-arabic), sans-serif;
 

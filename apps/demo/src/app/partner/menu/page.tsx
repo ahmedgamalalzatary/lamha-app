@@ -24,7 +24,7 @@ export default function PartnerMenu() {
 
   return (
     <main className="min-h-dvh">
-      <TopBar title="المنيو" subtitle={`${total} صنف • ${off ? `${off} خلصان` : "كله متاح"}`} back={false} />
+      <TopBar title="منتجات" subtitle={`${total} صنف • ${off ? `${off} خلصان` : "كله متاح"}`} back={false} />
       <div className="px-4">
         <div className="flex h-11 items-center gap-2 rounded-xl bg-sheet px-3 ring-1 ring-rule focus-within:ring-2 focus-within:ring-pen">
           <Search className="size-4.5 text-ink-3" />
