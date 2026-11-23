@@ -265,10 +265,10 @@ The same setup as the owner's Maqar project, so both are run the same way.
 | `bg-warm` | `#F8F5EF` | Cart "قد تعجبك أيضًا" band (wavy top edge) |
 | `surface` | `#F9FAFB` | Cards on white (wallet, points tiles) |
 | `input` | `#F2F3F7` | Text fields, search box on inner pages |
-| `ink` | near black (verify) | Titles, prices |
-| `ink-2` | grey (verify) | Secondary text, placeholders |
+| `ink` | `#1F1F1F` | Titles, prices |
+| `ink-2` | `#8A8A8A` | Secondary text, placeholders |
 | `success` | `#46B66F` | "التوصيل متاح لهذا الموقع", verified phone, wallet additions |
-| `danger` | red (verify) | Error toast, delete actions, account delete, validation messages |
+| `danger` | `#F44336` | Error toast, delete actions, account delete, validation messages |
 | `info` | blue (verify) | Values in the store info row (time, "توصيلتي") |
 | `chip-selected` | dark navy (verify) | Selected address type chip |
 
@@ -285,13 +285,13 @@ Dark mode: Tawsilty has none; Tawsela has none.
 - **Bottom sheets** with a grabber: address list, sort, rating filter, contact us, note, complaint type, e-wallet amount, pharmacy picker.
 - **Radio sheets** for sort and rating filters (checked radio is a filled orange circle with a tick).
 - **Filter chips** row, scrollable: رتب حسب ▾ · خصومات · عروض التوصيل · التقييم ▾ · توصيل سريع · الاستلام.
-- **Empty states**: big soft-orange circle with an icon, a bold title and a grey line. Used for no stores, no orders, empty cart, no favourites, no notifications, wallet tabs, points tabs.
+- **Empty states**: two soft-orange circles (pale outer, light inner) with an orange icon, a bold title and a grey line. Used for no stores, no orders, empty cart, no favourites, no notifications, wallet tabs, points tabs.
 - **Primary button**: full-width, rounded, orange; disabled state is a faded orange (OTP) or grey (map confirm).
 - **Toasts**: red pill for errors ("عذراً الخدمة مغلقة الآن", "يرجى رفع صورة او كتابة طلبك"), green pill for success ("تم حذف العنوان"), dark pill with the app icon for hints ("من فضلك أدخل الكوبون أولا").
 - **Badges on store rows**: lime pill "خصم 30 ج.م على منتجات" (product discount), green outline "توصيل مجاني للطلبات من 300 ج.م" (free delivery over an amount), cream pill with a purple "قسيمة" tag "خصم 6 ج.م على 150 ج.م" (voucher), struck-through fee + green "مجاني" (free delivery).
 - **Product cards**: lime "وفر 60.0 ج.م" (save) tag on the image, red price with the old price struck through, "+" to add (or "‹" when the item has options), "السعر حسب الاختيار" when the price depends on a choice, "قابل للتخصيص" under customizable items.
 - **Loading**: grey skeleton blocks in the shape of the content.
-- **Confirm dialog**: white card, title, message, "إلغاء" text button and a red action pill ("حذف").
+- **Confirm dialog**: white card, bold title, message, an action button and a "إلغاء" text button. Two looks: the cart's "حذف المنتج" is a rounded card with a red pill "حذف" and an orange "إلغاء"; the address's "حذف العنوان" is a square card with an orange rounded "تأكيد" and a red "إلغاء".
 - **Store "closed"** state: greyscale cover and a dark "مغلق" pill.
 - **Footer credit** on the account screen: "تمت البرمجة بواسطة شركة ZTechX". Tawsela replaces it with its own (see §15.1 #8).
 
@@ -652,3 +652,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-23 | Partner app from the owner's photos (§9): tabs الرئيسية · طلباتى · منتجات · حسابي, new-orders list, accept/reject popup, order details with the money breakdown and "استلم من المندوب" (10% commission), "تم التجهيز". Client: the store sees the payment method. Admin orders table details (§11). Screenshots sorted into folders with an index (§16). |
 | 2026-11-23 | Owner's decisions (§15.1): sign-in codes by email through Gmail, no SMS (§8.1); cash only, with card, e-wallet and wallet top-up excluded for now (§8.7, §8.15); local only until the first real mobile build; Expo push; lucky wheel excluded for now (#10). Missing screens wait for the owner's WhatsApp export. |
 | 2026-11-23 | Read the client's WhatsApp from 2026-11-22 17:28 on (§16): Tawsilty delivered order details and rating screen (§8.8), driver tabs, account, order details and order history (§10), invite reward is an admin setting (§8.2). New open item: what the captain pays the store (§15.1 #11). |
+| 2026-11-23 | Phase 0 done: §6.1 ink, ink-2 and danger measured (`#1F1F1F`, `#8A8A8A`, `#F44336`); §6.3 the two confirm-dialog looks and the double-circle empty state, from the screenshots. |

@@ -10,7 +10,8 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
-    include: ['test/**/*.e2e-spec.ts'],
+    include: ['test/e2e/**/*.e2e-spec.ts'],
+    globalSetup: ['test/utils/global-setup.ts'],
     env,
     // Tests share one database, so run the files one after another.
     fileParallelism: false,

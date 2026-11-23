@@ -73,7 +73,8 @@
   "jest": {
     "preset": "jest-expo",
     "setupFiles": [
-      "<rootDir>/jest.env.js"
+      "<rootDir>/jest.env.js",
+      "react-native-gesture-handler/jestSetup"
     ],
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.ts"
@@ -89,6 +90,7 @@
     ],
     "moduleNameMapper": {
       "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"
-    }
+    },
+    "resolver": "react-native-reanimated/jest/resolver"
   }
 }

@@ -1,10 +1,36 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
+import { type Env, validateEnv } from './core/config/env.js';
+import { DbModule } from './core/db/db.module.js';
+import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      // The single .env lives at the repo root (contract §5). Tests get their
+      // variables from the root .env.test through vitest instead.
+      envFilePath: '../../.env',
+      ignoreEnvFile: process.env.NODE_ENV === 'test',
+      validate: validateEnv,
+    }),
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => {
+        const env = config.get('NODE_ENV', { infer: true });
+        return {
+          pinoHttp: {
+            level: env === 'test' ? 'silent' : env === 'production' ? 'info' : 'debug',
+            // pino-pretty is a dev dependency, so only development uses it.
+            transport: env === 'development' ? { target: 'pino-pretty', options: { singleLine: true } } : undefined,
+            redact: ['req.headers.authorization', 'req.headers.cookie'],
+          },
+        };
+      },
+    }),
+    DbModule,
+    HealthModule,
+  ],
 })
 export class AppModule {}

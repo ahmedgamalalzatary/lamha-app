@@ -1,0 +1,100 @@
+'use client';
+
+import { ChevronUp, Menu, Search } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { ADMIN_NAV, filterNav, isActive } from './admin-nav';
+
+/**
+ * Tawsilty's admin sidebar (contract §11): light grey, logo and ≡ on top, "ابحث عن شاشة…", sections
+ * with an icon, a bold name and a chevron; pages indented on a thin rule; the open page soft orange
+ * with an orange bar.
+ */
+export function Sidebar() {
+  const pathname = usePathname();
+  const [query, setQuery] = useState('');
+  const [closed, setClosed] = useState<Set<string>>(new Set());
+  const groups = filterNav(ADMIN_NAV, query);
+
+  const toggle = (label: string) =>
+    setClosed((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+
+  return (
+    <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col gap-4 overflow-y-auto bg-tw-side px-4 py-5">
+      <div className="flex items-center justify-between">
+        <div className="flex size-9 items-center justify-center rounded-md bg-tw text-sm font-bold text-white">ت</div>
+        <Menu className="size-5 text-tw-ink-2" aria-hidden />
+      </div>
+
+      <label className="flex items-center gap-2 rounded-lg bg-tw-input px-3 py-2.5">
+        <Search className="size-4 text-tw-ink-2" aria-hidden />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="ابحث عن شاشة..."
+          aria-label="ابحث عن شاشة"
+          className="w-full bg-transparent text-sm outline-none placeholder:text-tw-ink-2"
+        />
+      </label>
+
+      <nav className="flex flex-col gap-1 text-sm">
+        {groups.map(({ label, icon: Icon, href, items }) => {
+          if (href) {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={label}
+                href={href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold ${active ? 'bg-tw-50 text-tw' : 'text-tw-ink'}`}
+              >
+                <Icon className="size-5 text-tw-ink" aria-hidden />
+                {label}
+              </Link>
+            );
+          }
+          const open = query.trim() !== '' || !closed.has(label);
+          return (
+            <div key={label} className="flex flex-col">
+              <button
+                type="button"
+                onClick={() => toggle(label)}
+                aria-expanded={open}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-tw-ink"
+              >
+                <Icon className="size-5" aria-hidden />
+                <span className="flex-1 text-start">{label}</span>
+                <ChevronUp className={`size-4 text-tw-ink-2 transition-transform ${open ? '' : 'rotate-180'}`} aria-hidden />
+              </button>
+              {open ? (
+                <ul className="ms-5 flex flex-col gap-0.5 border-s border-tw-line ps-3">
+                  {items.map((item) => {
+                    const active = isActive(pathname, item.href);
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          aria-current={active ? 'page' : undefined}
+                          className={`block rounded-lg border-s-2 px-3 py-2 ${
+                            active ? 'border-tw bg-tw-50 font-semibold text-tw' : 'border-transparent text-tw-ink-2 hover:text-tw-ink'
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+}
