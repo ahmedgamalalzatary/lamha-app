@@ -123,7 +123,7 @@ export type Order = {
   etaMinutes: number;
   cancelledAt?: number;
   refunds: RefundLine[];
-  rated?: { store: number; rider: number; comment?: string };
+  rated?: { store: number; rider: number; comment?: string; tags?: string[] };
   scheduledFor?: string;
   kind?: "store" | "courier";
   courier?: { from: string; to: string; what: string; size: string };

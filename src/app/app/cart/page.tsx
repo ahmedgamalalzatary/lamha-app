@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
@@ -13,6 +13,10 @@ import { Stamp } from "@/components/ui/stamp";
 import { Button, LinkButton } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { AddressSheet } from "@/components/customer/address-sheet";
+import { pickupAllowed } from "@/lib/data/admin";
+import dynamic from "next/dynamic";
+
+const PinMap = dynamic(() => import("@/components/customer/pin-map"), { ssr: false, loading: () => <div className="h-[200px] animate-pulse bg-pen-50" /> });
 import { egp, cx } from "@/lib/format";
 
 const TIPS = [0, 5, 10, 20];
@@ -27,7 +31,12 @@ export default function CartPage() {
   const [timeOpen, setTimeOpen] = useState(false);
   const [code, setCode] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [confirmLoc, setConfirmLoc] = useState(false);
   const addr = s.addresses.find((a) => a.id === s.addressId) ?? s.addresses[0];
+
+  useEffect(() => {
+    if (store && !pickupAllowed(store) && s.mode === "pickup") useCustomer.setState({ mode: "delivery" });
+  }, [store, s.mode]);
 
   const upsell = useMemo(() => {
     if (!store) return [];
@@ -49,8 +58,18 @@ export default function CartPage() {
   const blocked = q.belowMinimumBy > 0 || closed;
   const cardOk = store.payments.includes("card");
 
+  const canPickup = pickupAllowed(store);
+
+  /** Delivery orders confirm the drop-off location first. */
+  const ask = () => {
+    if (blocked) return;
+    if (s.mode === "delivery") setConfirmLoc(true);
+    else place();
+  };
+
   const place = () => {
     if (blocked) return;
+    setConfirmLoc(false);
     setPlacing(true);
     setTimeout(() => {
       const id = s.placeOrder();
@@ -144,7 +163,11 @@ export default function CartPage() {
 
       {/* Delivery */}
       <Block title="التوصيل">
-        <Segmented value={s.mode} onChange={(v) => useCustomer.setState({ mode: v })} options={[{ value: "delivery", label: "توصيل" }, { value: "pickup", label: "استلام من المحل" }]} />
+        {canPickup ? (
+          <Segmented value={s.mode} onChange={(v) => useCustomer.setState({ mode: v })} options={[{ value: "delivery", label: "توصيل" }, { value: "pickup", label: "استلام من المحل" }]} />
+        ) : (
+          <p className="rounded-xl bg-paper px-3 py-2 text-[12.5px] text-ink-3">المحل ده بيوصل بس، الاستلام من المحل مش متاح</p>
+        )}
         <button onClick={() => (s.mode === "delivery" ? setAddrOpen(true) : undefined)} className="tap mt-3 flex w-full items-center gap-3 rounded-2xl p-1 text-start">
           <span className="grid size-10 place-items-center rounded-xl bg-pen-50 text-pen">{s.mode === "delivery" ? <MapPin className="size-5" /> : <StoreIcon className="size-5" />}</span>
           <span className="min-w-0 flex-1">
@@ -250,7 +273,7 @@ export default function CartPage() {
       {/* Sticky confirm */}
       <div className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[440px] border-t border-rule bg-sheet/95 px-4 pt-3 backdrop-blur">
         {blocked && <p className="mb-2 text-center text-[13px] text-void">{closed ? "المحل مقفول. جدول الطلب عشان تكمّل" : `ناقص ${egp(q.belowMinimumBy)} للحد الأدنى`}</p>}
-        <Button block size="lg" disabled={blocked} loading={placing} onClick={place}>
+        <Button block size="lg" disabled={blocked} loading={placing} onClick={ask}>
           <span>أكّد الطلب</span>
           <span className="tabular-nums">• {egp(q.total)}</span>
         </Button>
@@ -260,6 +283,25 @@ export default function CartPage() {
       <AnimatePresence>{placing && <PlacingOverlay storeName={store.name} total={q.total} />}</AnimatePresence>
 
       <AddressSheet open={addrOpen} onOpenChange={setAddrOpen} />
+      <Sheet open={confirmLoc} onOpenChange={setConfirmLoc} title="أكّد مكان التوصيل" description="الطيار هيوصل للنقطة دي بالظبط. اتأكد إنها صح قبل ما نبعت الطلب.">
+        <div className="px-5 pb-6">
+          <div className="overflow-hidden rounded-2xl ring-1 ring-rule">
+            {confirmLoc && <PinMap center={addr.coords} onMove={() => {}} height={200} />}
+          </div>
+          <div className="mt-3 flex items-start gap-3 rounded-2xl bg-paper p-3">
+            <MapPin className="mt-0.5 size-5 shrink-0 text-pen" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold">{addr.label}</span>
+              <span className="block text-[13px] text-ink-2">{addr.area}، {addr.street}، {addr.details}</span>
+              {addr.landmark && <span className="block text-[12.5px] text-ink-3">علامة مميزة: {addr.landmark}</span>}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2.5">
+            <Button block size="lg" onClick={place}><Check className="size-5" /> أيوه، وصّلوا هنا</Button>
+            <Button block size="lg" variant="secondary" onClick={() => { setConfirmLoc(false); setAddrOpen(true); }}>غيّر العنوان</Button>
+          </div>
+        </div>
+      </Sheet>
       <Sheet open={timeOpen} onOpenChange={setTimeOpen} title="عايزه امتى؟">
         <div className="grid gap-2 px-5 pb-8" role="radiogroup">
           <TimeOpt on={!s.scheduledFor} disabled={!store.open} onClick={() => { useCustomer.setState({ scheduledFor: null }); setTimeOpen(false); }} title="دلوقتي" sub={store.open ? `${store.etaMin}–${store.etaMax} دقيقة` : "المحل مقفول دلوقتي"} />

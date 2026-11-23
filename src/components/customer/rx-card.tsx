@@ -16,8 +16,11 @@ const RX_ITEMS = [
   { id: "ph3", qty: 1, note: "5 مل 3 مرات يومياً" },
 ];
 
-export function RxCard({ storeId }: { storeId: string }) {
-  const [open, setOpen] = useState(false);
+export function RxCard({ storeId, open: openProp, onOpenChange, kind = "rx", hideTrigger }: { storeId: string; open?: boolean; onOpenChange?: (v: boolean) => void; kind?: "rx" | "photo"; hideTrigger?: boolean }) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (v: boolean) => { setOpenState(v); onOpenChange?.(v); };
+  const isPhoto = kind === "photo";
   const [photo, setPhoto] = useState<string | null>(null);
   const [phase, setPhase] = useState<"pick" | "review" | "priced">("pick");
   const [picked, setPicked] = useState<string[]>(RX_ITEMS.map((r) => r.id));
@@ -49,15 +52,15 @@ export function RxCard({ storeId }: { storeId: string }) {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="tap mx-4 mt-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-[18px] bg-stamp p-4 text-start text-white">
+      {!hideTrigger && <button onClick={() => setOpen(true)} className="tap mx-4 mt-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-[18px] bg-stamp p-4 text-start text-white">
         <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white/15"><Camera className="size-6" /></span>
         <span className="flex-1">
           <span className="block text-[16px] font-semibold">عندك روشتة؟ صوّرها</span>
           <span className="block text-[13px] text-white/85">الصيدلي يراجعها ويسعّرها في دقايق، وإنت توافق قبل أي حاجة</span>
         </span>
-      </button>
+      </button>}
 
-      <Sheet open={open} onOpenChange={setOpen} title="ارفع الروشتة" description="صورة واضحة للروشتة كلها. محدش بيشوفها غير الصيدلي.">
+      <Sheet open={open} onOpenChange={setOpen} title={isPhoto ? "صوّر المنتج" : "ارفع الروشتة"} description={isPhoto ? "صورة للعلبة أو الاسم، والصيدلي يلاقيه ويسعّره." : "صورة واضحة للروشتة كلها. محدش بيشوفها غير الصيدلي."}>
         <div className="px-5 pb-6">
           <input ref={input} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
           {phase === "pick" && (

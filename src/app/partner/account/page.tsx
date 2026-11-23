@@ -1,14 +1,15 @@
 "use client";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Bell, ChevronLeft, Clock, Headset, Landmark, LayoutGrid, LogOut, RotateCcw, Users } from "lucide-react";
+import { ChevronLeft, ClipboardList, Clock, Headset, Landmark, LayoutGrid, LogOut, RotateCcw, Users } from "lucide-react";
 import { usePartner, PARTNER_STORE_ID } from "@/lib/store/partner";
 import { storeById } from "@/lib/data/stores";
-import { Photo, StoreLogo, Switch, Rating } from "@/components/ui/bits";
+import { Photo, StoreLogo, Rating } from "@/components/ui/bits";
 
 export default function PartnerAccount() {
   const store = storeById(PARTNER_STORE_ID)!;
-  const { sound, setSound, signOut, reset } = usePartner();
+  const { orders, signOut, reset } = usePartner();
+  const made = orders.filter((o) => o.status !== "rejected").length;
   const rows = [
     { icon: Clock, label: "مواعيد العمل", value: "12 الظهر – 2 بالليل" },
     { icon: Landmark, label: "حساب التحويل", value: "بنك مصر •••• 7781" },
@@ -28,7 +29,7 @@ export default function PartnerAccount() {
         {rows.map((r) => (
           <li key={r.label}><button onClick={() => toast("الإعداد ده متاح في التطبيق النهائي")} className="tap flex w-full items-center gap-3 px-4 py-3.5 text-start"><r.icon className="size-5 text-ink-2" /><span className="flex-1 text-[15px]">{r.label}</span><span className="text-[13px] text-ink-3">{r.value}</span><ChevronLeft className="size-5 text-ink-3" /></button></li>
         ))}
-        <li className="flex items-center gap-3 px-4 py-3.5"><Bell className="size-5 text-ink-2" /><span className="flex-1 text-[15px]">جرس الطلبات الجديدة</span><Switch checked={sound} onChange={setSound} label="جرس الطلبات الجديدة" /></li>
+        <li><Link href="/partner" className="tap flex items-center gap-3 px-4 py-3.5"><ClipboardList className="size-5 text-ink-2" /><span className="flex-1 text-[15px]">الطلبات اللي اتعملت</span><span className="grid min-w-6 place-items-center rounded-full bg-pen px-1.5 text-[12px] font-bold text-white tabular-nums">{made}</span><ChevronLeft className="size-5 text-ink-3" /></Link></li>
         <li><button onClick={() => toast("بنوصلك بمدير حسابك")} className="tap flex w-full items-center gap-3 px-4 py-3.5 text-start"><Headset className="size-5 text-ink-2" /><span className="flex-1 text-[15px]">كلّم مدير حسابك</span><ChevronLeft className="size-5 text-ink-3" /></button></li>
       </ul>
       <ul className="mx-4 mt-4 divide-y divide-rule overflow-hidden rounded-[18px] bg-sheet shadow-sheet">

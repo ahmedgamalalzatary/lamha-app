@@ -8,7 +8,7 @@ import { useNow } from "@/lib/hooks";
 import { TabBar } from "@/components/customer/tab-bar";
 import { CartBar } from "@/components/customer/cart-bar";
 
-const TAB_ROUTES = ["/app", "/app/search", "/app/orders", "/app/account", "/app/restaurants", "/app/offers"];
+const TAB_ROUTES = ["/app", "/app/search", "/app/orders", "/app/account", "/app/restaurants", "/app/offers", "/app/pharmacy"];
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();

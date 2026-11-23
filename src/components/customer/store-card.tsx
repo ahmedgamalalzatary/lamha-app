@@ -43,6 +43,26 @@ export function StoreRow({ store }: { store: Store }) {
   );
 }
 
+/** Compact white card (logo tile + name + rating + time), used in the colored home sections and "اطلب من جديد". */
+export function MiniStoreCard({ store, className }: { store: Store; className?: string }) {
+  return (
+    <Link href={`/app/store/${store.id}`} className={cx("tap flex h-[84px] items-center gap-3 overflow-hidden rounded-[16px] bg-sheet pe-3 shadow-sheet", className)}>
+      <div className="relative h-full w-[96px] shrink-0">
+        <Photo src={store.cover} alt="" className={cx("h-full w-full", !store.open && "grayscale")} sizes="96px" />
+        {!store.open && <span className="absolute inset-0 grid place-items-center bg-ink/45"><span className="rounded-full bg-ink/80 px-2.5 py-0.5 text-[12px] font-semibold text-white">مغلق</span></span>}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-[15px] font-bold">{store.name}</h3>
+        <div className="mt-1 flex items-center gap-2 text-[12.5px] text-ink-2">
+          <Rating value={store.rating} count={store.ratingCount} />
+          <span className="text-rule">|</span>
+          <span className="inline-flex items-center gap-1 tabular-nums"><Clock className="size-3.5 text-ink-3" />{store.etaMax} د</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export function StoreCard({ store }: { store: Store }) {
   return (
     <Link href={`/app/store/${store.id}`} className="tap block w-[232px] shrink-0">

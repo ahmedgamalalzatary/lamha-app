@@ -9,6 +9,9 @@ export const PROMOS: Promo[] = [
   { code: "LAMHA20", label: "خصم 20٪ لحد 60 ج.م", kind: "percent", value: 20, maxDiscount: 60, minSubtotal: 150 },
   { code: "FAYOUM", label: "توصيل مجاني", kind: "freeDelivery", value: 0, minSubtotal: 0 },
   { code: "WELCOME50", label: "خصم 50 ج.م", kind: "flat", value: 50, minSubtotal: 200 },
+  { code: "SPIN5", label: "خصم 5 ج.م من لفة الحظ", kind: "flat", value: 5, minSubtotal: 50 },
+  { code: "SPIN10", label: "خصم 10 ج.م من لفة الحظ", kind: "flat", value: 10, minSubtotal: 80 },
+  { code: "SPIN20", label: "خصم 20 ج.م من لفة الحظ", kind: "flat", value: 20, minSubtotal: 120 },
 ];
 
 export type Address = {

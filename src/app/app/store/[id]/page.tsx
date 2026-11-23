@@ -3,13 +3,14 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import { notFound, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { Bike, ChevronLeft, ChevronRight, Clock, Heart, Info, Plus, Search, Share2, Star, X } from "lucide-react";
+import { Bike, ChevronRight, Clock, Heart, Info, Lock, Plus, Search, Share2, Star, Store, X } from "lucide-react";
 import { storeById } from "@/lib/data/stores";
 import { REVIEWS, RATING_BARS } from "@/lib/data/reviews";
 import { useCustomer } from "@/lib/store/customer";
 import { usePartner, PARTNER_STORE_ID } from "@/lib/store/partner";
 import type { MenuItem } from "@/lib/types";
-import { Photo, Rating, StoreLogo } from "@/components/ui/bits";
+import { Photo, StoreLogo } from "@/components/ui/bits";
+import { layoutFor } from "@/lib/data/admin";
 import { Sheet } from "@/components/ui/sheet";
 import { Stamp } from "@/components/ui/stamp";
 import { ItemSheet } from "@/components/customer/item-sheet";
@@ -31,7 +32,7 @@ function StoreView({ id }: { id: string }) {
   const soldOut = usePartner((s) => s.soldOut);
   const priceOverride = usePartner((s) => s.priceOverride);
   const isPartner = store.id === PARTNER_STORE_ID;
-  const grid = store.vertical !== "food";
+  const grid = layoutFor(store) === "grid";
 
   const [active, setActive] = useState(store.menu[0]?.id);
   const [itemOpen, setItemOpen] = useState<MenuItem | null>(null);
@@ -92,6 +93,7 @@ function StoreView({ id }: { id: string }) {
   };
 
   const fav = favorites.includes(store.id);
+  const myCount = cart.storeId === store.id ? cart.lines.reduce((n, l) => n + l.qty, 0) : 0;
   const deliveryLine = mode === "pickup" ? "استلام ببلاش" : store.deliveryFee === 0 ? "مجاني" : egp(store.deliveryFee);
 
   return (
@@ -115,44 +117,42 @@ function StoreView({ id }: { id: string }) {
         </button>
       </div>
 
-      <Photo src={store.cover} alt={store.name} className="h-[230px]" priority />
-
-      <div className="relative -mt-10 px-4">
-        <div className="receipt-shadow">
-          <div className="receipt px-4 pt-4">
-            <div className="flex items-start gap-3">
-              <StoreLogo store={store} size={52} className="shadow-sheet" />
-              <div className="min-w-0 flex-1">
-                <h1 className="text-[21px] font-bold leading-tight">{store.name}</h1>
-                <p className="text-[13.5px] text-ink-3">{store.tags.join("، ")} • {store.area} • {store.distanceKm} كم</p>
-              </div>
-              <button onClick={() => setInfoOpen(true)} aria-label="معلومات المحل" className="tap grid size-9 place-items-center rounded-full bg-paper text-ink-2"><Info className="size-4.5" /></button>
-            </div>
-            <button onClick={() => setReviewsOpen(true)} className="tap mt-3 inline-flex items-center gap-1.5 rounded-lg text-[14px]">
-              <Rating value={store.rating} count={store.ratingCount} />
-              <span className="text-pen">شوف التقييمات</span>
-              <ChevronLeft className="size-4 text-pen" />
+      {/* Cover with logo + name on it (Tawsilty style) */}
+      <div className="relative h-[270px]">
+        <Photo src={store.cover} alt={store.name} className="absolute inset-0" priority />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
+        <div className="absolute inset-x-0 bottom-12 flex items-end gap-3 px-4 text-white">
+          <StoreLogo store={store} size={64} className="shadow-lift ring-4" />
+          <div className="min-w-0 flex-1 pb-1">
+            <h1 className="truncate text-[23px] font-bold leading-tight">{store.name}</h1>
+            <button onClick={() => setReviewsOpen(true)} className="tap mt-0.5 inline-flex items-center gap-1.5 text-[13.5px]">
+              <Star className="size-4 fill-gold text-gold" /><b className="tabular-nums">{store.rating.toFixed(1)}</b><span className="tabular-nums text-white/75">({store.ratingCount})</span>
+              <span className="text-white/75">• {store.tags.join("، ")}</span>
             </button>
-            <dl className="mt-3 grid grid-cols-3 border-t-2 border-dotted border-leader pt-3 text-center">
-              <div>
-                <dt className="text-[12px] text-ink-3">{mode === "pickup" ? "يجهز في" : "يوصل في"}</dt>
-                <dd className="mt-0.5 text-[15px] font-semibold tabular-nums">{mode === "pickup" ? store.etaMin : `${store.etaMin}–${store.etaMax}`} د</dd>
-              </div>
-              <div className="border-x-2 border-dotted border-leader">
-                <dt className="text-[12px] text-ink-3">التوصيل</dt>
-                <dd className="mt-0.5 text-[15px] font-semibold tabular-nums">{deliveryLine}</dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-ink-3">أقل طلب</dt>
-                <dd className="mt-0.5 text-[15px] font-semibold tabular-nums">{store.minOrder ? egp(store.minOrder) : "مفيش"}</dd>
-              </div>
-            </dl>
-            <div className="mt-3 flex flex-wrap gap-2 text-[12.5px]">
-              {store.freeDeliveryOver && mode !== "pickup" && <span className="rounded-md bg-stamp-50 px-2 py-1 font-medium text-stamp">التوصيل مجاني لو الطلب فوق {egp(store.freeDeliveryOver)}</span>}
-              <span className="inline-flex items-center gap-1 rounded-md bg-paper px-2 py-1 text-ink-2"><Bike className="size-3.5" /> {store.lamhaRider ? "طيار لمحة: تتبع مباشر" : "توصيل المحل"}</span>
-              <span className="rounded-md bg-paper px-2 py-1 text-ink-2">{store.payments.map((p) => ({ cash: "كاش", card: "كارت", wallet: "محفظة" })[p]).join(" • ")}</span>
-            </div>
           </div>
+          <button onClick={() => setInfoOpen(true)} aria-label="معلومات المحل" className="tap mb-1 grid size-9 place-items-center rounded-full bg-white/20 backdrop-blur"><Info className="size-4.5" /></button>
+        </div>
+      </div>
+
+      <div className="relative -mt-8 rounded-t-[26px] bg-paper px-4 pt-4">
+        <dl className="grid grid-cols-3 rounded-[18px] bg-sheet py-3 text-center shadow-sheet">
+          <div>
+            <dt className="inline-flex items-center gap-1 text-[12px] text-ink-3"><Clock className="size-3.5" /> {mode === "pickup" ? "يجهز في" : "مدة التوصيل"}</dt>
+            <dd className="mt-0.5 text-[15px] font-bold tabular-nums text-pen">{mode === "pickup" ? store.etaMin : store.etaMax} دقيقة</dd>
+          </div>
+          <div className="border-x border-rule">
+            <dt className="inline-flex items-center gap-1 text-[12px] text-ink-3"><Bike className="size-3.5" /> رسوم التوصيل</dt>
+            <dd className="mt-0.5 text-[15px] font-bold tabular-nums">{deliveryLine}</dd>
+          </div>
+          <div>
+            <dt className="inline-flex items-center gap-1 text-[12px] text-ink-3"><Store className="size-3.5" /> التوصيل بواسطة</dt>
+            <dd className="mt-0.5 text-[15px] font-bold text-pen">{store.lamhaRider ? "لمحة" : "المحل"}</dd>
+          </div>
+        </dl>
+        <div className="mt-3 flex flex-wrap gap-2 text-[12.5px]">
+          {store.freeDeliveryOver && mode !== "pickup" && <span className="rounded-md bg-stamp-50 px-2 py-1 font-medium text-stamp">التوصيل مجاني لو الطلب فوق {egp(store.freeDeliveryOver)}</span>}
+          {store.promo && <span className="rounded-md bg-marker-soft px-2 py-1 font-medium">{store.promo}</span>}
+          <span className="rounded-md bg-sheet px-2 py-1 text-ink-2 ring-1 ring-rule">{store.payments.map((p) => ({ cash: "كاش", card: "كارت", wallet: "محفظة" })[p]).join(" • ")}</span>
         </div>
         {!store.open && (
           <div className="mt-3 flex items-center gap-3 rounded-2xl bg-void-50 p-3 text-[14px] text-ink">
@@ -161,6 +161,20 @@ function StoreView({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      {grid && !query && (
+        <section className="mt-5">
+          <h2 className="px-4 text-[19px] font-bold">الأقسام</h2>
+          <div className="mt-3 grid grid-cols-4 gap-x-2.5 gap-y-3 px-4">
+            {store.menu.map((c) => (
+              <button key={c.id} onClick={() => document.getElementById(`cat-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="tap flex flex-col items-center gap-1.5">
+                <Photo src={c.items[0]?.img} alt="" className="aspect-square w-full rounded-[16px] ring-1 ring-rule" sizes="90px" />
+                <span className="line-clamp-2 text-center text-[12.5px] font-medium leading-tight">{c.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {store.vertical === "pharmacy" && <RxCard storeId={store.id} />}
 
@@ -259,6 +273,15 @@ function StoreView({ id }: { id: string }) {
           )}
         </section>
       ))}
+
+      {myCount === 0 && store.minOrder > 0 && (
+        <div className="fixed inset-x-0 bottom-3 z-30 mx-auto max-w-[440px] px-3">
+          <div className="rounded-[18px] bg-pen-50 px-4 py-3 shadow-lift ring-1 ring-pen-100">
+            <p className="flex items-center gap-2 text-[14px] font-semibold"><Lock className="size-4 text-pen" /> تسوّق الآن وأضف {egp(store.minOrder)} أو أكثر إلى طلبك!</p>
+            <div className="mt-2 h-1.5 rounded-full bg-pen-100" />
+          </div>
+        </div>
+      )}
 
       <ItemSheet
         item={itemOpen}

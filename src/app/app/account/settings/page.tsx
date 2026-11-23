@@ -6,10 +6,9 @@ import { TopBar, Switch, Segmented } from "@/components/ui/bits";
 import { Button } from "@/components/ui/button";
 
 export default function Settings() {
-  const { name, phone } = useCustomer();
+  const { name, phone, lang } = useCustomer();
   const [n, setN] = useState(name);
   const [prefs, setPrefs] = useState({ orders: true, offers: true, sms: false, sound: true });
-  const [lang, setLang] = useState("ar");
   return (
     <main className="min-h-dvh pb-10">
       <TopBar title="الإعدادات" />
@@ -30,7 +29,7 @@ export default function Settings() {
       </section>
       <section className="mx-4 mt-4 rounded-[18px] bg-sheet p-4 shadow-sheet">
         <h2 className="mb-3 text-[16px] font-semibold">اللغة</h2>
-        <Segmented value={lang} onChange={(v) => { setLang(v); if (v === "en") toast("النسخة الإنجليزية جاية في التطبيق النهائي"); }} options={[{ value: "ar", label: "العربية" }, { value: "en", label: "English" }]} />
+        <Segmented value={lang} onChange={(v) => { useCustomer.setState({ lang: v }); if (v === "en") toast("النسخة الإنجليزية جاية في التطبيق النهائي"); }} options={[{ value: "ar", label: "العربية" }, { value: "en", label: "English" }]} />
       </section>
     </main>
   );

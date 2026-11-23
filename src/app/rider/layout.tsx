@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { ChevronRight, Navigation, Wallet } from "lucide-react";
+import { ChevronRight, Navigation, UserRound, Wallet } from "lucide-react";
 import { useRider } from "@/lib/store/rider";
 import { Wordmark } from "@/components/ui/wordmark";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { cx } from "@/lib/format";
 const TABS = [
   { href: "/rider", label: "الشغل", icon: Navigation },
   { href: "/rider/earnings", label: "أرباحي", icon: Wallet },
+  { href: "/rider/account", label: "حسابي", icon: UserRound },
 ];
 
 export default function RiderLayout({ children }: { children: React.ReactNode }) {
@@ -42,9 +43,9 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
     <>
       <div className="pb-20">{children}</div>
       <nav aria-label="تطبيق الطيار" className="pb-safe fixed inset-x-0 bottom-0 z-[600] mx-auto max-w-[440px] border-t border-rule bg-sheet/95 backdrop-blur-md">
-        <ul className="grid grid-cols-2">
+        <ul className="grid grid-cols-3">
           {TABS.map((t) => {
-            const on = t.href === "/rider" ? path === "/rider" : path.startsWith(t.href);
+            const on = t.href === "/rider" ? path === "/rider" : t.href === "/rider/account" ? ["/rider/account", "/rider/orders", "/rider/fines"].some((x) => path.startsWith(x)) : path.startsWith(t.href);
             return (
               <li key={t.href}>
                 <Link href={t.href} aria-current={on ? "page" : undefined} className="tap relative flex h-15 flex-col items-center justify-center gap-1 pt-1.5">

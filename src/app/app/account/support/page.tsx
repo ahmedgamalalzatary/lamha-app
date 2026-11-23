@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronDown, Headset, Lightbulb, MessageCircle, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomer } from "@/lib/store/customer";
@@ -13,15 +14,20 @@ import { ago, cx } from "@/lib/format";
 const FAQ = [
   ["هل في رسوم خدمة؟", "لأ. اللي بتشوفه في الفاتورة قبل التأكيد هو اللي بتدفعه: الأكل والتوصيل بس، وأي خصم بيظهر سطر لوحده."],
   ["أقدر ألغي الطلب؟", "أيوه ببلاش لحد ما المحل يأكد الطلب، وبيظهرلك عداد في صفحة التتبع. بعد التأكيد كلم الدعم."],
-  ["جالي صنف غلط أو ناقص؟", "من صفحة الطلب دوس «في مشكلة؟» واختار الصنف، وفلوسه ترجع محفظتك فوراً."],
+  ["جالي صنف غلط أو ناقص؟", "من صفحة الطلب دوس «في مشكلة؟» واختار المشكلة، وفريق الدعم هيراجعها ويتواصل معاك ويرجعلك حقك."],
   ["التوصيل المجاني بيشتغل إزاي؟", "كل محل كاتب الحد اللي بعده التوصيل مجاني، والفاتورة بتوريك كام فاضلك. لما توصله، سطر التوصيل بيبقى صفر بجد."],
   ["أدفع إزاي؟", "كاش للطيار، كارت، أو من محفظة لمحة. وتقدر تقسم بين المحفظة والكاش."],
 ];
 const TOPICS = { complaint: ["طلب متأخر", "تعامل الطيار", "جودة الأكل", "الدفع والفلوس", "حاجة تانية"], suggestion: ["محل نفسي يبقى موجود", "فكرة للتطبيق", "حاجة تانية"] };
 
 export default function Support() {
+  return <Suspense><SupportInner /></Suspense>;
+}
+
+function SupportInner() {
   const { tickets, addTicket } = useCustomer();
-  const [form, setForm] = useState<null | "complaint" | "suggestion">(null);
+  const kind = useSearchParams().get("kind");
+  const [form, setForm] = useState<null | "complaint" | "suggestion">(kind === "complaint" || kind === "suggestion" ? kind : null);
   const [topic, setTopic] = useState("");
   const [text, setText] = useState("");
   const [chat, setChat] = useState(false);

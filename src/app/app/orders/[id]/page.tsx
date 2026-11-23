@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { Camera, Check, ChevronRight, FastForward, Headset, MessageCircle, Phone, RotateCcw, Star, PencilLine, X } from "lucide-react";
+import { Camera, Check, CheckCircle2, ChevronRight, FastForward, Headset, IdCard, Info, MapPin, MessageCircle, Phone, RotateCcw, Star, PencilLine, X } from "lucide-react";
 import { useCustomer } from "@/lib/store/customer";
 import { storeById, AREAS } from "@/lib/data/stores";
 import { orderState, STATUS_TEXT, FLOW, STEP_MS } from "@/lib/order-sim";
@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { FlipNumber, Photo, Stepper, StoreLogo, Empty } from "@/components/ui/bits";
 import { ChatSheet } from "@/components/customer/chat-sheet";
-import { egp, clock, mmss, cx, dateShort } from "@/lib/format";
+import { egp, clock, mmss, cx } from "@/lib/format";
 
 const OrderMap = dynamic(() => import("@/components/customer/order-map"), { ssr: false, loading: () => <div className="h-[300px] animate-pulse bg-pen-50" /> });
 
@@ -65,6 +65,70 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   // When each step was stamped (demo clock)
   const stepAt = (i: number) => order.placedAt - order.offsetMs + FLOW.slice(0, i).reduce((a, k) => a + STEP_MS[k], 0);
 
+  // After delivery the customer sees a plain order summary, not the tracking timeline.
+  if (st.status === "delivered") {
+    const payLabel = { cash: "الدفع عند الاستلام", card: "كارت", wallet: "محفظة لمحة" }[order.payment];
+    return (
+      <main className="min-h-dvh bg-sheet pb-10">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-1 bg-sheet/95 px-2 backdrop-blur">
+          <button aria-label="رجوع" onClick={() => router.push("/app/orders")} className="tap grid size-10 place-items-center rounded-full"><ChevronRight className="size-6" /></button>
+          <h1 className="flex-1 text-center text-[18px] font-bold">تفاصيل الطلب</h1>
+          <button onClick={() => setChat("support")} aria-label="الدعم" className="tap grid size-10 place-items-center rounded-full"><Headset className="size-5 text-pen" /></button>
+        </header>
+        <div className="px-5">
+          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-stamp-50 px-3 py-1.5 text-[14px] font-semibold text-stamp"><CheckCircle2 className="size-4.5" /> تم التوصيل</span>
+          <div className="mt-4 flex items-center gap-3">
+            {store ? <StoreLogo store={store} size={64} /> : <span className="grid size-16 place-items-center rounded-2xl bg-pen text-2xl text-white">م</span>}
+            <div className="min-w-0 flex-1">
+              <p className="text-[20px] font-bold">{courier ? "مشوار" : store?.name}</p>
+              <p className="text-[13.5px] text-ink-3 tabular-nums">{new Date(order.placedAt).toLocaleDateString("en-US")} • {clock(order.placedAt)}</p>
+              <p className="text-[13.5px] text-ink-3 tabular-nums">رقم الطلب {order.number}</p>
+            </div>
+          </div>
+
+          <DetailBlock icon={<MapPin className="size-5" />} title={pickup ? "استلام من المحل" : "عنوان التوصيل"}>
+            <p className="text-[14.5px] text-ink-2">{order.addressLabel} • {order.addressText}</p>
+          </DetailBlock>
+          {!pickup && (
+            <DetailBlock icon={<IdCard className="size-5" />} title="معلومات المندوب">
+              <p className="text-[12.5px] text-ink-3">الاسم</p>
+              <p className="text-[16px] font-semibold">{RIDER.name}</p>
+            </DetailBlock>
+          )}
+          <DetailBlock title="تفاصيل الطلب">
+            <ul className="space-y-2.5">
+              {order.lines.map((l) => (
+                <li key={l.key} className="flex items-baseline gap-3 text-[15px]">
+                  <span className="flex-1"><b className="tabular-nums">{l.qty} ×</b> {l.name}{l.choices.length > 0 && <span className="block text-[12.5px] text-ink-3">{l.choices.map((c) => c.name).join("، ")}</span>}</span>
+                  <span className="tabular-nums text-ink-3">{egp(lineTotal(l))}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 space-y-2 border-t border-rule pt-3 text-[15px]">
+              {order.quote.lines.map((l) => (
+                <div key={l.key} className="flex justify-between"><span>{l.key === "subtotal" ? "المجموع" : l.label}</span><span className="font-semibold tabular-nums text-ink-3">{egp(l.amount)}</span></div>
+              ))}
+            </div>
+            <div className="mt-3 space-y-2.5 border-t border-rule pt-3 text-[15px]">
+              <div className="flex justify-between text-[17px] font-bold"><span>قيمة الطلب</span><span className="tabular-nums">{egp(order.quote.total)}</span></div>
+              <div className="flex justify-between"><span className="text-ink-2">طريقة الدفع</span><span className="font-semibold">{payLabel}</span></div>
+              <div className="flex justify-between"><span className="text-ink-2">وقت التوصيل</span><span className="font-semibold">{order.scheduledFor ?? "الآن"}</span></div>
+            </div>
+          </DetailBlock>
+
+          <div className="mt-6 grid grid-cols-2 gap-2">
+            {!courier && <Button variant="secondary" onClick={() => { s.reorder(order.id); router.push("/app/cart"); }}><RotateCcw className="size-4.5" /> اطلبه تاني</Button>}
+            <Button variant="outline" onClick={() => setReportOpen(true)} className={courier ? "col-span-2" : ""}>في مشكلة؟</Button>
+            {!order.rated && <Button className="col-span-2" onClick={() => setRateOpen(true)}><Star className="size-4.5" /> قيّم الطلب وخد 10 نقط</Button>}
+          </div>
+        </div>
+        <ReportSheet open={reportOpen} onOpenChange={setReportOpen} orderId={order.id} onSupport={() => { setReportOpen(false); setChat("support"); }} />
+        <RateSheet open={rateOpen} onOpenChange={setRateOpen} orderId={order.id} storeName={store?.name ?? "المشوار"} />
+        <ChatSheet who={chat} onClose={() => setChat(null)} orderNumber={order.number} riderName={RIDER.name} />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-dvh pb-10">
       <div className="relative">
@@ -86,7 +150,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             <div className="min-w-0">
               <p className="text-[13px] text-ink-3">طلب #{order.number} • {courier ? "مشوار" : store?.name}</p>
               <h1 className="mt-0.5 text-[20px] font-bold leading-tight">{STATUS_TEXT[st.status].title}</h1>
-              <p className="text-[14px] text-ink-2">{st.status === "delivered" ? `اتسلم ${dateShort(order.placedAt)}` : STATUS_TEXT[st.status].line}</p>
+              <p className="text-[14px] text-ink-2">{STATUS_TEXT[st.status].line}</p>
             </div>
             <Stamp key={st.status} tone={st.status === "cancelled" ? "void" : st.status === "placed" ? "pen" : "stamp"} animate className="mt-1 shrink-0">
               {STATUS_TEXT[st.status].stamp}
@@ -166,13 +230,6 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
 
-        {st.status === "delivered" && (
-          <div className="grid grid-cols-2 gap-2">
-            {!courier && <Button variant="secondary" onClick={() => { s.reorder(order.id); router.push("/app/cart"); }}><RotateCcw className="size-4.5" /> اطلبه تاني</Button>}
-            <Button variant="outline" onClick={() => setReportOpen(true)} className={courier ? "col-span-2" : ""}>في مشكلة؟</Button>
-            {!order.rated && <Button className="col-span-2" onClick={() => setRateOpen(true)}><Star className="size-4.5" /> قيّم الطلب وخد 10 نقط</Button>}
-          </div>
-        )}
       </div>
 
       {/* The receipt itself */}
@@ -229,7 +286,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
       </Sheet>
 
       {!courier && <EditSheet open={editOpen} onOpenChange={setEditOpen} orderId={order.id} />}
-      <ReportSheet open={reportOpen} onOpenChange={setReportOpen} orderId={order.id} />
+      <ReportSheet open={reportOpen} onOpenChange={setReportOpen} orderId={order.id} onSupport={() => { setReportOpen(false); setChat("support"); }} />
       <RateSheet open={rateOpen} onOpenChange={setRateOpen} orderId={order.id} storeName={store?.name ?? "المشوار"} />
       <ChatSheet who={chat} onClose={() => setChat(null)} orderNumber={order.number} riderName={RIDER.name} />
     </main>
@@ -263,27 +320,38 @@ function EditSheet({ open, onOpenChange, orderId }: { open: boolean; onOpenChang
   );
 }
 
-const REASONS = ["صنف ناقص", "صنف غلط", "الأكل بايظ أو بارد", "الكمية أقل"];
+const REASONS = ["صنف ناقص", "صنف غلط", "الأكل بايظ أو بارد", "الكمية أقل", "مشكلة مع الطيار", "حاجة تانية"];
 
-function ReportSheet({ open, onOpenChange, orderId }: { open: boolean; onOpenChange: (v: boolean) => void; orderId: string }) {
+/** Problems never refund on their own: they open a ticket and the support team handles it. */
+function ReportSheet({ open, onOpenChange, orderId, onSupport }: { open: boolean; onOpenChange: (v: boolean) => void; orderId: string; onSupport: () => void }) {
   const s = useCustomer();
   const order = s.orders.find((o) => o.id === orderId)!;
   const [keys, setKeys] = useState<string[]>([]);
-  const [reason, setReason] = useState(REASONS[0]);
-  const [done, setDone] = useState(0);
-  const refunded = new Set(order.refunds.map((r) => r.lineKey));
-  const amount = order.lines.filter((l) => keys.includes(l.key)).reduce((a, l) => a + lineTotal(l), 0);
-  useEffect(() => { if (open) { setKeys([]); setDone(0); } }, [open]);
+  const [reason, setReason] = useState<string | null>(null);
+  const [text, setText] = useState("");
+  const [ticket, setTicket] = useState<string | null>(null);
+  useEffect(() => { if (open) { setKeys([]); setReason(null); setText(""); setTicket(null); } }, [open]);
+
+  const send = () => {
+    if (!reason) return;
+    const items = order.lines.filter((l) => keys.includes(l.key)).map((l) => `${l.qty}× ${l.name}`).join("، ");
+    s.addTicket({ kind: "complaint", topic: `طلب #${order.number}: ${reason}`, text: [items && `الأصناف: ${items}`, text.trim()].filter(Boolean).join(" • ") || reason });
+    setTicket(useCustomer.getState().tickets[0]?.id ?? "");
+  };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} title={done ? undefined : "إيه المشكلة؟"} description={done ? undefined : "اختار الأصناف اللي فيها مشكلة وفلوسها ترجع محفظتك على طول."}>
+    <Sheet open={open} onOpenChange={onOpenChange} title={ticket !== null ? undefined : "إيه المشكلة؟"} description={ticket !== null ? undefined : "قولنا حصل إيه، وفريق الدعم هيراجع الطلب ويتواصل معاك ويحل المشكلة."}>
       <AnimatePresence mode="wait">
-        {done ? (
-          <motion.div key="done" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center px-6 pb-10 pt-6 text-center">
-            <Stamp tone="stamp" size="lg" animate>رجعت المحفظة</Stamp>
-            <p className="mt-6 text-[28px] font-bold tabular-nums text-stamp">{egp(done)}</p>
-            <p className="mt-2 max-w-[30ch] text-[14.5px] text-ink-2">الفلوس في محفظتك دلوقتي وتقدر تستخدمها في أي طلب. وبلغنا المحل عشان ميتكررش.</p>
-            <Button className="mt-6" variant="secondary" onClick={() => onOpenChange(false)}>تمام</Button>
+        {ticket !== null ? (
+          <motion.div key="done" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center px-6 pb-8 pt-6 text-center">
+            <span className="grid size-16 place-items-center rounded-full bg-pen-50 text-pen"><Headset className="size-8" /></span>
+            <p className="mt-4 text-[19px] font-bold">شكوتك وصلت للدعم</p>
+            {ticket && <p className="mt-1 text-[13.5px] text-ink-3 tabular-nums">رقم الشكوى {ticket}</p>}
+            <p className="mt-2 max-w-[32ch] text-[14.5px] text-ink-2">فريق الدعم هيراجع الطلب ويتواصل معاك خلال دقايق. لو في مبلغ لازم يرجعلك، الدعم هو اللي بيرجعه.</p>
+            <div className="mt-6 grid w-full gap-2">
+              <Button block size="lg" onClick={onSupport}><MessageCircle className="size-5" /> كلّم الدعم دلوقتي</Button>
+              <Button block variant="secondary" onClick={() => onOpenChange(false)}>تمام</Button>
+            </div>
           </motion.div>
         ) : (
           <motion.div key="form" className="px-5 pb-6">
@@ -292,24 +360,25 @@ function ReportSheet({ open, onOpenChange, orderId }: { open: boolean; onOpenCha
                 <button key={r} role="radio" aria-checked={reason === r} onClick={() => setReason(r)} className={cx("tap h-9 rounded-full px-3.5 text-[13.5px] ring-1 ring-inset", reason === r ? "bg-ink text-white ring-ink" : "ring-rule")}>{r}</button>
               ))}
             </div>
-            <ul className="mt-4 space-y-2">
+            <p className="mt-4 text-[14px] font-medium">الأصناف اللي فيها مشكلة (اختياري)</p>
+            <ul className="mt-2 space-y-2">
               {order.lines.map((l) => {
-                const was = refunded.has(l.key);
                 const on = keys.includes(l.key);
                 return (
                   <li key={l.key}>
-                    <button disabled={was} role="checkbox" aria-checked={on} onClick={() => setKeys(on ? keys.filter((k) => k !== l.key) : [...keys, l.key])} className={cx("tap flex w-full items-center gap-3 rounded-2xl p-3 text-start ring-1 ring-inset disabled:opacity-50", on ? "bg-void-50 ring-void" : "ring-rule")}>
+                    <button role="checkbox" aria-checked={on} onClick={() => setKeys(on ? keys.filter((k) => k !== l.key) : [...keys, l.key])} className={cx("tap flex w-full items-center gap-3 rounded-2xl p-3 text-start ring-1 ring-inset", on ? "bg-void-50 ring-void" : "ring-rule")}>
                       <span className={cx("grid size-5 place-items-center rounded-md border-2", on ? "border-void bg-void text-white" : "border-leader")}>{on && <Check className="size-3.5" strokeWidth={3} />}</span>
                       <span className="flex-1 text-[15px]">{l.qty}× {l.name}</span>
-                      <span className="text-[14px] tabular-nums text-ink-2">{was ? "اترد" : egp(lineTotal(l))}</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-            <button className="tap mt-3 inline-flex items-center gap-2 rounded-xl px-2 py-2 text-[14px] text-pen" onClick={() => toast("ضفنا الصورة (ديمو)")}><Camera className="size-4.5" /> ضيف صورة (اختياري)</button>
-            <Button block size="lg" className="mt-3" variant="danger" disabled={keys.length === 0} onClick={() => setDone(s.refundLines(orderId, keys, reason))}>
-              رجّعلي {egp(amount)} للمحفظة
+            <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, 300))} rows={3} placeholder="اكتب تفاصيل المشكلة (اختياري)" className="mt-3 w-full resize-none rounded-2xl bg-paper p-3 text-[15px] outline-none ring-1 ring-rule focus:ring-2 focus:ring-pen" />
+            <button className="tap mt-1 inline-flex items-center gap-2 rounded-xl px-2 py-2 text-[14px] text-pen" onClick={() => toast("ضفنا الصورة (ديمو)")}><Camera className="size-4.5" /> ضيف صورة (اختياري)</button>
+            {!reason && <p className="mt-1 flex items-center gap-1.5 text-[13px] text-void"><Info className="size-4" /> اختار سبب المشكلة</p>}
+            <Button block size="lg" className="mt-3" disabled={!reason} onClick={send}>
+              <Headset className="size-5" /> ابعت للدعم الفني
             </Button>
           </motion.div>
         )}
@@ -318,26 +387,62 @@ function ReportSheet({ open, onOpenChange, orderId }: { open: boolean; onOpenCha
   );
 }
 
-const TAGS = ["سخن", "مغلف كويس", "الطيار محترم", "في ميعاده", "طعمه حلو"];
+const GOOD = ["سخن", "مغلف كويس", "الطيار محترم", "في ميعاده", "طعمه حلو"];
+const BAD = ["عنصر مفقود", "طلب خاطئ", "الطعام غير ساخن", "المذاق غير جيد", "الكمية غير كافية", "التغليف غير مناسب", "الطيار اتأخر"];
+const LABELS = ["", "مخيبة للآمال", "سيئة", "مقبولة", "جيدة", "ممتازة"];
 
+/** The chips follow the stars: 1–3 stars ask what went wrong (at least one), 4–5 ask what was good. */
 function RateSheet({ open, onOpenChange, orderId, storeName }: { open: boolean; onOpenChange: (v: boolean) => void; orderId: string; storeName: string }) {
   const rate = useCustomer((s) => s.rateOrder);
   const [storeStars, setStoreStars] = useState(0);
   const [riderStars, setRiderStars] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
+  const [comment, setComment] = useState("");
+  const low = storeStars > 0 && storeStars <= 3;
+  const chips = low ? BAD : GOOD;
+  const valid = storeStars > 0 && (!low || tags.length > 0);
+  const pickStars = (n: number) => {
+    if (storeStars === 0 || (n <= 3) !== (storeStars <= 3)) setTags([]);
+    setStoreStars(n);
+  };
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} title="الطلب عجبك؟" description="تقييمك بيساعد الناس في الفيوم تختار صح."
-      footer={<Button block size="lg" disabled={!storeStars} onClick={() => { rate(orderId, { store: storeStars, rider: riderStars || storeStars }); toast.success("شكراً! ضفنالك 10 نقط"); onOpenChange(false); }}>ابعت التقييم</Button>}>
-      <div className="space-y-6 px-5 pb-4">
-        <Stars label={storeName} value={storeStars} onChange={setStoreStars} />
-        <Stars label={`الطيار ${RIDER.name}`} value={riderStars} onChange={setRiderStars} />
-        <div className="flex flex-wrap gap-2">
-          {TAGS.map((t) => (
-            <button key={t} aria-pressed={tags.includes(t)} onClick={() => setTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t])} className={cx("tap h-9 rounded-full px-3.5 text-[13.5px] ring-1 ring-inset", tags.includes(t) ? "bg-stamp-50 text-stamp ring-stamp" : "ring-rule")}>{t}</button>
-          ))}
+    <Sheet open={open} onOpenChange={onOpenChange} title={`كيف كان طلبك من ${storeName}؟`} description="تقييمك بيساعد الناس في الفيوم تختار صح."
+      footer={<Button block size="lg" disabled={!valid} onClick={() => { rate(orderId, { store: storeStars, rider: riderStars || storeStars, tags, comment: comment.trim() || undefined }); toast.success("شكراً! ضفنالك 10 نقط"); onOpenChange(false); }}>ابعت التقييم</Button>}>
+      <div className="space-y-5 px-5 pb-4">
+        <div>
+          <Stars label={storeName} value={storeStars} onChange={pickStars} />
+          {storeStars > 0 && <p className="mt-1.5 text-[14px] font-medium text-ink-2">{LABELS[storeStars]}</p>}
         </div>
+        <Stars label={`الطيار ${RIDER.name}`} value={riderStars} onChange={setRiderStars} />
+        {storeStars > 0 && (
+          <div>
+            <p className="text-[16px] font-bold">{low ? "ما هي المشكلة التي واجهتها مع طلبك؟" : "إيه اللي عجبك؟"}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <button key={c} aria-pressed={tags.includes(c)} onClick={() => setTags(tags.includes(c) ? tags.filter((x) => x !== c) : [...tags, c])} className={cx("tap h-10 rounded-full px-4 text-[14px] ring-1 ring-inset", tags.includes(c) ? (low ? "bg-void-50 text-void ring-void" : "bg-stamp-50 text-stamp ring-stamp") : "ring-rule")}>{c}</button>
+              ))}
+            </div>
+            {low && tags.length === 0 && <p className="mt-2 flex items-center gap-1.5 text-[13px] text-void"><Info className="size-4" /> اختر سبب واحد على الأقل</p>}
+          </div>
+        )}
+        <label className="block">
+          <span className="text-[16px] font-bold">أخبرنا المزيد</span>
+          <textarea value={comment} onChange={(e) => setComment(e.target.value.slice(0, 300))} rows={3} placeholder={low ? "اكتب سبب تقييمك…" : "اكتب رأيك (اختياري)"} className="mt-2 w-full resize-none rounded-2xl bg-paper p-3 text-[15px] outline-none ring-1 ring-rule focus:ring-2 focus:ring-pen" />
+        </label>
       </div>
     </Sheet>
+  );
+}
+
+function DetailBlock({ icon, title, children }: { icon?: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-5 border-t border-rule pt-5">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-[17px] font-bold">{title}</h2>
+        {icon && <span className="text-pen">{icon}</span>}
+      </div>
+      {children}
+    </section>
   );
 }
 

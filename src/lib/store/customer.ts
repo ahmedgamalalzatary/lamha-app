@@ -40,6 +40,8 @@ type State = {
   tickets: Ticket[];
   recent: string[];
   nextNumber: number;
+  lastSpinDay: string | null;
+  lang: "ar" | "en";
 };
 
 type Actions = {
@@ -68,6 +70,7 @@ type Actions = {
   markNoticesRead: () => void;
   addTicket: (t: Omit<Ticket, "id" | "at" | "status">) => void;
   pushRecent: (q: string) => void;
+  spinWheel: (prize: { kind: "points" | "promo" | "none"; value: number; code?: string }) => void;
   resetDemo: () => void;
 };
 
@@ -95,6 +98,8 @@ const initial = (): State => ({
   tickets: [],
   recent: ["شاورما", "كشري", "كنافة"],
   nextNumber: 1045,
+  lastSpinDay: null,
+  lang: "ar",
 });
 
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -265,6 +270,11 @@ export const useCustomer = create<State & Actions>()(
       topUp: (amount) => set((s) => ({ wallet: s.wallet + amount, walletTx: [{ id: uid(), label: "شحن رصيد بالكارت", amount, at: Date.now() }, ...s.walletTx] })),
       markNoticesRead: () => set((s) => ({ notices: s.notices.map((n) => ({ ...n, read: true })) })),
       addTicket: (t) => set((s) => ({ tickets: [{ ...t, id: `T-${2400 + s.tickets.length + 1}`, at: Date.now(), status: "open" }, ...s.tickets] })),
+      spinWheel: (prize) => set((s) => ({
+        lastSpinDay: new Date().toDateString(),
+        points: prize.kind === "points" ? s.points + prize.value : s.points,
+        promoCode: prize.kind === "promo" && prize.code ? prize.code : s.promoCode,
+      })),
       pushRecent: (q) => set((s) => ({ recent: [q, ...s.recent.filter((r) => r !== q)].slice(0, 6) })),
       resetDemo: () => set(initial()),
     }),
