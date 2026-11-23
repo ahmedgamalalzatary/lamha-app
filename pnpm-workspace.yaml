@@ -3,6 +3,8 @@ packages:
   - "packages/*"
 allowBuilds:
   # Native install scripts pnpm may run. Anything not listed stops the install.
+  '@parcel/watcher': true
+  '@scarf/scarf': false
   esbuild: true
   sharp: false
   unrs-resolver: false

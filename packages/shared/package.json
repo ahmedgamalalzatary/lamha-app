@@ -12,15 +12,21 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "oxlint src/",
+    "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
     "@tawsela/tsconfig": "workspace:*",
-    "typescript": "^5.9.3"
+    "oxlint": "^1.91.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
   }
 }
