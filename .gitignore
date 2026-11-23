@@ -1,0 +1,52 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+build/
+.next/
+out/
+.expo/
+*.tsbuildinfo
+next-env.d.ts
+
+# turbo
+.turbo/
+
+# env
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# logs
+*.log
+npm-debug.log*
+.pnpm-debug.log*
+
+# misc
+.DS_Store
+*.pem
+
+# signing keys: never commit
+*.keystore
+*.jks
+coverage/
+apk-out/
+
+# uploaded images in development
+/uploads/
+apps/*/uploads/
+
+# Playwright screenshots and logs
+.playwright-mcp/
+.dev-logs/
+
+# design review screenshots (the phone ones show personal data)
+.impeccable/review/
+.impeccable/phone/
+
+# client WhatsApp export: private, never commit
+whatsapp-export/
+*.zip
