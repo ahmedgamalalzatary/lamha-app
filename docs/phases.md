@@ -27,7 +27,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 0 | Foundation | ✅ | none |
 | 1 | Accounts: phone, email code and password | ✅ | none (#1 decided: email) |
 | 2 | Production server and deploys (moved to just before the first real mobile build) | ⬜ | owner provides the VPS (#6) |
-| 3 | Dashboard shell and sign-in (admin and partner areas) | ⬜ | |
+| 3 | Dashboard shell and sign-in (admin and partner areas) | ✅ | |
 | 4 | Catalog: verticals, stores, categories, products | ⬜ | |
 | 5 | Customer home | ⬜ | |
 | 6 | Store lists, filters and search | ⬜ | |
@@ -86,6 +86,13 @@ Docker Compose (API + MySQL), nginx, Let's Encrypt, the dashboard build, backups
 
 Contract §11 and §11.1. One sign-in page; the role decides the area: admins land in the admin area (sidebar from §11, empty pages), partners in `/partner` (its own sidebar, empty pages). A partner can never open an admin page or another store's data (guard on every `/v1/partner/*` route by the account's store). Admin users (A23).
 
+**Built:**
+
+- **API:** `/v1/admin/admins` (admins only): list, create with a generated password shown once, reset the password (old sessions end), disable or enable (signed out at once). An admin cannot reset or disable their own account (`OWN_ACCOUNT`), so one admin always stays. Seed: two more admins.
+- **Dashboard:** the session in `localStorage`, renewed once on a 401, one renewal across tabs (the realestate pattern); `/sign-in` for admins and partners (customers and drivers are turned away and their new session ended); the area gate; the admin sidebar as in the Tawsilty photo plus الإعدادات › حسابات الإدارة; the partner sidebar (الطلبات, المنتجات, المتجر, التقارير, الحساب); empty pages show "قريباً"; sign-out in the sidebar; partner الحساب (name, phone, sign-out).
+- **Tests:** the dashboard tests run against the real API (built `apps/api`) on its own database `tawsela_web_test`, with no mocked requests.
+- **Moved to Phase 4:** the store guard on `/v1/partner/*`. A partner belongs to a store, and stores arrive in Phase 4; until then `/v1/partner/*` has no routes.
+
 ## Phase 4: Catalog
 
 Contract §8.3–§8.5, §11 (الموردين, المنتجات والكتالوج).
@@ -93,6 +100,7 @@ Contract §8.3–§8.5, §11 (الموردين, المنتجات والكتال�
 - **Database:** `verticals`, `stores`, `store_categories`, `products`, `cuisines`, `zones`.
 - **API:** public catalog reads; admin CRUD with image upload (`sharp`).
 - **Dashboard:** stores (type, layout, pickup allowed, fees, minimum order, hours, cover), categories, products, inactive products, cuisines, home tiles (order and images).
+- **Partner store guard (from Phase 3):** every `/v1/partner/*` route reads the store from the signed-in partner's account; a partner never reaches another store's data.
 - **Partner accounts:** creating a store generates its partner account; the password is shown once with a copy button; reset password and disable (contract §2, §11). The same actions in the mobile app for admins (contract §11.2, M2).
 - Seed from the demo's data.
 

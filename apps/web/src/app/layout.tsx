@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Alexandria } from 'next/font/google';
-import { Sidebar } from '@/features/nav/Sidebar';
 import { Providers } from './providers';
 import './globals.css';
 
@@ -11,15 +10,12 @@ export const metadata: Metadata = {
   description: 'لوحة تحكم توصيلة',
 };
 
-/** Arabic RTL, the sidebar on the right (contract §11). */
+/** Arabic RTL. Each area (admin, `/partner`) brings its own sidebar; sign-in has none. */
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="ar" dir="rtl" className={`${alexandria.variable} h-full antialiased`}>
       <body className="flex min-h-full font-tw">
-        <Providers>
-          <Sidebar />
-          <main className="min-w-0 flex-1 p-8">{children}</main>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

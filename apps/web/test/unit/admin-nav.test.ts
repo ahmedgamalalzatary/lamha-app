@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ADMIN_NAV, filterNav, isActive } from '@/features/nav/admin-nav';
+import { ADMIN_NAV, filterNav, isActive, PARTNER_NAV, pageTitle } from '@/features/nav/admin-nav';
 
 const labels = (groups: ReturnType<typeof filterNav>) =>
   groups.map((g) => [g.label, ...g.items.map((i) => i.label)]);
@@ -17,6 +17,31 @@ describe('ADMIN_NAV (Tawsilty admin sidebar, contract §11)', () => {
       'التقارير',
       'الإعدادات',
     ]);
+  });
+
+  it('puts the admin accounts (A23) under الإعدادات', () => {
+    expect(ADMIN_NAV.at(-1)?.items).toEqual([{ label: 'حسابات الإدارة', href: '/settings/admins' }]);
+  });
+});
+
+describe('PARTNER_NAV (the partner area, contract §11.1)', () => {
+  it('lists the partner pages, all under /partner', () => {
+    expect(PARTNER_NAV.map((g) => [g.label, g.href])).toEqual([
+      ['الطلبات', '/partner/orders'],
+      ['المنتجات', '/partner/products'],
+      ['المتجر', '/partner/store'],
+      ['التقارير', '/partner/reports'],
+      ['الحساب', '/partner/account'],
+    ]);
+  });
+});
+
+describe('pageTitle', () => {
+  it("names the page from the sidebar, and falls back to the area's name", () => {
+    expect(pageTitle('/products/inactive')).toBe('منتجات غير فعالة');
+    expect(pageTitle('/partner/store')).toBe('المتجر');
+    expect(pageTitle('/')).toBe('الرئيسية');
+    expect(pageTitle('/nowhere')).toBe('لوحة التحكم');
   });
 });
 

@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { type Env, validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
 import { MailModule } from './core/mail/mailer.js';
+import { AdminsModule } from './modules/admins/admins.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -37,6 +38,7 @@ import { UsersModule } from './modules/users/users.module.js';
     HealthModule,
     AuthModule,
     UsersModule,
+    AdminsModule,
   ],
 })
 export class AppModule {}

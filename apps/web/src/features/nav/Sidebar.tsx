@@ -1,21 +1,24 @@
 'use client';
 
-import { ChevronUp, Menu, Search } from 'lucide-react';
+import { ChevronUp, LogOut, Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ADMIN_NAV, filterNav, isActive } from './admin-nav';
+import { api, useSession } from '@/core/api/client';
+import { filterNav, isActive, type NavGroup } from './admin-nav';
 
 /**
  * Tawsilty's admin sidebar (contract §11): light grey, logo and ≡ on top, "ابحث عن شاشة…", sections
  * with an icon, a bold name and a chevron; pages indented on a thin rule; the open page soft orange
  * with an orange bar.
  */
-export function Sidebar() {
+export function Sidebar({ nav }: { nav: NavGroup[] }) {
   const pathname = usePathname();
+  const session = useSession();
   const [query, setQuery] = useState('');
   const [closed, setClosed] = useState<Set<string>>(new Set());
-  const groups = filterNav(ADMIN_NAV, query);
+  const groups = filterNav(nav, query);
+  const name = session ? `${session.user.firstName} ${session.user.lastName}`.trim() : '';
 
   const toggle = (label: string) =>
     setClosed((prev) => {
@@ -95,6 +98,19 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* The signed-in account and sign-out, at the foot of the sidebar. */}
+      <div className="mt-auto flex flex-col gap-1 border-t border-tw-line pt-3 text-sm">
+        <p className="truncate px-3 font-semibold">{name}</p>
+        <button
+          type="button"
+          onClick={() => void api.signOut()}
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-semibold text-tw-danger hover:bg-white"
+        >
+          <LogOut className="size-5 rtl:-scale-x-100" aria-hidden />
+          تسجيل الخروج
+        </button>
+      </div>
     </aside>
   );
 }

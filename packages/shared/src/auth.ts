@@ -60,8 +60,33 @@ export interface OtpVerified {
   ticket: string;
 }
 
+/** An account an admin manages (admins now; partners and drivers in their phases). */
+export interface StaffAccount {
+  id: number;
+  role: Role;
+  phone: string;
+  firstName: string;
+  lastName: string;
+  disabled: boolean;
+  /** ISO time. */
+  createdAt: string;
+  /** The signed-in admin's own account. */
+  you: boolean;
+}
+
+/** A created account, or a reset, with the generated password. It is shown once and never stored in clear. */
+export interface GeneratedPassword {
+  password: string;
+}
+
+export interface CreatedAccount extends GeneratedPassword {
+  account: StaffAccount;
+}
+
 /** Machine-readable reasons the API gives with an error, translated by the apps. */
 export type ApiErrorCode =
+  | 'OWN_ACCOUNT'
+  | 'ACCOUNT_NOT_FOUND'
   | 'PHONE_TAKEN'
   | 'EMAIL_TAKEN'
   | 'PHONE_NOT_FOUND'

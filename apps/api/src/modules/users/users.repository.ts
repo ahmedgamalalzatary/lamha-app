@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import type { Role } from '@tawsela/shared';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type NewUser, type UserRow, users } from './users.schema.js';
 
@@ -11,6 +12,11 @@ export class UsersRepository {
   async findLiveById(id: number): Promise<UserRow | undefined> {
     const [row] = await this.db.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt)));
     return row;
+  }
+
+  /** Oldest first. */
+  async listLiveByRole(role: Role): Promise<UserRow[]> {
+    return this.db.select().from(users).where(and(eq(users.role, role), isNull(users.deletedAt))).orderBy(asc(users.id));
   }
 
   async findLiveByPhone(phone: string): Promise<UserRow | undefined> {

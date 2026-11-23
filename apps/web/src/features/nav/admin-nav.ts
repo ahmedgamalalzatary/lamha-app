@@ -1,4 +1,4 @@
-import { Bike, ChartLine, ClipboardList, House, type LucideIcon, Megaphone, Package, Settings, Store, Users } from 'lucide-react';
+import { Bike, ChartLine, ClipboardList, House, type LucideIcon, Megaphone, Package, Settings, Store, UserRound, Users } from 'lucide-react';
 
 export interface NavItem {
   label: string;
@@ -33,8 +33,30 @@ export const ADMIN_NAV: NavGroup[] = [
   },
   { label: 'التسويق والعروض', icon: Megaphone, items: [{ label: 'الإشعارات التفاعلية', href: '/marketing/notifications' }] },
   { label: 'التقارير', icon: ChartLine, items: [{ label: 'التقارير', href: '/reports' }] },
-  { label: 'الإعدادات', icon: Settings, items: [{ label: 'الإعدادات', href: '/settings' }] },
+  { label: 'الإعدادات', icon: Settings, items: [{ label: 'حسابات الإدارة', href: '/settings/admins' }] },
 ];
+
+/**
+ * The partner area (contract §11.1): same look as the admin sidebar, its own pages, no sections.
+ * الحساب holds the profile and sign-out.
+ */
+export const PARTNER_NAV: NavGroup[] = [
+  { label: 'الطلبات', icon: ClipboardList, href: '/partner/orders', items: [] },
+  { label: 'المنتجات', icon: Package, href: '/partner/products', items: [] },
+  { label: 'المتجر', icon: Store, href: '/partner/store', items: [] },
+  { label: 'التقارير', icon: ChartLine, href: '/partner/reports', items: [] },
+  { label: 'الحساب', icon: UserRound, href: '/partner/account', items: [] },
+];
+
+/** The page's name as the sidebar shows it, for its heading. */
+export function pageTitle(pathname: string): string {
+  for (const group of [...ADMIN_NAV, ...PARTNER_NAV]) {
+    if (group.href === pathname) return group.label;
+    const item = group.items.find((i) => i.href === pathname);
+    if (item) return item.label;
+  }
+  return 'لوحة التحكم';
+}
 
 /** Folds the spellings people mix up when typing Arabic: أ/إ/آ → ا, ة → ه, ى → ي. */
 function fold(text: string): string {

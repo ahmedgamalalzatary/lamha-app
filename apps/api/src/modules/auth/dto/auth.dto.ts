@@ -11,7 +11,7 @@ const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? val
 const PHONE = /^01[0125]\d{8}$/;
 const PHONE_MESSAGE = 'phone must be an Egyptian mobile number';
 
-class PhoneDto {
+export class PhoneDto {
   @ApiProperty({ example: '01554459196' })
   @Transform(toPhone)
   @IsString()

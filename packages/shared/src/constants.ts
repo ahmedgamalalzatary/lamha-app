@@ -22,5 +22,8 @@ export const AUTH = {
 /** Customers' invite codes: 6 capitals and digits, like Tawsilty's "3JXDEB" (§8.17). */
 export const INVITE_CODE_LENGTH = 6;
 
+/** Passwords the admin generates for admin, partner and driver accounts, shown once (contract §2). */
+export const GENERATED_PASSWORD_LENGTH = 10;
+
 /** Uploaded images, relative to apps/api. Served at /uploads in dev and by nginx in production. */
 export const UPLOADS_DIR = 'uploads';

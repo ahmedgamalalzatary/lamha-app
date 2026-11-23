@@ -548,6 +548,12 @@ Layout follows the Tawsilty admin (`admin.talbatelfayoum.com`, same platform) [T
 
 The full list of dashboard modules, with sources and phases, is in §1.1.
 
+**Built in Phase 3:**
+
+- **Sign-in:** one page, `/sign-in`, for admins and partners. Tawsilty's admin sign-in is not captured [Open]; the page uses the app's sign-in words. Customers and drivers are told the dashboard is for admins and stores.
+- **Sidebar:** exactly the sections and pages in the Tawsilty photo, plus الإعدادات › حسابات الإدارة (A23) [Needed]. The other §11 pages join the sidebar with their phases. The account's name and "تسجيل الخروج" sit at its foot.
+- **حسابات الإدارة:** a table in the orders-table look (orange header row, actions in العمليات). Admins are added with a name and phone; the password is generated and shown once, like partner and driver accounts. Reset password and disable/enable ask first, using the address-delete confirm look (§6.3). An admin cannot reset or disable their own account.
+
 **Account creation** (الموردين and المندوبين): "إضافة" creates the partner or driver account with name and phone; the generated password is shown once with a copy button; "إعادة تعيين كلمة المرور" generates a new one; an account can be disabled (§2).
 
 ### 11.1 Partner area (`/partner`) [Client]
@@ -663,3 +669,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-23 | Read the client's WhatsApp from 2026-11-22 17:28 on (§16): Tawsilty delivered order details and rating screen (§8.8), driver tabs, account, order details and order history (§10), invite reward is an admin setting (§8.2). New open item: what the captain pays the store (§15.1 #11). |
 | 2026-11-23 | Phase 0 done: §6.1 ink, ink-2 and danger measured (`#1F1F1F`, `#8A8A8A`, `#F44336`); §6.3 the two confirm-dialog looks and the double-circle empty state, from the screenshots. |
 | 2026-11-23 | Phase 1 done (§8.1): the app opens on sign-in [Derived]; the uncaptured sign-in, sign-up step 1, forgot and new-password screens follow Tawsilty's sign-up pattern [Open]; errors are codes the app translates; admins also get the حسابي tab to sign out; profile phone change and avatar photo [Open]. |
+| 2026-11-23 | Phase 3 done (§11): one `/sign-in` for admins and partners [Open look]; the admin sidebar as in the Tawsilty photo plus حسابات الإدارة (A23); the partner sidebar (§11.1); admin accounts with a generated password shown once. The partner store guard moves to Phase 4, with the stores. |
