@@ -19,5 +19,8 @@ export const AUTH = {
   nameMaxLength: 100,
 } as const;
 
+/** Customers' invite codes: 6 capitals and digits, like Tawsilty's "3JXDEB" (§8.17). */
+export const INVITE_CODE_LENGTH = 6;
+
 /** Uploaded images, relative to apps/api. Served at /uploads in dev and by nginx in production. */
 export const UPLOADS_DIR = 'uploads';

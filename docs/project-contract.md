@@ -318,6 +318,15 @@ Dark mode: Tawsilty has none; Tawsela has none.
 3. **التفاصيل الشخصية**: phone and email (locked), first name and family name (100 chars each), password (8+ characters: letters, numbers or symbols), and an optional **invite code** box ("ستحصل على 25 ج.م في محفظتك… يُستخدم خلال 30 يومًا"). Links to terms and privacy. "متابعة".
 4. Returning users sign in with phone + password. "نسيت كلمة المرور؟" sends a code to the account's email.
 
+Built in Phase 1:
+
+- [Derived, 2026-11-23] **The app opens on sign-in.** Nothing is shown before signing in; after it, the account's role picks the tab bar. Tawsilty's first screen was not captured; its OTP and details screens open from a pushed stack and its home already shows the signed-in user's address.
+- [Open] The **sign-in** (phone + password, "نسيت كلمة المرور؟", "ليس لديك حساب؟ إنشاء حساب"), **sign-up step 1** (phone + email), **forgot password** and **new password** screens are not captured from Tawsilty. They are drawn in the pattern of its "رمز التحقق" and "التفاصيل الشخصية" screens until a capture replaces them.
+- The OTP screen says "أرسلنا رمز التحقق إلى <email>" with "تغيير"; the details screen shows the phone and the email locked.
+- Errors come from the API as codes (PHONE_TAKEN, OTP_WRONG with the tries left, BAD_CREDENTIALS, STAFF_RESET_BY_ADMIN…) and the app shows them in Arabic or English as Tawsilty's red toast.
+- A partner or driver who asks for a password reset is told to ask the admin. Deleting an account (customers only) needs the password; the phone can sign up again afterwards.
+- The links to terms and privacy arrive with the app-content pages (§8.14).
+
 ### 8.2 Home
 
 - [Tawsilty] Orange header: "التوصيل إلى **<address label>**" with a chevron (opens the address sheet), and a search box.
@@ -442,7 +451,7 @@ Tabs الكل · مطاعم · متاجر أخرى. Empty "ابحث عن الأ�
 - [Client] "اعملي حساب العميل زي ابلكيشن توصيلتي بظبط": the account screen matches Tawsilty exactly.
 
 Sub-screens [Tawsilty]:
-- **الملف الشخصي**: avatar with camera, full name (locked), phone with "تغيير", email, gender ذكر/أنثى, region (locked).
+- **الملف الشخصي**: avatar with camera, full name (locked), phone with "تغيير", email, gender ذكر/أنثى, region (locked). Phase 1 builds the email and gender edits; the phone's "تغيير" (needs a new code) and the avatar photo are [Open].
 - **إعدادات الإشعارات**: "تفعيل الإشعار" and "ايقاف رسائل SMS من التطبيق" toggles with explanations. Tawsela keeps only "تفعيل الإشعار" because it sends no SMS.
 - **المفضلة**: favourite stores; empty "لا توجد خدمات مفضلة".
 - **الإشعارات**: list; empty "لا توجد إشعارات".
@@ -653,3 +662,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-23 | Owner's decisions (§15.1): sign-in codes by email through Gmail, no SMS (§8.1); cash only, with card, e-wallet and wallet top-up excluded for now (§8.7, §8.15); local only until the first real mobile build; Expo push; lucky wheel excluded for now (#10). Missing screens wait for the owner's WhatsApp export. |
 | 2026-11-23 | Read the client's WhatsApp from 2026-11-22 17:28 on (§16): Tawsilty delivered order details and rating screen (§8.8), driver tabs, account, order details and order history (§10), invite reward is an admin setting (§8.2). New open item: what the captain pays the store (§15.1 #11). |
 | 2026-11-23 | Phase 0 done: §6.1 ink, ink-2 and danger measured (`#1F1F1F`, `#8A8A8A`, `#F44336`); §6.3 the two confirm-dialog looks and the double-circle empty state, from the screenshots. |
+| 2026-11-23 | Phase 1 done (§8.1): the app opens on sign-in [Derived]; the uncaptured sign-in, sign-up step 1, forgot and new-password screens follow Tawsilty's sign-up pattern [Open]; errors are codes the app translates; admins also get the حسابي tab to sign out; profile phone change and avatar photo [Open]. |

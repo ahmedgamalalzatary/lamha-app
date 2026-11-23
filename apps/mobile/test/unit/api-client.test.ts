@@ -45,6 +45,15 @@ describe('api', () => {
     await expect(api('/x')).rejects.toMatchObject({ status: 400, message: 'phone is wrong' });
   });
 
+  it('passes on the error code and its numbers', async () => {
+    respond(400, { statusCode: 400, code: 'OTP_WRONG', message: 'Wrong code', triesLeft: 3 });
+    await expect(api('/auth/code/verify', { method: 'POST', body: {} })).rejects.toMatchObject({
+      status: 400,
+      code: 'OTP_WRONG',
+      triesLeft: 3,
+    });
+  });
+
   it('reports a network failure as status 0', async () => {
     global.fetch = jest.fn().mockRejectedValue(new TypeError('Network request failed')) as unknown as typeof fetch;
     await expect(api('/health')).rejects.toMatchObject({ status: 0 });

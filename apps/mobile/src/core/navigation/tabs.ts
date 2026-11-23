@@ -30,8 +30,11 @@ const TABS: Record<Role, TabSpec[]> = {
     { name: 'current', label: 'tabs.currentOrders', icon: Bike },
     { name: 'account', label: 'tabs.account', icon: User },
   ],
-  // Contract §11.2: an admin gets the accounts area only.
-  admin: [{ name: 'index', label: 'tabs.accounts', icon: Users }],
+  // Contract §11.2: an admin gets the accounts area, plus حسابي to sign out like every role.
+  admin: [
+    { name: 'index', label: 'tabs.accounts', icon: Users },
+    { name: 'account', label: 'tabs.account', icon: User },
+  ],
 };
 
 /** The tab bar for a signed-in account's role (contract §2: one app, four roles). */

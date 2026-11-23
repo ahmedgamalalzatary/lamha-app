@@ -3,7 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { type Env, validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
+import { MailModule } from './core/mail/mailer.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
   imports: [
@@ -30,7 +33,10 @@ import { HealthModule } from './modules/health/health.module.js';
       },
     }),
     DbModule,
+    MailModule,
     HealthModule,
+    AuthModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

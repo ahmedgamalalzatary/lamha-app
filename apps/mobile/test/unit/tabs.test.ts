@@ -16,8 +16,8 @@ describe('tabsForRole (one app, the role picks the tab bar: contract §2)', () =
     expect(labels('driver')).toEqual(['الرئيسية', 'الطلبات الحالية', 'حسابي']);
   });
 
-  it('admin: accounts only (§11.2)', () => {
-    expect(labels('admin')).toEqual(['الحسابات']);
+  it('admin: the accounts area (§11.2) and حسابي to sign out', () => {
+    expect(labels('admin')).toEqual(['الحسابات', 'حسابي']);
   });
 
   it('gives every tab of a role its own route', () => {

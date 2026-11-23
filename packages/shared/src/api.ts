@@ -5,6 +5,11 @@ export interface ApiError {
   statusCode: number;
   message: string | string[];
   error?: string;
+  /** Set on business errors (see ApiErrorCode); the apps translate it. */
+  code?: string;
+  /** Extra numbers for the message, e.g. seconds to wait or tries left. */
+  retryIn?: number;
+  triesLeft?: number;
 }
 
 /** GET /v1/health */

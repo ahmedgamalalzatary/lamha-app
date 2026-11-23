@@ -1,3 +1,3 @@
-// Every table, re-exported from the module that owns it (`modules/<feature>/<feature>.schema.ts`).
-// Drizzle and drizzle-kit read this file. Phase 0 has no tables yet.
-export {};
+// Every table, re-exported from the module that owns it. Drizzle and drizzle-kit read this file.
+export * from '../../modules/users/users.schema.js';
+export * from '../../modules/auth/auth.schema.js';

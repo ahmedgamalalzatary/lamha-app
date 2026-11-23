@@ -10,7 +10,7 @@ describe('translate', () => {
   });
 
   it('fills {placeholders}', () => {
-    expect(translate('health.version', 'ar', { version: '1.2.3' })).toBe('الإصدار 1.2.3');
+    expect(translate('errors.OTP_WRONG', 'ar', { tries: 3 })).toBe('الرمز غير صحيح، متبقي 3 محاولات');
   });
 });
 

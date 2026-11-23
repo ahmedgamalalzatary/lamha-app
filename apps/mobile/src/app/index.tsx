@@ -1,3 +1,9 @@
-import { StartScreen } from '@/features/start/screens/StartScreen';
+import { type Href, Redirect } from 'expo-router';
+import { useSession } from '@/core/auth/session';
 
-export default StartScreen;
+/** The app opens on sign-in; a signed-in account goes to its own tabs (contract §2). */
+export default function Index() {
+  const { status, user } = useSession();
+  if (status === 'loading') return null;
+  return <Redirect href={(user ? `/${user.role}` : '/sign-in') as Href} />;
+}

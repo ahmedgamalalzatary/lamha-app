@@ -25,7 +25,7 @@ The order in which the real product is built. Each phase points at the contract 
 | # | Phase | Status | Decide first (§15.1) |
 |---|---|---|---|
 | 0 | Foundation | ✅ | none |
-| 1 | Accounts: phone, email code and password | ⬜ | none (#1 decided: email) |
+| 1 | Accounts: phone, email code and password | ✅ | none (#1 decided: email) |
 | 2 | Production server and deploys (moved to just before the first real mobile build) | ⬜ | owner provides the VPS (#6) |
 | 3 | Dashboard shell and sign-in (admin and partner areas) | ⬜ | |
 | 4 | Catalog: verticals, stores, categories, products | ⬜ | |

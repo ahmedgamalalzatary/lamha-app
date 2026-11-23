@@ -1,5 +1,5 @@
 import { plainToInstance, Transform } from 'class-transformer';
-import { IsIn, IsInt, IsString, Matches, Max, Min, MinLength, validateSync } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength, validateSync } from 'class-validator';
 
 const NODE_ENVS = ['development', 'test', 'production'] as const;
 
@@ -33,10 +33,42 @@ export class Env {
   @IsString({ each: true })
   CORS_ORIGINS: string[] = [];
 
-  /** Signs access tokens. Long and random. */
+  /** Signs access tokens and sign-up tickets. Long and random. */
   @IsString()
   @MinLength(32)
   JWT_ACCESS_SECRET: string;
+
+  /**
+   * Optional mail server for sign-in and password codes, e.g. Gmail (smtp.gmail.com, 465, the
+   * address and a Google app password). Without SMTP_HOST the code is written to the log.
+   */
+  @IsOptional()
+  @IsString()
+  SMTP_HOST?: string;
+
+  @Transform(({ value }) => (value === undefined || value === '' ? 465 : Number(value)))
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  SMTP_PORT = 465;
+
+  @IsOptional()
+  @IsString()
+  SMTP_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_PASS?: string;
+
+  /** The sender shown, e.g. "Tawsela <tawsela@gmail.com>". Defaults to SMTP_USER. */
+  @IsOptional()
+  @IsString()
+  MAIL_FROM?: string;
+
+  /** Password for the seeded admin, partner and driver. Only the seed script reads it. */
+  @IsOptional()
+  @IsString()
+  SEED_PASSWORD?: string;
 }
 
 /** Used by ConfigModule's `validate`. Throws one error that lists every bad variable. */

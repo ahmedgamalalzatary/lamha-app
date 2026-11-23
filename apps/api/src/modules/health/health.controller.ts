@@ -1,6 +1,7 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
 import type { HealthResponse } from '@tawsela/shared';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { HealthService } from './health.service.js';
 
 /** Router for `/v1/health`. The apps use it to show they reach the API. */
@@ -9,6 +10,7 @@ import { HealthService } from './health.service.js';
 export class HealthController {
   constructor(private readonly health: HealthService) {}
 
+  @Public()
   @Get()
   @ApiOkResponse({ description: 'API and database are up' })
   @ApiServiceUnavailableResponse({ description: 'The database is down' })
