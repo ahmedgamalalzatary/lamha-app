@@ -31,10 +31,10 @@ The order in which the real product is built. Each phase points at the contract 
 | 4 | Catalog: verticals, stores, categories, products | ⬜ | |
 | 5 | Customer home | ⬜ | |
 | 6 | Store lists, filters and search | ⬜ | |
-| 7 | Store page and product sheet | ⬜ | 9 (options) |
+| 7 | Store page and product sheet | ⬜ | |
 | 8 | Addresses, zones and the map picker | ⬜ | |
 | 9 | Cart | ⬜ | |
-| 10 | Checkout and placing an order | ⬜ | 2, 3, 9 |
+| 10 | Checkout and placing an order | ⬜ | 2, 3 |
 | 11 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 |
 | 12 | Driver: shifts, offers and skips | ⬜ | 5, 9 |
 | 13 | Live tracking and the delivered view | ⬜ | 9 |
@@ -46,7 +46,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 19 | Offers, coupons and banners | ⬜ | |
 | 20 | Lucky wheel | ⬜ | |
 | 21 | Pharmacy: prescriptions and product photos | ⬜ | |
-| 22 | Send anything (اطلب دليفري) | ⬜ | 9 |
+| 22 | Send anything (اطلب دليفري) | ⬜ | |
 | 23 | Driver: history and fines | ⬜ | |
 | 24 | Admin: overview and reports | ⬜ | |
 | 25 | Release | ⬜ | 8 |
@@ -162,7 +162,7 @@ Contract §8.11: prescription and product-photo uploads, choose-a-pharmacy sheet
 
 ## Phase 22: Send anything
 
-Contract §8.12, once its screens are captured.
+Contract §8.12: no new screens. Seed an "اطلب دليفري" store with one 1 ج.م product; make sure the cart note reaches the driver and the store's orders.
 
 ## Phase 23: Driver: history and fines
 
