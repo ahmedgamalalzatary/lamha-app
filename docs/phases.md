@@ -18,15 +18,15 @@ The order in which the real product is built. Each phase points at the contract 
 
 **Order:** phases run in order. A phase blocked by an open decision (contract §15.1) waits for it; its "Decide first" column lists them.
 
-**Status values:** ⬜ not started, 🟨 in progress, ✅ done.
+**Status values:** ⬜ not started, 🟨 in progress, ✅ done, ⛔ excluded for now (not built until the owner says otherwise).
 
 ## Overview
 
 | # | Phase | Status | Decide first (§15.1) |
 |---|---|---|---|
 | 0 | Foundation | ⬜ | none |
-| 1 | Accounts: phone, OTP and password | ⬜ | 1 |
-| 2 | Production server and deploys | ⬜ | 6 |
+| 1 | Accounts: phone, email code and password | ⬜ | none (#1 decided: email) |
+| 2 | Production server and deploys (moved to just before the first real mobile build) | ⬜ | owner provides the VPS (#6) |
 | 3 | Dashboard shell and sign-in (admin and partner areas) | ⬜ | |
 | 4 | Catalog: verticals, stores, categories, products | ⬜ | |
 | 5 | Customer home | ⬜ | |
@@ -34,21 +34,21 @@ The order in which the real product is built. Each phase points at the contract 
 | 7 | Store page and product sheet | ⬜ | |
 | 8 | Addresses, zones and the map picker | ⬜ | |
 | 9 | Cart | ⬜ | |
-| 10 | Checkout and placing an order | ⬜ | 2, 3 |
-| 11 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 |
-| 12 | Driver: shifts, offers and skips | ⬜ | 5, 9 |
-| 13 | Live tracking and the delivered view | ⬜ | 9 |
+| 10 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
+| 11 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens), 11 |
+| 12 | Driver: shifts, offers and skips | ⬜ | 5, 9 (driver home and current orders), 11 |
+| 13 | Live tracking and the delivered view | ⬜ | 9 (live tracking; the delivered view is captured) |
 | 14 | Ratings, complaints and support | ⬜ | |
-| 15 | Notifications and push | ⬜ | 7 |
-| 16 | Wallet and top-up | ⬜ | 2 |
+| 15 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
+| 16 | Wallet (top-up excluded for now) | ⬜ | none |
 | 17 | Points | ⬜ | 4 |
 | 18 | Invite friends | ⬜ | |
 | 19 | Offers, coupons and banners | ⬜ | |
-| 20 | Lucky wheel | ⬜ | |
+| 20 | Lucky wheel | ⛔ excluded for now | 10 |
 | 21 | Pharmacy: prescriptions and product photos | ⬜ | |
 | 22 | Send anything (اطلب دليفري) | ⬜ | |
-| 23 | Driver: history and fines | ⬜ | |
-| 24 | Admin: overview and reports | ⬜ | |
+| 23 | Driver: history and fines | ⬜ | none (history captured; fines follow the client's rules) |
+| 24 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
 | 25 | Release | ⬜ | 8 |
 
 ---
@@ -69,14 +69,18 @@ The skeleton every feature plugs into. The only visible result is that the apps 
 
 Contract §2, §8.1, §8.14 (profile), §9 and §10 (sign-in).
 
-- **Database:** `users`, `otp_codes`, `refresh_tokens`.
-- **API:** request OTP, verify OTP, complete profile (with optional invite code), sign in with phone + password, refresh, sign out, forgot password by OTP (customers only); `GET/PATCH/DELETE /me`; role guard; rate limits. Partner and driver accounts cannot sign up or use forgot password: they only sign in with admin-generated credentials (contract §2). Seed: an admin, a partner and a driver.
+No SMS: the code goes by email through Gmail SMTP (`nodemailer`); without `SMTP_HOST` the API writes it to its log (contract §8.1, §15.1 #1).
+
+- **Database:** `users` (email required for customers), `otp_codes`, `refresh_tokens`.
+- **API:** request a code (phone + email, sent by email), verify the code, complete profile (with optional invite code), sign in with phone + password, refresh, sign out, forgot password by email code (customers only); `GET/PATCH/DELETE /me`; role guard; rate limits. Partner and driver accounts cannot sign up or use forgot password: they only sign in with admin-generated credentials (contract §2). Seed: an admin, a partner and a driver.
 - **Mobile:** phone, OTP, personal details and sign-in screens for customers; one sign-in screen (phone + password) for partners, drivers and admins; after sign-in the tab bar matches the role; profile screen; sign out; delete account (customers).
 - **Tests:** OTP expiry and attempts; each role's guard; partners and drivers refused on sign-up and forgot password; refresh; deletion.
 
 ## Phase 2: Production server and deploys
 
 Docker Compose (API + MySQL), nginx, Let's Encrypt, the dashboard build, backups before each deploy, migrations on deploy. Same pattern as the owner's other servers.
+
+**Moved:** everything runs locally until the first real mobile build. This phase runs just before that build, on a VPS the owner provides then (contract §15.1 #6). Later phases don't wait for it.
 
 ## Phase 3: Dashboard shell and sign-in
 
@@ -114,7 +118,7 @@ Contract §8.6: one store per cart, steppers, delete confirm, upsell row, note s
 
 ## Phase 10: Checkout and placing an order
 
-Contract §8.6–§8.7: confirm the location on a map, delivery fee, payment method, coupon, place order; server-side totals; order created for the store.
+Contract §8.6–§8.7: confirm the location on a map, delivery fee, payment method (cash on delivery only; card and e-wallet excluded for now), coupon, place order; server-side totals; order created for the store.
 
 ## Phase 11: Partner: orders and products
 
@@ -134,11 +138,11 @@ Contract §8.8 and §8.14: star rating with good/bad chips and text; order probl
 
 ## Phase 15: Notifications and push
 
-Notification list, notification settings (push and SMS), push tokens, order status pushes, dashboard الإشعارات التفاعلية campaigns.
+Notification list, notification settings (push only; no SMS), push tokens sent through Expo's push HTTP API with no SDK, order status pushes, dashboard الإشعارات التفاعلية campaigns.
 
-## Phase 16: Wallet and top-up
+## Phase 16: Wallet
 
-Contract §8.15: balance, additions and deductions, e-wallet top-up (10–10,000 ج.م), paying with the wallet.
+Contract §8.15: balance, additions and deductions, paying with the wallet. E-wallet top-up is excluded for now (§15.1 #2).
 
 ## Phase 17: Points
 
@@ -153,6 +157,8 @@ Contract §8.17: codes, rewards with their limits and expiry, monthly cap, frien
 Contract §8.2 and §8.10: offer banners, the mart banner with its product row, offer tiles, coupons, offers grouped by the customer's coupon, "عروض التوصيل" and "خصومات" filters; dashboard management.
 
 ## Phase 20: Lucky wheel
+
+**Excluded for now** (contract §15.1 #10). Skipped until the owner says otherwise.
 
 Contract §8.2: one spin a day, prizes (points or coupons) from the dashboard.
 

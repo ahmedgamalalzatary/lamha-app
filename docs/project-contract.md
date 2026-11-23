@@ -55,23 +55,23 @@ Every feature module of the product. Each one is detailed in the section shown a
 
 | # | Module | What it covers | § | Source | Phase |
 |---|---|---|---|---|---|
-| C1 | Sign-up and sign-in | Phone, 4-digit OTP, personal details with invite code, phone + password sign-in, forgot password | 8.1 | Tawsilty | 1 |
+| C1 | Sign-up and sign-in | Phone and email, 4-digit code by email (no SMS), personal details with invite code, phone + password sign-in, forgot password by email code | 8.1 | Tawsilty, Owner | 1 |
 | C2 | Home | Address header, rotating search, vertical tiles, invite card | 8.2 | Tawsilty, Client | 5 |
 | C3 | Store lists | Per-vertical lists, cuisine circles, filter chips, sort and rating sheets, closed and empty states, order again | 8.3 | Tawsilty, Client | 6 |
 | C4 | Search | Tabs all / restaurants / other stores, results | 8.13 | Tawsilty | 6 |
 | C5 | Store page and products | Cover, info row, categories, product grid or list, product sheet, minimum-order bar, favourite | 8.4, 8.5 | Tawsilty, Client | 7 |
 | C6 | Addresses and map | Saved addresses, map picker, address form, delivery-zone check | 8.9 | Tawsilty | 8 |
 | C7 | Cart | Lines, upsell, note, payment summary, pickup where allowed | 8.6 | Tawsilty, Client | 9 |
-| C8 | Checkout and payment | Address, now or scheduled slot, wallet toggle, cash / e-wallet / card, coupon code, service and payment-method fees, place order; location confirm on the map | 8.7 | Tawsilty, Client | 10 |
+| C8 | Checkout and payment | Address, now or scheduled slot, wallet toggle, cash on delivery only (e-wallet and card excluded for now), coupon code, service fee, place order; location confirm on the map | 8.7 | Tawsilty, Client | 10 |
 | C9 | Orders | Orders list, live tracking, delivered details view, reorder | 8.8 | Tawsilty, Client | 13 |
 | C10 | Ratings | Stars, good/bad suggestion chips, written reason | 8.8 | Client | 14 |
 | C11 | Support | Order problem → ticket, suggestion, complaint (general or past order), contact us | 8.8, 8.14 | Tawsilty, Client | 14 |
-| C12 | Notifications | Notification list, push, notification and SMS settings | 8.14 | Tawsilty | 15 |
-| C13 | Wallet | Balance, additions and deductions, e-wallet top-up, pay with wallet | 8.15 | Tawsilty | 16 |
+| C12 | Notifications | Notification list, push, notification settings (no SMS toggle, since no SMS is sent) | 8.14 | Tawsilty | 15 |
+| C13 | Wallet | Balance, additions and deductions, pay with wallet (e-wallet top-up excluded for now) | 8.15 | Tawsilty | 16 |
 | C14 | Points | Balance, progress to redeem, earned and spent, redeem | 8.16 | Tawsilty | 17 |
 | C15 | Invite friends | Code, share, rewards and their limits, friends list | 8.17 | Tawsilty | 18 |
 | C16 | Offers and coupons | Offer banners, mart banner, offer tiles, coupons, offers by coupon | 8.2, 8.10 | Client | 19 |
-| C17 | Lucky wheel | One spin a day, prizes | 8.2 | Client | 20 |
+| C17 | Lucky wheel | **Excluded for now** (owner, 2026-11-23). One spin a day, prizes | 8.2 | Client | 20 |
 | C18 | Pharmacy | Prescription and product-photo requests, choose a pharmacy, pharmacy list | 8.11 | Tawsilty, Client | 21 |
 | C19 | Send anything | A normal store with a 1 ج.م "اطلب دليفري" product; the need goes in the note | 8.12 | Tawsilty | 22 |
 | C20 | Favourites | Favourite stores | 8.14 | Tawsilty | 7 |
@@ -209,7 +209,7 @@ The same setup as the owner's Maqar project, so both are run the same way.
 | Mobile | Expo SDK 58, Expo Router (`src/app` holds routes only), React Native 0.88, React 19.3, React Compiler, typed routes. Packages installed with `npx expo install` |
 | Mobile libraries | `@tanstack/react-query`, `zustand` + AsyncStorage, `expo-secure-store` (tokens), `expo-image`, `react-native-maps` (Google Maps, as Tawsilty), `expo-location`, `expo-notifications`, `expo-image-picker` (pharmacy photos), `expo-haptics`, `react-native-svg`, `lucide-react-native`, Reanimated + Gesture Handler |
 | Dashboard | Next.js 16 (App Router), Tailwind 4, React Query |
-| API | NestJS 12 (ESM) with `@nestjs/config`, `@nestjs/swagger`, `class-validator`, JWT + passport, argon2, throttler, helmet, `@nestjs/schedule` (shifts, timers), `@nestjs/websockets` + socket.io (live orders and driver location), `sharp`, `nestjs-pino`, `date-fns` + `@date-fns/tz` (Africa/Cairo) |
+| API | NestJS 12 (ESM) with `@nestjs/config`, `@nestjs/swagger`, `class-validator`, JWT + passport, argon2, throttler, helmet, `@nestjs/schedule` (shifts, timers), `@nestjs/websockets` + socket.io (live orders and driver location), `sharp`, `nodemailer` (sign-in codes by Gmail SMTP), `nestjs-pino`, `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Database | MySQL 8, Drizzle ORM, `drizzle-kit` migrations |
 | Tests | API: vitest (`test/unit`, `test/e2e` with supertest against `tawsela_test`). Mobile: Jest + `jest-expo` + React Native Testing Library (`test/unit`, `test/ui`). Dashboard and shared: vitest |
 | Lint | API and shared: oxlint. Mobile: ESLint 9 + `eslint-config-expo`. Dashboard: ESLint 9 + `eslint-config-next` |
@@ -311,10 +311,12 @@ Dark mode: Tawsilty has none; Tawsela has none.
 
 ### 8.1 Sign-up and sign-in [Tawsilty]
 
-1. Enter phone number.
-2. **OTP**: 4 boxes, "أرسلنا رمز التحقق إلى +2 …", "تغيير الرقم" link, resend after a 00:59 countdown, "تأكيد" disabled until 4 digits.
-3. **التفاصيل الشخصية**: phone (locked), first name and family name (100 chars each), email (optional), password (8+ characters: letters, numbers or symbols), and an optional **invite code** box ("ستحصل على 25 ج.م في محفظتك… يُستخدم خلال 30 يومًا"). Links to terms and privacy. "متابعة".
-4. Returning users sign in with phone + password. "نسيت كلمة المرور؟" resets by OTP.
+[Owner, 2026-11-23] **No SMS.** The 4-digit code is sent by **email** (Gmail SMTP). The phone number stays the account's sign-in name, as in Tawsilty. Because the code goes to the email, the email is asked for with the phone and is **required**, not optional. Without SMTP settings (local development) the API writes the code to its log instead.
+
+1. Enter phone number and email.
+2. **OTP**: 4 boxes, "أرسلنا رمز التحقق إلى <email>", "تغيير" link (back to step 1), resend after a 00:59 countdown, "تأكيد" disabled until 4 digits.
+3. **التفاصيل الشخصية**: phone and email (locked), first name and family name (100 chars each), password (8+ characters: letters, numbers or symbols), and an optional **invite code** box ("ستحصل على 25 ج.م في محفظتك… يُستخدم خلال 30 يومًا"). Links to terms and privacy. "متابعة".
+4. Returning users sign in with phone + password. "نسيت كلمة المرور؟" sends a code to the account's email.
 
 ### 8.2 Home
 
@@ -325,10 +327,10 @@ Dark mode: Tawsilty has none; Tawsela has none.
 - [Tawsilty] "العروض اللي تستاهل تجربها دلوووقتي ⚡" auto-sliding banner carousel with dots; a banner opens its store.
 - [Tawsilty] **Coloured store sections**: a full-width coloured band with a title and a round image ("الأكثر طلبًا 🔥", "استمتع باختيارك 😍", …), holding a sideways-scrolling grid of three store rows (logo, name, rating, count, time). Admin-managed.
 - [Tawsilty] **Product rails**: a banner ("كل احتياجات بيتك — منظفات • بقالة • أدوات منزلية") that opens a store, with a row of its products and "+" buttons.
-- [Tawsilty] Invite card: "اربح 300 ج.م عن كل صديق — وصديقك يحصل على 25 ج.م فور تسجيله", dismissible ✕.
+- [Tawsilty] Invite card: "اربح 300 ج.م عن كل صديق — وصديقك يحصل على 25 ج.م فور تسجيله", dismissible ✕. The amount changes: the client's screenshots of 2026-11-22 show "اربح 50 ج.م", the adb capture of 2026-11-23 shows 300, so both rewards are admin settings.
 - [Client] Auto-sliding **offer banners** managed by the admin.
 - [Client] A **banner that opens the mart (or any chosen store) directly**, with a row of its products.
-- [Client] **Lucky wheel** (عجلة الحظ): one spin a day; prizes set by the admin.
+- [Client] **Lucky wheel** (عجلة الحظ): one spin a day; prizes set by the admin. **Excluded for now** [Owner, 2026-11-23]: not built until the owner says otherwise.
 - [Client] Categories are not shown on the home screen; banners take their place.
 - [Client] Discounts are not shown as a flat badge; offers are grouped by the customer's coupon (§8.10).
 
@@ -382,18 +384,20 @@ Full-width image, ✕ close, name, optional description, quantity stepper (− 1
 1. **عنوان التوصيل**: the selected address with "تغيير".
 2. **When**: "سيصل خلال 30 دقيقة" (now) or "اختر وقتاً لاحقاً" (later), which opens "اختر وقت التوصيل": half-hour slots (8:30 PM, 9:00 PM, …) and "اختر وقتاً" (disabled until a slot is picked).
 3. **رصيدك**: "رصيد المحفظة" toggle to pay with the wallet; "لا يوجد رصيد متاح" in red when empty, and "شحن المحفظة".
-4. **طريقة الدفع**: الدفع عند الاستلام (cash, default) · محفظة الكترونية · بطاقة الإئتمان; "جميع عمليات الدفع آمنة ومشفّرة".
+4. **طريقة الدفع**: Tawsilty shows الدفع عند الاستلام (cash, default) · محفظة الكترونية · بطاقة الإئتمان; "جميع عمليات الدفع آمنة ومشفّرة". [Owner, 2026-11-23] Tawsela shows **cash only** for now; e-wallet and card are excluded, so the payment-method fee is always 0. The money fields stay in the data model so they can return later.
 5. **وفر على طلبك**: discount code field with "تطبيق" (empty → "من فضلك أدخل الكوبون أولا").
 6. **ملخّص الدفع**: مجموع المنتجات, رسوم التوصيل, **رسوم الخدمة** (service fee, e.g. 10 ج.م), **رسوم طريقة الدفع** (payment-method fee, only for e-wallet/card, e.g. 5.60 ج.م), الإجمالي.
 7. Bottom button "تنفيذ الطلب <total>".
 
-Which providers handle e-wallet and card: [Open] §15.1 #2.
+E-wallet and card providers: excluded for now (§15.1 #2).
 
 ### 8.8 Orders (طلباتي)
 
 - [Tawsilty] List of orders; empty "لا توجد طلبات — ابدأ بطلب منتجاتك المفضلة الآن".
 - Live order tracking: [Open] (not seen yet).
 - [Client] Once an order is **delivered**, the customer no longer sees the tracking; they see a plain details view (items, totals, address, store).
+- [Tawsilty] That **delivered details view** ("تفاصيل الطلب", back arrow): a green "تم التوصيل" pill with a tick; the store logo and name, the date (11/13/2026) and "رقم الطلب 494358"; "عنوان التوصيل" with a pin; "معلومات المندوب" with "الاسم" and the captain's name; "تفاصيل الطلب": "1 × name" lines with prices; المجموع, رسوم التوصيل, رسوم الخدمة; **قيمة الطلب** (bold); طريقة الدفع ("الدفع عند الاستلام"); وقت التوصيل ("الآن"). Reference: `customer/orders/order-details-delivered-driver-fees-payment.jpg`.
+- [Tawsilty] **Rating screen** (full screen, ✕ top-left, soft beige top): the store logo, "كيف كان طلبك من <store>؟", five stars with a word under them (1 star = "مخيبة للآمال"). For a low rating: "ما هي المشكلة التي واجهتها مع طلبك؟" with outlined chips عنصر مفقود · طلب خاطئ · الطعام غير ساخن · المذاق غير جيد · الكمية غير كافية · التغليف غير مناسب, the red hint "اختر سبب واحد على الأقل", a "أخبرنا المزيد" text box, and a grey "أكمل" button until a reason is picked. Reference: `customer/orders/rating-one-star-problem-chips-tell-more.jpg`. [Client] wants this, with the chips changing between good and bad ratings and the written reason always shown.
 - [Client] "اطلب تاني" (reorder) lives only inside طلباتي, not as a one-tap button outside.
 - [Client] **Rating** after delivery: stars, then suggestion chips that change with the star count (good vs. bad), plus "أخبرنا المزيد" text for the reason.
 - [Client] **Problem with an order** opens a support ticket ("تواصل مع الدعم الفني"); money is never refunded automatically from the app.
@@ -439,7 +443,7 @@ Tabs الكل · مطاعم · متاجر أخرى. Empty "ابحث عن الأ�
 
 Sub-screens [Tawsilty]:
 - **الملف الشخصي**: avatar with camera, full name (locked), phone with "تغيير", email, gender ذكر/أنثى, region (locked).
-- **إعدادات الإشعارات**: "تفعيل الإشعار" and "ايقاف رسائل SMS من التطبيق" toggles with explanations.
+- **إعدادات الإشعارات**: "تفعيل الإشعار" and "ايقاف رسائل SMS من التطبيق" toggles with explanations. Tawsela keeps only "تفعيل الإشعار" because it sends no SMS.
 - **المفضلة**: favourite stores; empty "لا توجد خدمات مفضلة".
 - **الإشعارات**: list; empty "لا توجد إشعارات".
 - **عن توصيلتي**: logo, description, "تواصل معنا عبر واتساب", social links (Facebook, Twitter, Instagram, YouTube).
@@ -447,7 +451,7 @@ Sub-screens [Tawsilty]:
 
 ### 8.15 Wallet (حركة المحفظة) [Tawsilty]
 
-Orange balance card ("0.0 ج.م"), "شحن المحفظة"; tabs الإضافات / الخصومات with their empty states. Top-up: "حدد طريقة الشحن" → محفظة الكترونية → amount sheet (min 10, max 10,000 ج.م) → "تأكيد البيانات" → payment provider [Open].
+Orange balance card ("0.0 ج.م"), "شحن المحفظة"; tabs الإضافات / الخصومات with their empty states. Top-up: "حدد طريقة الشحن" → محفظة الكترونية → amount sheet (min 10, max 10,000 ج.م) → "تأكيد البيانات" → payment provider. [Owner, 2026-11-23] **Top-up is excluded for now**, so "شحن المحفظة" is not shown. The wallet still holds invite credit and admin additions and deductions, and pays at checkout.
 
 ### 8.16 Points (نقاطي) [Tawsilty]
 
@@ -488,10 +492,26 @@ A partner manages their store from **two places with the same powers** [Client]:
 
 ## 10. Features: driver
 
-Tawsilty's driver app is not public; these rules come from the client [Client] and the demo [Demo].
+Tawsilty's driver app is not public. Three of its screens came in the client's WhatsApp (2026-11-22, `.impeccable/phone/driver/`); the rules come from the client [Client] and the demo [Demo].
+
+**Screens seen [Tawsilty]:**
+
+- **Tabs:** الرئيسية · الطلبات الحالية (scooter icon) · حسابي. Active tab orange.
+- **حسابي:** like the customer account: bell with a red count, avatar, name, "عرض الملف الشخصي". Two tiles: **فواتيري** (wallet icon, amount in green, e.g. "525.00 ج.م") and **نقاطي**. Groups: **العمل** (نوبات عملي with a clock, سجل الطلبات with a receipt), **الدعم والمساعدة** (تقديم مقترح, تقديم شكوى), **الحساب** (إعدادات حسابي). Footer credit.
+- **Order details** ("تفاصيل الطلب #485804", back arrow), white cards on grey:
+  - البائع (store name) with an orange "عرض الموقع" pin link, and عنوان البائع.
+  - The customer's name with call, SMS and WhatsApp icons; their area with "عرض الموقع".
+  - المنتجات, collapsible: "2 منتج" and the items total in orange; opens to "2× name" lines with prices. [Client] each line also shows the product photo next to the quantity.
+  - **ادفع نقداً للبائع <amount>** in orange: what the captain pays the store.
+  - **المبلغ — تحصيل النقود <amount>**: what the captain collects from the customer.
+  - Orange button **خارج للتوصيل**.
+  - In the example, the captain pays the store 270, which is the full items total (2 products, 270). The partner photos (§9) show the store collecting 90% of the items total. Which amount is right: [Open].
+- **Order history** ("طلباتى", back arrow): two date pickers (from, to), an outlined blue "بحث" button; a card per order: "الطلب #500569", a status pill (ملغي red, تم التوصيل green), the store name, "الاجمالى <items count>", a red "تقديم شكوى" button, the date ("Wednesday, 18 November 2026") and the earning in green ("+ 25.0 ج.م"). A grey bottom panel: **اجمالى الارباح** and **عدد الطلبات المكتملة**.
+
+**Rules:**
 
 - **Sign-in** with the phone + password the admin generated (§2); no sign-up. A forgotten password is reset by the admin.
-- **Shifts**: the driver cannot start work at any time. The admin sets shift times; the "ابدأ الشفت" button unlocks **30 minutes** before the shift starts.
+- **Shifts**: the driver cannot start work at any time. The admin sets shift times; the "ابدأ الشفت" button unlocks **30 minutes** before the shift starts. [Client] reference from another app (`client-requests/client-driver-shift-reserved-start-reference-other-app.jpg`): a "نوبة عمل محجوزة" card with "ستبدأ في 9 دقائق", the time range, the place, "عرض على الخريطة", and a "بدء نوبة العمل" button.
 - When the shift ends, the driver gets no new orders unless they **extend the shift** (by 60 minutes).
 - **Skips**: skipping offers is counted. After **2** skips the driver gets a warning notification; after **3** they are **suspended for 15 minutes**. (The numbers are admin settings; confirm the defaults with the client.)
 - **Order offer and details**: store name and address, customer name, phone and address, items with prices, what to pay the store and what to collect. Steps: accept → at the store → "خارج للتوصيل" → delivered.
@@ -588,17 +608,19 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 
 ### 15.1 Open decisions
 
-| # | Decision | Blocks |
-|---|---|---|
-| 1 | SMS provider for OTP | Phase 1 |
-| 2 | Payment methods at checkout and the e-wallet top-up provider | Checkout, wallet |
-| 3 | Delivery fee rules (per store, per distance, per zone) | Checkout |
-| 4 | Points earn rate and EGP value | Points |
-| 5 | Exact shift, skip and suspension defaults (2 / 3 / 15 min / 60 min extend) | Driver shifts |
-| 6 | Production server and domain (Biscofa VPS or a new one) | Deploy |
-| 7 | Push provider (Expo push vs. FCM directly) | Notifications |
-| 8 | App identity, asked of the client: name (ZTechX already publishes apps named "توصيلة" and "توصيلتي"), package/bundle ID (`com.<company>.<app>`), logo (to be designed; the icon, adaptive icon and splash come from it), footer credit, and who owns the Google Play and Apple developer accounts | Store release; until then placeholders in `app.config.ts` |
-| 9 | Screens not captured yet: live tracking and order details (needs a real order), lucky wheel (Tawsilty has none; client's own design), partner app after sign-in, driver app, admin pages beyond the orders list | Their phases |
+| # | Decision | Status (owner, 2026-11-23) | Blocks |
+|---|---|---|---|
+| 1 | ~~SMS provider for OTP~~ | **Decided:** no SMS. Codes go by email through Gmail SMTP (§8.1). | — |
+| 2 | ~~Payment methods at checkout and the e-wallet top-up provider~~ | **Excluded for now:** cash on delivery only; card, e-wallet and wallet top-up are not built (§8.7, §8.15). | — |
+| 3 | Delivery fee rules (per store, per distance, per zone) | Open | Checkout (Phase 10) |
+| 4 | Points earn rate and EGP value | Open | Points (Phase 17) |
+| 5 | Exact shift, skip and suspension defaults (2 / 3 / 15 min / 60 min extend) | Open | Driver shifts (Phase 12) |
+| 6 | ~~Production server and domain~~ | **Decided:** everything stays local until the first real mobile build; the owner then provides a VPS. | Deploy (Phase 2), moved to just before that build |
+| 7 | ~~Push provider~~ | **Decided:** Expo push service, called over its HTTP API with no SDK, as in the Maqar project. | — |
+| 8 | App identity, asked of the client: name (ZTechX already publishes apps named "توصيلة" and "توصيلتي"), package/bundle ID (`com.<company>.<app>`), logo (to be designed; the icon, adaptive icon and splash come from it), footer credit, and who owns the Google Play and Apple developer accounts | Open | Store release (Phase 25); until then placeholders in `app.config.ts` |
+| 9 | Screens not captured yet. The WhatsApp export (read 2026-11-23) brought the customer's delivered order details and rating screen (§8.8) and three driver screens (§10). Still missing: live tracking, the partner products and account screens, the driver home and current-orders tabs, and admin pages beyond the orders list. | Partly cleared | Phases 11, 12, 13 (live tracking), 24 |
+| 10 | ~~Lucky wheel~~ | **Excluded for now.** Tawsilty has none; the client sent a reference from another app (`client-requests/client-lucky-wheel-reference-other-app.jpg`: "لفة الحظ", 8 prizes of points, discounts and free delivery, "لف العجلة", "متبقي 1 لفة اليوم"). | — |
+| 11 | What the captain pays the store: the full items total (driver photo) or the items total minus the 10% commission (partner photos)? | Open | Phases 10–12 |
 
 ### 15.2 Out of scope (until this file says otherwise)
 
@@ -610,8 +632,8 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 
 ## 16. Reference material
 
-- `.impeccable/phone/`: 112 Tawsilty screenshots, git-ignored, sorted into `customer/<area>/`, `partner/`, `admin/` and `client-requests/`, each file named after what it shows. `.impeccable/phone/INDEX.md` lists them all; open only the ones a task needs.
-- `whatsapp-export/`: the client's requests with pictures. Git-ignored.
+- `.impeccable/phone/`: 125 Tawsilty screenshots, git-ignored, sorted into `customer/<area>/`, `partner/`, `driver/`, `admin/` and `client-requests/`, each file named after what it shows. `.impeccable/phone/INDEX.md` lists them all; open only the ones a task needs.
+- `whatsapp-export/`: the client's WhatsApp chat with all its media (the full chat file plus about 1,000 files). Git-ignored. The useful Tawsilty screens from it are copied into `.impeccable/phone/`.
 - `apps/demo`: the approved clickable demo.
 - Tawsilty admin photo: sidebar and orders table (§11).
 
@@ -628,3 +650,5 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-23 | Admins can also create, reset and disable partner and driver accounts from the mobile app (§11.2, modules M1–M2); the app now has four roles. What a partner may edit is decided (§11.1). Repo renamed to `lamha-app`. |
 | 2026-11-23 | Second phone capture (open stores in Fayoum): checkout (§8.7) is no longer open; product options and removable ingredients (§8.5); restaurant vs. market store layouts and vouchers (§8.4); offers screen (§8.10); pharmacy request screen (§8.11); send-anything is a 1 ج.م product (§8.12); search results (§8.13); home sections and badges (§6.3, §8.2). |
 | 2026-11-23 | Partner app from the owner's photos (§9): tabs الرئيسية · طلباتى · منتجات · حسابي, new-orders list, accept/reject popup, order details with the money breakdown and "استلم من المندوب" (10% commission), "تم التجهيز". Client: the store sees the payment method. Admin orders table details (§11). Screenshots sorted into folders with an index (§16). |
+| 2026-11-23 | Owner's decisions (§15.1): sign-in codes by email through Gmail, no SMS (§8.1); cash only, with card, e-wallet and wallet top-up excluded for now (§8.7, §8.15); local only until the first real mobile build; Expo push; lucky wheel excluded for now (#10). Missing screens wait for the owner's WhatsApp export. |
+| 2026-11-23 | Read the client's WhatsApp from 2026-11-22 17:28 on (§16): Tawsilty delivered order details and rating screen (§8.8), driver tabs, account, order details and order history (§10), invite reward is an admin setting (§8.2). New open item: what the captain pays the store (§15.1 #11). |
