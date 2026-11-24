@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, Product } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { AuditService } from '../audit/audit.service.js';
 import { AdminCatalogService } from './admin-catalog.service.js';
 import {
   CategoryDto,
@@ -25,7 +26,10 @@ import {
 @Roles('admin')
 @Controller('admin')
 export class AdminCatalogController {
-  constructor(private readonly admin: AdminCatalogService) {}
+  constructor(
+    private readonly admin: AdminCatalogService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get('stores')
   listStores(@CurrentUser() me: AuthUser, @Query() query: StoreListQuery): Promise<AdminStore[]> {
@@ -34,8 +38,12 @@ export class AdminCatalogController {
 
   /** The store and its partner account; the generated password is in the answer, once. */
   @Post('stores')
-  createStore(@CurrentUser() me: AuthUser, @Body() body: CreateStoreDto): Promise<CreatedStore> {
-    return this.admin.createStore(me.id, body);
+  async createStore(@CurrentUser() me: AuthUser, @Body() body: CreateStoreDto): Promise<CreatedStore> {
+    const created = await this.admin.createStore(me.id, body);
+    const { partner, ...fields } = body;
+    await this.audit.record(me.id, 'store.create', { type: 'store', id: created.store.id, name: created.store.name }, { ...fields, name: created.store.name });
+    await this.audit.recordAccount(me.id, 'partner.create', created.partner.account.id, { phone: partner.phone, storeId: created.store.id });
+    return created;
   }
 
   @Get('stores/:id')
@@ -43,9 +51,12 @@ export class AdminCatalogController {
     return this.admin.getStore(me.id, id);
   }
 
+  /** Each save is recorded with the fields it sent (availability included: active, closedNow). */
   @Patch('stores/:id')
-  updateStore(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: UpdateStoreDto): Promise<AdminStore> {
-    return this.admin.updateStore(me.id, id, body);
+  async updateStore(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: UpdateStoreDto): Promise<AdminStore> {
+    const store = await this.admin.updateStore(me.id, id, body);
+    await this.audit.record(me.id, 'store.update', { type: 'store', id, name: store.name }, { ...body });
+    return store;
   }
 
   @Get('stores/:id/categories')

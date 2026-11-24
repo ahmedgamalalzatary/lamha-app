@@ -28,10 +28,11 @@ describe('ADMIN_NAV (Tawsilty admin sidebar, contract §11)', () => {
     ]);
   });
 
-  it('puts the delivery zones (§8.9) and the admin accounts (A23) under الإعدادات', () => {
+  it('puts the delivery zones (§8.9), the admin accounts (A23) and the change log (review F70) under الإعدادات', () => {
     expect(ADMIN_NAV.at(-1)?.items).toEqual([
       { label: 'المناطق', href: '/settings/zones' },
       { label: 'حسابات الإدارة', href: '/settings/admins' },
+      { label: 'سجل التغييرات', href: '/settings/audit' },
     ]);
   });
 });

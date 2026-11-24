@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Address, Zone, ZoneCheck } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { AuditService } from '../audit/audit.service.js';
 import { AddressesService } from './addresses.service.js';
 import { AddressDto, LatLngDto, UpdateZoneDto, ZoneDto } from './dto/addresses.dto.js';
 
@@ -59,7 +60,10 @@ export class ZoneCheckController {
 @Roles('admin')
 @Controller('admin/zones')
 export class AdminZonesController {
-  constructor(private readonly addresses: AddressesService) {}
+  constructor(
+    private readonly addresses: AddressesService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   list(): Promise<Zone[]> {
@@ -67,12 +71,21 @@ export class AdminZonesController {
   }
 
   @Post()
-  create(@Body() body: ZoneDto): Promise<Zone> {
-    return this.addresses.createZone(body);
+  async create(@CurrentUser() me: AuthUser, @Body() body: ZoneDto): Promise<Zone> {
+    const zone = await this.addresses.createZone(body);
+    await this.audit.record(me.id, 'zone.create', { type: 'zone', id: zone.id, name: zone.name }, zoneDetails(body));
+    return zone;
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateZoneDto): Promise<Zone> {
-    return this.addresses.updateZone(id, body);
+  async update(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: UpdateZoneDto): Promise<Zone> {
+    const zone = await this.addresses.updateZone(id, body);
+    await this.audit.record(me.id, 'zone.update', { type: 'zone', id, name: zone.name }, zoneDetails(body));
+    return zone;
   }
+}
+
+/** A zone change for the log: its outline as the corner count, not every coordinate. */
+function zoneDetails({ polygon, ...rest }: UpdateZoneDto): Record<string, unknown> {
+  return polygon ? { ...rest, corners: polygon.length } : { ...rest };
 }

@@ -7,3 +7,4 @@ export * from './catalog.js';
 export * from './store-list.js';
 export * from './product.js';
 export * from './address.js';
+export * from './audit.js';

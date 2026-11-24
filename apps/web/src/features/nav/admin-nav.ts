@@ -43,6 +43,8 @@ export const ADMIN_NAV: NavGroup[] = [
       // Phase 8: delivery zones (§8.9) [Open: name and layout ours].
       { label: 'المناطق', href: '/settings/zones' },
       { label: 'حسابات الإدارة', href: '/settings/admins' },
+      // Review F70: who changed accounts, stores and zones [Open: not in Tawsilty's captures].
+      { label: 'سجل التغييرات', href: '/settings/audit' },
     ],
   },
 ];

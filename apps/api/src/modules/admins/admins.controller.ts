@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { CreatedAccount, GeneratedPassword, StaffAccount } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { AuditService } from '../audit/audit.service.js';
 import { AdminsService } from './admins.service.js';
 import { CreateAdminDto, SetDisabledDto } from './dto/admins.dto.js';
 
@@ -12,7 +13,10 @@ import { CreateAdminDto, SetDisabledDto } from './dto/admins.dto.js';
 @Roles('admin')
 @Controller('admin/admins')
 export class AdminsController {
-  constructor(private readonly admins: AdminsService) {}
+  constructor(
+    private readonly admins: AdminsService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   list(@CurrentUser() me: AuthUser): Promise<StaffAccount[]> {
@@ -20,17 +24,23 @@ export class AdminsController {
   }
 
   @Post()
-  create(@CurrentUser() me: AuthUser, @Body() body: CreateAdminDto): Promise<CreatedAccount> {
-    return this.admins.create(me.id, body);
+  async create(@CurrentUser() me: AuthUser, @Body() body: CreateAdminDto): Promise<CreatedAccount> {
+    const created = await this.admins.create(me.id, body);
+    await this.audit.recordAccount(me.id, 'admin.create', created.account.id, { phone: created.account.phone });
+    return created;
   }
 
   @Post(':id/password')
-  resetPassword(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<GeneratedPassword> {
-    return this.admins.resetPassword(me.id, id);
+  async resetPassword(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<GeneratedPassword> {
+    const generated = await this.admins.resetPassword(me.id, id);
+    await this.audit.recordAccount(me.id, 'admin.password', id);
+    return generated;
   }
 
   @Patch(':id')
-  setDisabled(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: SetDisabledDto): Promise<StaffAccount> {
-    return this.admins.setDisabled(me.id, id, body.disabled);
+  async setDisabled(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: SetDisabledDto): Promise<StaffAccount> {
+    const account = await this.admins.setDisabled(me.id, id, body.disabled);
+    await this.audit.recordAccount(me.id, body.disabled ? 'admin.disable' : 'admin.enable', id);
+    return account;
   }
 }
