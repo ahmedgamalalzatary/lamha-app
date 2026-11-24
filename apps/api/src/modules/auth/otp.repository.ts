@@ -9,11 +9,12 @@ import { type OtpRow, otpCodes } from './auth.schema.js';
 export class OtpRepository {
   constructor(@InjectDb() private readonly db: Db) {}
 
-  async latest(phone: string, purpose: OtpPurpose): Promise<OtpRow | undefined> {
+  /** `email`: only the codes sent to that address (a phone change keeps one code per account). */
+  async latest(phone: string, purpose: OtpPurpose, email?: string): Promise<OtpRow | undefined> {
     const [row] = await this.db
       .select()
       .from(otpCodes)
-      .where(and(eq(otpCodes.phone, phone), eq(otpCodes.purpose, purpose)))
+      .where(and(eq(otpCodes.phone, phone), eq(otpCodes.purpose, purpose), email === undefined ? undefined : eq(otpCodes.email, email)))
       .orderBy(desc(otpCodes.id))
       .limit(1);
     return row;

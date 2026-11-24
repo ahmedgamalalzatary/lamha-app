@@ -93,7 +93,7 @@ describe('حسابي (contract §8.14; real API)', () => {
 });
 
 describe('الملف الشخصي (real API)', () => {
-  it('shows the locked name and saves email and gender', async () => {
+  it('shows the locked name, saves the gender, and moves the email only with the code sent to the new address (review F01)', async () => {
     await signedInCustomer();
     await renderApp(ROUTES, { initialUrl: '/profile' });
 
@@ -104,7 +104,14 @@ describe('الملف الشخصي (real API)', () => {
     expect(screen.getByRole('radio', { name: 'ذكر' })).toBeChecked();
     await press('حفظ');
 
-    expect(await screen.findByText('تم حفظ التغييرات')).toBeTruthy();
+    // The gender is saved; the email waits for the code sent to the new address.
+    expect(await screen.findByText('new@gmail.com')).toBeTruthy();
+    expect(screen.getByText('أرسلنا رمز التحقق إلى')).toBeTruthy();
+    expect(useSession.getState().user).toMatchObject({ email: 'ahmed@gmail.com', gender: 'male' });
+    await fireEvent.changeText(screen.getByLabelText('رمز التحقق'), await emailedCode('01554459196', 'email'));
+    await press('تأكيد');
+
+    expect(await screen.findByText('تم تغيير البريد الإلكتروني')).toBeTruthy();
     expect(useSession.getState().user).toMatchObject({ email: 'new@gmail.com', gender: 'male' });
     const [row] = await sql<{ email: string; gender: string }[]>('SELECT email, gender FROM users WHERE phone = ?', ['01554459196']);
     expect(row).toEqual({ email: 'new@gmail.com', gender: 'male' });

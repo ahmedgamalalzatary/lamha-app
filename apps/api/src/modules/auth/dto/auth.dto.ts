@@ -44,6 +44,24 @@ export class VerifyCodeDto extends PhoneDto {
   code: string;
 }
 
+/** POST /v1/me/email/code: the new recovery email; its code goes there. */
+export class EmailDto {
+  @ApiProperty({ example: 'ahmed@gmail.com' })
+  @Transform(toEmail)
+  @IsEmail()
+  @MaxLength(255)
+  email: string;
+}
+
+/** POST /v1/me/email: the new email and the code sent to it. */
+export class ChangeEmailDto extends EmailDto {
+  @ApiProperty({ example: '1234' })
+  @IsString()
+  @Length(OTP.length, OTP.length)
+  @Matches(/^\d+$/)
+  code: string;
+}
+
 /** POST /v1/me/phone: the new number and the code emailed for it. */
 export class ChangePhoneDto extends PhoneDto {
   @ApiProperty({ example: '1234' })

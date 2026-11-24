@@ -13,6 +13,11 @@ export const OTP = {
 export const AUTH = {
   accessTokenTtl: '15m',
   refreshTokenDays: 30,
+  /**
+   * A rotated refresh token may be sent once more this soon after, while the token that replaced it
+   * is unused: the phone lost the answer (a timeout, the app killed). Later, it counts as a stolen copy.
+   */
+  refreshGraceSeconds: 30,
   /** Sign-in, sign-up and OTP requests per minute per IP. */
   rateLimitPerMinute: 10,
   passwordMinLength: 8,

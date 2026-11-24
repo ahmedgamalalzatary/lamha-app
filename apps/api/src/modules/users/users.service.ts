@@ -1,9 +1,7 @@
 import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Me } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
-import { AddressesRepository } from '../addresses/addresses.repository.js';
 import { verifyPassword } from '../auth/password.js';
-import { SessionsRepository } from '../auth/sessions.repository.js';
 import type { UpdateMeDto } from './dto/me.dto.js';
 import { newInviteCode } from './invite-code.js';
 import { UsersRepository } from './users.repository.js';
@@ -30,8 +28,6 @@ export function toMe(row: UserRow): Me {
 export class UsersService {
   constructor(
     private readonly users: UsersRepository,
-    private readonly sessions: SessionsRepository,
-    private readonly addresses: AddressesRepository,
   ) {}
 
   async getMe(id: number): Promise<Me> {
@@ -40,11 +36,8 @@ export class UsersService {
     return toMe(row);
   }
 
-  /** The profile screen (contract §8.14): email, gender and language. Name and region stay locked; the phone changes with a code. */
+  /** The profile screen (contract §8.14): gender and language. Name and region stay locked; phone and email change with a code. */
   async updateMe(id: number, body: UpdateMeDto): Promise<Me> {
-    if (body.email && (await this.users.emailInUse(body.email, id))) {
-      throw new ApiException(HttpStatus.CONFLICT, 'EMAIL_TAKEN', 'This email already has an account');
-    }
     await this.users.update(id, body);
     return this.getMe(id);
   }
@@ -65,7 +58,7 @@ export class UsersService {
     if (!(await verifyPassword(row.passwordHash, password))) {
       throw new ApiException(HttpStatus.FORBIDDEN, 'WRONG_PASSWORD', 'Wrong password');
     }
-    await this.users.endSessions(id, {
+    const deleted = await this.users.deleteAccount(id, {
       phone: `deleted-${id}`,
       email: null,
       firstName: '',
@@ -76,8 +69,7 @@ export class UsersService {
       inviteCode: null,
       deletedAt: new Date(),
     });
-    await this.sessions.revokeAllForUser(id);
-    await this.addresses.deleteAllOf(id);
+    if (!deleted) throw new UnauthorizedException();
   }
 
   /** A fresh invite code no one has yet. */

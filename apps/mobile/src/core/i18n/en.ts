@@ -89,6 +89,7 @@ export const en: Record<TranslationKey, string> = {
   'profile.newPhone': 'Enter the new phone number',
   'profile.confirmPhone': 'Confirm phone number',
   'profile.phoneChanged': 'Phone number changed',
+  'profile.emailChanged': 'Email changed',
   'profile.changePhoto': 'Change photo',
   'profile.choosePhoto': 'Choose a photo',
   'profile.takePhoto': 'Take a photo',
@@ -260,4 +261,5 @@ export const en: Record<TranslationKey, string> = {
   'map.confirm': 'Confirm location',
   'map.noMap': 'The map is not available yet; your current location will be used',
   'errors.OUT_OF_ZONE': 'Delivery is not available here',
+  'errors.CONFLICT': 'This changed at the same moment, please try again',
 };

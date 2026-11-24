@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { api } from '@/core/api/client';
 import { session, useSession } from '@/core/auth/session';
 import { queryClient } from '@/core/query';
-import { insertUser, refreshWorks, resetDb, signInAs } from '../utils/db';
+import { insertUser, pastRefreshGrace, refreshWorks, resetDb, signInAs } from '../utils/db';
 
 beforeEach(async () => {
   await session.signOutLocally();
@@ -37,6 +37,7 @@ describe('session (real API)', () => {
     const stored = await SecureStore.getItemAsync('tawsela.refreshToken');
     expect(stored).toEqual(expect.stringMatching(/.+/));
     expect(stored).not.toBe(auth.refreshToken);
+    await pastRefreshGrace();
     expect(await refreshWorks(auth.refreshToken)).toBe(false);
   });
 

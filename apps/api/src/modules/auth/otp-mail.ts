@@ -12,3 +12,18 @@ export function otpMail(to: string, code: string): MailMessage {
 </div>`;
   return { to, subject: `رمز التحقق ${code}`, text, html };
 }
+
+/**
+ * Sent to the old address once the account moves to a new email (review F01). [Open] Wording not
+ * captured from Tawsilty.
+ */
+export function emailChangedMail(to: string, newEmail: string): MailMessage {
+  const text = `تم تغيير البريد الإلكتروني لحسابك في توصيلة إلى ${newEmail}.\nإذا لم تقم بهذا التغيير، تواصل معنا فورًا.`;
+  const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:16px;color:#1f1f1f">
+<p>تم تغيير البريد الإلكتروني لحسابك في توصيلة إلى <b>${escapeHtml(newEmail)}</b>.</p>
+<p style="color:#8a8a8a">إذا لم تقم بهذا التغيير، تواصل معنا فورًا.</p>
+</div>`;
+  return { to, subject: 'تم تغيير البريد الإلكتروني', text, html };
+}
+
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);

@@ -38,24 +38,59 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     expect(res.body).not.toHaveProperty('passwordHash');
   });
 
-  it('updates email, gender and language; the name stays locked', async () => {
+  it('updates gender and language; the name stays locked', async () => {
     await insertUser('customer', '01554459196', PASSWORD, 'ahmed@gmail.com');
     const { accessToken } = await signIn('01554459196');
     const res = await http()
       .patch('/v1/me')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ email: 'New@Gmail.com', gender: 'male', locale: 'en' })
+      .send({ gender: 'male', locale: 'en' })
       .expect(200);
-    expect(res.body).toMatchObject({ email: 'new@gmail.com', gender: 'male', locale: 'en' });
+    expect(res.body).toMatchObject({ email: 'ahmed@gmail.com', gender: 'male', locale: 'en' });
     await http().patch('/v1/me').set('Authorization', `Bearer ${accessToken}`).send({ firstName: 'x' }).expect(400);
   });
 
-  it("refuses another account's email", async () => {
-    await insertUser('customer', '01000000001', PASSWORD, 'taken@gmail.com');
+  it('changes the recovery email only with a code sent to the new address, and tells the old one (review F01)', async () => {
     await insertUser('customer', '01554459196', PASSWORD, 'ahmed@gmail.com');
+    await insertUser('customer', '01000000009', PASSWORD, 'taken@gmail.com');
     const { accessToken } = await signIn('01554459196');
-    const res = await http().patch('/v1/me').set('Authorization', `Bearer ${accessToken}`).send({ email: 'taken@gmail.com' }).expect(409);
-    expect(res.body.code).toBe('EMAIL_TAKEN');
+    const auth = { Authorization: `Bearer ${accessToken}` };
+
+    // The profile save no longer moves the email, and it can never be removed.
+    await http().patch('/v1/me').set(auth).send({ email: 'new@gmail.com' }).expect(400);
+    await http().post('/v1/me/email/code').set(auth).send({ email: null }).expect(400);
+    const taken = await http().post('/v1/me/email/code').set(auth).send({ email: 'taken@gmail.com' }).expect(409);
+    expect(taken.body.code).toBe('EMAIL_TAKEN');
+
+    const sent = await http().post('/v1/me/email/code').set(auth).send({ email: 'New@Gmail.com' }).expect(201);
+    expect(sent.body).toEqual({ email: 'new@gmail.com', resendIn: 59 });
+    const code = lastCodeTo('new@gmail.com');
+    // Another address cannot borrow the code.
+    await http().post('/v1/me/email').set(auth).send({ email: 'other@gmail.com', code }).expect(400);
+    expect((await http().get('/v1/me').set(auth).expect(200)).body.email).toBe('ahmed@gmail.com');
+
+    const res = await http().post('/v1/me/email').set(auth).send({ email: 'new@gmail.com', code }).expect(201);
+    expect(res.body.email).toBe('new@gmail.com');
+    expect(mailbox.at(-1)?.to).toBe('ahmed@gmail.com');
+    await http().post('/v1/me/email').set(auth).send({ email: 'new@gmail.com', code }).expect(400);
+  });
+
+  it('answers 409, not a server error, when two sign-ups take the same email at the same moment (review F12)', async () => {
+    for (const [i, phone] of ['01000000001', '01000000002'].entries()) {
+      await http().post('/v1/auth/signup/code').send({ phone, email: 'same@gmail.com' }).expect(201);
+      mailbox[i] = mailbox.at(-1)!;
+    }
+    const tickets = await Promise.all(
+      ['01000000001', '01000000002'].map(async (phone, i) => {
+        const code = mailbox[i]!.text.match(/\b\d{4}\b/)![0];
+        return (await http().post('/v1/auth/code/verify').send({ phone, purpose: 'signup', code }).expect(201)).body.ticket as string;
+      }),
+    );
+    const res = await Promise.all(
+      tickets.map((ticket) => http().post('/v1/auth/signup').send({ ticket, firstName: 'احمد', lastName: 'علي', password: PASSWORD })),
+    );
+    expect(res.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(res.find((r) => r.status === 409)?.body.code).toBe('EMAIL_TAKEN');
   });
 
   it('deletes a customer account with its password: sessions end, addresses go and the phone is free again', async () => {
@@ -102,6 +137,22 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     // The new number signs in; the code was used up.
     await signIn('01550000001');
     await http().post('/v1/me/phone').set(auth).send({ phone: '01550000001', code }).expect(400);
+  });
+
+  it('keeps each phone-change code to the account that asked: two customers can ask for the same number (review F05)', async () => {
+    await insertUser('customer', '01554459196', PASSWORD, 'ahmed@gmail.com');
+    await insertUser('customer', '01000000009', PASSWORD, 'other@gmail.com');
+    const mine = { Authorization: `Bearer ${(await signIn('01554459196')).accessToken}` };
+    const theirs = { Authorization: `Bearer ${(await signIn('01000000009')).accessToken}` };
+
+    await http().post('/v1/me/phone/code').set(mine).send({ phone: '01550000001' }).expect(201);
+    // The other customer's request neither waits on mine nor replaces my code.
+    await http().post('/v1/me/phone/code').set(theirs).send({ phone: '01550000001' }).expect(201);
+    const theirCode = lastCodeTo('other@gmail.com');
+    const myCode = lastCodeTo('ahmed@gmail.com');
+    if (theirCode !== myCode) await http().post('/v1/me/phone').set(mine).send({ phone: '01550000001', code: theirCode }).expect(400);
+    const res = await http().post('/v1/me/phone').set(mine).send({ phone: '01550000001', code: myCode }).expect(201);
+    expect(res.body.phone).toBe('01550000001');
   });
 
   it('sets the avatar from a photo ("اختر صورة")', async () => {

@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse } from '@tawsela/shared';
+import { AUTH, type AuthResponse } from '@tawsela/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { createTestApp, lastCodeTo, mailbox } from '../utils/app.js';
@@ -205,11 +205,36 @@ describe('Accounts (e2e, contract §8.1)', () => {
       const next = await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(201);
       expect(next.body.refreshToken).not.toBe(auth.refreshToken);
 
+      // Past the grace window, a second use of the old token can only be a copy.
+      await sql('UPDATE refresh_tokens SET created_at = created_at - INTERVAL 1 MINUTE');
       const reused = await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(401);
       expect(reused.body.code).toBe('SESSION_EXPIRED');
       // The stolen copy took the rotated one down too, and its access token.
       await http().post('/v1/auth/refresh').send({ refreshToken: next.body.refreshToken }).expect(401);
       await http().get('/v1/me').set('Authorization', `Bearer ${next.body.accessToken}`).expect(401);
+    });
+
+    it(`lets a device whose refresh answer was lost retry within ${AUTH.refreshGraceSeconds} seconds, without ending other sessions (review F08)`, async () => {
+      const auth = await signUp('01554459196', 'ahmed@gmail.com');
+      const other = (await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(201)).body as AuthResponse;
+      const lost = await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(201);
+
+      // The phone never got `lost` and sends its old token again: a fresh pair replaces the lost one.
+      const retry = await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(201);
+      expect(retry.body.refreshToken).not.toBe(lost.body.refreshToken);
+      // The first token and the lost one are revoked; the other device's and the retry's are live.
+      const rows = await sql<{ revoked_at: Date | null }[]>('SELECT revoked_at FROM refresh_tokens ORDER BY id');
+      expect(rows.map((r) => r.revoked_at !== null)).toEqual([true, false, true, false]);
+      await http().post('/v1/auth/refresh').send({ refreshToken: retry.body.refreshToken }).expect(201);
+      // The other device was never touched.
+      await http().post('/v1/auth/refresh').send({ refreshToken: other.refreshToken }).expect(201);
+    });
+
+    it('allows no grace once the newer token was used or signed out', async () => {
+      const auth = await signUp('01554459196', 'ahmed@gmail.com');
+      const next = await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(201);
+      await http().post('/v1/auth/logout').send({ refreshToken: next.body.refreshToken }).expect(204);
+      await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(401);
     });
 
     it('signs out: the refresh token stops working', async () => {
@@ -273,6 +298,17 @@ describe('Accounts (e2e, contract §8.1)', () => {
       await signUp('01554459196', 'new@gmail.com');
       await http().post('/v1/auth/password/reset').send({ ticket: body.ticket, password: 'newpass99' }).expect(401);
       await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(201);
+    });
+
+    it('drops a reset code once the account email changes: it went to the old address (review F02)', async () => {
+      const auth = await signUp('01554459196', 'ahmed@gmail.com');
+      await http().post('/v1/auth/password/code').send({ phone: '01554459196' }).expect(201);
+      const code = lastCodeTo('ahmed@gmail.com');
+      const me = { Authorization: `Bearer ${auth.accessToken}` };
+      await http().post('/v1/me/email/code').set(me).send({ email: 'new@gmail.com' }).expect(201);
+      await http().post('/v1/me/email').set(me).send({ email: 'new@gmail.com', code: lastCodeTo('new@gmail.com') }).expect(201);
+      const res = await http().post('/v1/auth/code/verify').send({ phone: '01554459196', purpose: 'reset', code }).expect(400);
+      expect(res.body.code).toBe('OTP_EXPIRED');
     });
 
     it('tells partners and drivers to ask the admin', async () => {

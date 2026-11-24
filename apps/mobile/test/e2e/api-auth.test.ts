@@ -1,7 +1,7 @@
 import type { Me } from '@tawsela/shared';
 import { api } from '@/core/api/client';
 import { session, useSession } from '@/core/auth/session';
-import { insertUser, refreshWorks, resetDb, signInAs } from '../utils/db';
+import { insertUser, pastRefreshGrace, refreshWorks, resetDb, signInAs } from '../utils/db';
 
 beforeEach(async () => {
   await session.signOutLocally();
@@ -22,6 +22,7 @@ describe('api with a session (real API)', () => {
     await expect(api<Me>('/me')).resolves.toMatchObject({ phone: '01554459196' });
     expect(session.accessToken()).not.toBe(`${auth.accessToken}x`);
     // The old refresh token was rotated away.
+    await pastRefreshGrace();
     expect(await refreshWorks(auth.refreshToken)).toBe(false);
   });
 

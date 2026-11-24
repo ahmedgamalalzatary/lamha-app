@@ -23,9 +23,10 @@ export type Gender = (typeof GENDERS)[number];
 
 /**
  * Why a code is asked for: a new customer account, a forgotten password, or a customer moving the
- * account to a new number ('phone'; the code still goes to the account email).
+ * account to a new number ('phone'; the code still goes to the account email), or to a new email
+ * ('email'; the code goes to the new address, proving it is theirs).
  */
-export type OtpPurpose = 'signup' | 'reset' | 'phone';
+export type OtpPurpose = 'signup' | 'reset' | 'phone' | 'email';
 
 /** The signed-in account, as /me returns it. */
 export interface Me {
@@ -117,6 +118,8 @@ export type ApiErrorCode =
   | 'TILE_TARGET'
   /** The address's spot is in no delivery zone (§8.9). */
   | 'OUT_OF_ZONE'
+  /** Two writes clashed at the same moment (a row deleted meanwhile, a deadlock): try again. */
+  | 'CONFLICT'
   | 'PHONE_TAKEN'
   | 'EMAIL_TAKEN'
   | 'PHONE_NOT_FOUND'

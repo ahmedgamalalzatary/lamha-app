@@ -3,11 +3,11 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AUTH, type AuthResponse, maskEmail, type Me, OTP, type OtpPurpose, type OtpSent, type OtpVerified, type PhoneStatus } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
-import { Mailer } from '../../core/mail/mailer.js';
+import { Mailer, type MailMessage } from '../../core/mail/mailer.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { toMe, UsersService } from '../users/users.service.js';
 import type { LoginDto, ResetPasswordDto, SignupDto } from './dto/auth.dto.js';
-import { otpMail } from './otp-mail.js';
+import { emailChangedMail, otpMail } from './otp-mail.js';
 import { checkCode, newCode, resendWait } from './otp-rules.js';
 import { OtpRepository } from './otp.repository.js';
 import { hashPassword, verifyPassword } from './password.js';
@@ -85,7 +85,8 @@ export class AuthService {
     const payload: TicketPayload = { typ: 'ticket', purpose, phone, email: row.email };
     if (purpose === 'reset') {
       const user = await this.users.findLiveByPhone(phone);
-      if (!user) throw this.codeExpired();
+      // The code went to the account's email of that moment: once the email changes, it is void.
+      if (!user || user.email !== row.email) throw this.codeExpired();
       payload.sub = user.id;
       payload.ver = user.sessionVersion;
     }
@@ -102,7 +103,8 @@ export class AuthService {
     if (await this.users.phoneInUse(phone)) {
       throw new ApiException(HttpStatus.CONFLICT, 'PHONE_TAKEN', 'This phone already has an account');
     }
-    await this.sendCode(phone, user.email, 'phone');
+    // Kept per account (its email): another customer asking for the same number has their own code.
+    await this.sendCode(phone, user.email, 'phone', user.email);
     return { email: maskEmail(user.email), resendIn: OTP.resendSeconds };
   }
 
@@ -110,13 +112,39 @@ export class AuthService {
   async changePhone(userId: number, phone: string, code: string): Promise<Me> {
     const user = await this.users.findLiveById(userId);
     if (!user?.email) throw this.sessionExpired();
-    const row = await this.useCode(phone, 'phone', code);
-    // The code must be the one sent to this account, not to another asking for the same number.
-    if (row.email !== user.email) throw this.codeExpired();
+    await this.useCode(phone, 'phone', code, user.email);
     if (await this.users.phoneInUse(phone)) {
       throw new ApiException(HttpStatus.CONFLICT, 'PHONE_TAKEN', 'This phone already has an account');
     }
     await this.users.update(user.id, { phone });
+    return this.profiles.getMe(user.id);
+  }
+
+  /**
+   * A new recovery email (contract §8.14, review F01): the code goes to the new address, so only its
+   * owner can move the account there. Customers only.
+   */
+  async sendEmailChangeCode(userId: number, email: string): Promise<OtpSent> {
+    const user = await this.users.findLiveById(userId);
+    if (!user) throw this.sessionExpired();
+    if (await this.users.emailInUse(email)) {
+      throw new ApiException(HttpStatus.CONFLICT, 'EMAIL_TAKEN', 'This email already has an account');
+    }
+    await this.sendCode(user.phone, email, 'email');
+    return { email, resendIn: OTP.resendSeconds };
+  }
+
+  /** The code from the new address switches the email; the old address is told. */
+  async changeEmail(userId: number, email: string, code: string): Promise<Me> {
+    const user = await this.users.findLiveById(userId);
+    if (!user) throw this.sessionExpired();
+    // Only the code sent to this address: typing another address never uses up the real code.
+    await this.useCode(user.phone, 'email', code, email);
+    if (await this.users.emailInUse(email, user.id)) {
+      throw new ApiException(HttpStatus.CONFLICT, 'EMAIL_TAKEN', 'This email already has an account');
+    }
+    await this.users.update(user.id, { email });
+    if (user.email && user.email !== email) this.mailInBackground(emailChangedMail(user.email, email));
     return this.profiles.getMe(user.id);
   }
 
@@ -159,7 +187,7 @@ export class AuthService {
     const ticket = await this.readTicket(body.ticket, 'reset');
     if (ticket.sub === undefined || ticket.ver === undefined) throw this.badTicket();
     const user = await this.users.findLiveById(ticket.sub);
-    if (!user || user.role !== 'customer' || user.phone !== ticket.phone) throw this.badTicket();
+    if (!user || user.role !== 'customer' || user.phone !== ticket.phone || user.email !== ticket.email) throw this.badTicket();
     if (!(await this.users.resetPasswordAt(user.id, ticket.ver, await hashPassword(body.password)))) throw this.badTicket();
     await this.sessions.revokeAllForUser(user.id);
     return this.issue(user.id, ticket.ver + 1);
@@ -181,16 +209,27 @@ export class AuthService {
    * Rotates the refresh token. A token used twice means it was copied: every session ends, access
    * tokens too. The new token keeps the old one's session version, so a rotation racing a reset,
    * a disable or that alarm is refused.
+   *
+   * One exception (review F08): a device that never got the answer sends the old token again. Within
+   * AUTH.refreshGraceSeconds, while the token it was rotated into is still unused, that token is
+   * swapped for a fresh one instead of ending every session.
    */
   async refresh(refreshToken: string): Promise<AuthResponse> {
     const row = await this.sessions.findByHash(sha256(refreshToken));
     if (!row || row.expiresAt.getTime() < Date.now()) throw this.sessionExpired();
-    if (row.revokedAt || !(await this.sessions.revoke(row.id))) {
-      await this.users.endSessions(row.userId);
-      await this.sessions.revokeAllForUser(row.userId);
-      throw this.sessionExpired();
-    }
-    return this.issue(row.userId, row.sessionVersion);
+    if (!row.revokedAt && (await this.sessions.revoke(row.id))) return this.issue(row.userId, row.sessionVersion, row.id);
+    if (await this.retryWithinGrace(row)) return this.issue(row.userId, row.sessionVersion, row.id);
+    await this.users.endSessions(row.userId);
+    await this.sessions.revokeAllForUser(row.userId);
+    throw this.sessionExpired();
+  }
+
+  /** Whether `row`'s replacement is fresh and unused; if so it is revoked, to be issued again. */
+  private async retryWithinGrace(row: { replacedById: number | null }): Promise<boolean> {
+    if (!row.replacedById) return false;
+    const next = await this.sessions.find(row.replacedById);
+    if (!next || next.revokedAt || Date.now() - next.createdAt.getTime() > AUTH.refreshGraceSeconds * 1000) return false;
+    return this.sessions.revoke(next.id);
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -198,9 +237,10 @@ export class AuthService {
     if (row) await this.sessions.revoke(row.id);
   }
 
-  private async sendCode(phone: string, email: string, purpose: OtpPurpose): Promise<void> {
+  /** `owner`: the account's email, when the code is kept per account (a phone change). */
+  private async sendCode(phone: string, email: string, purpose: OtpPurpose, owner?: string): Promise<void> {
     const now = new Date();
-    const wait = resendWait((await this.otps.latest(phone, purpose))?.createdAt, now);
+    const wait = resendWait((await this.otps.latest(phone, purpose, owner))?.createdAt, now);
     if (wait > 0) {
       throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, 'OTP_TOO_SOON', 'Wait before asking for another code', { retryIn: wait });
     }
@@ -213,17 +253,21 @@ export class AuthService {
       expiresAt: new Date(now.getTime() + OTP.validSeconds * 1000),
       createdAt: now,
     });
-    // Sent in the background: a mail server's failure is logged, and the user can resend.
-    this.mailer.send(otpMail(email, code)).catch((err: unknown) => this.log.error(`Code email to ${email} failed: ${String(err)}`));
+    this.mailInBackground(otpMail(email, code));
+  }
+
+  /** Sent in the background: a mail server's failure is logged, and the user can resend. */
+  private mailInBackground(message: MailMessage): void {
+    this.mailer.send(message).catch((err: unknown) => this.log.error(`Email to ${message.to} failed: ${String(err)}`));
   }
 
   /**
    * Checks a code and uses it up. Each try is counted before the answer counts, so guesses sent at
    * the same moment still share the 5 tries.
    */
-  private async useCode(phone: string, purpose: OtpPurpose, code: string) {
+  private async useCode(phone: string, purpose: OtpPurpose, code: string, owner?: string) {
     const locked = () => new ApiException(HttpStatus.TOO_MANY_REQUESTS, 'OTP_LOCKED', 'Too many wrong codes');
-    const row = await this.otps.latest(phone, purpose);
+    const row = await this.otps.latest(phone, purpose, owner);
     const result = row ? checkCode(row, codeHash(phone, purpose, code), new Date()) : 'expired';
     if (result === 'expired' || !row) throw this.codeExpired();
     if (result === 'locked') throw locked();
@@ -254,13 +298,18 @@ export class AuthService {
     return new ApiException(HttpStatus.UNAUTHORIZED, 'SESSION_EXPIRED', 'Session expired, please sign in again');
   }
 
-  /** A session at the account's session version `version`; refused if the account moved past it. */
-  private async issue(userId: number, version: number): Promise<AuthResponse> {
+  /**
+   * A session at the account's session version `version`; refused if the account moved past it.
+   * `rotatedFrom`: the refresh token it replaces, which remembers it for the grace retry.
+   */
+  private async issue(userId: number, version: number, rotatedFrom?: number): Promise<AuthResponse> {
     const row = await this.users.findLiveById(userId);
     if (!row) throw this.sessionExpired();
     const refreshToken = randomBytes(32).toString('base64url');
     const expiresAt = new Date(Date.now() + AUTH.refreshTokenDays * 86_400_000);
-    if (!(await this.sessions.create(row.id, version, sha256(refreshToken), expiresAt))) throw this.sessionExpired();
+    const id = await this.sessions.create(row.id, version, sha256(refreshToken), expiresAt);
+    if (id === undefined) throw this.sessionExpired();
+    if (rotatedFrom !== undefined) await this.sessions.setReplacedBy(rotatedFrom, id);
 
     const payload: AccessPayload = { typ: 'access', sub: row.id, role: row.role, ver: version };
     const accessToken = await this.jwt.signAsync(payload, { expiresIn: AUTH.accessTokenTtl });

@@ -58,8 +58,11 @@ export class AddressesService {
     const { zone } = await this.check(body);
     if (!zone) throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'OUT_OF_ZONE', 'Delivery is not available at this spot');
     const { isDefault, ...values } = body;
+    // Checked again under the lock: a delete may have landed since (review F22).
     const saved = await this.repo.save(userId, id, { ...values, zoneId: zone.id }, isDefault);
-    return (await this.list(userId)).find((a) => a.id === saved)!;
+    const address = saved === undefined ? undefined : (await this.list(userId)).find((a) => a.id === saved);
+    if (!address) throw notFound('address');
+    return address;
   }
 
   async delete(userId: number, id: number): Promise<void> {

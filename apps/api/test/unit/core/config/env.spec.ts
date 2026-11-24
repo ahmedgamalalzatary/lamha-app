@@ -43,6 +43,19 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...valid, NODE_ENV: 'staging' })).toThrow(/NODE_ENV/);
   });
 
+  it('refuses production without a mail server: sign-up and reset codes would never arrive (review F03)', () => {
+    expect(() => validateEnv({ ...valid, NODE_ENV: 'production' })).toThrow(/SMTP_HOST[\s\S]*SMTP_USER[\s\S]*SMTP_PASS/);
+    const mail = { SMTP_HOST: 'smtp.gmail.com', SMTP_USER: 'a@gmail.com', SMTP_PASS: 'app-password' };
+    expect(validateEnv({ ...valid, ...mail, NODE_ENV: 'production' }).SMTP_HOST).toBe('smtp.gmail.com');
+    expect(validateEnv(valid).SMTP_HOST).toBeUndefined();
+  });
+
+  it('reads TRUST_PROXY as the number of proxy hops in front of the API, none by default (review F14)', () => {
+    expect(validateEnv(valid).TRUST_PROXY).toBe(0);
+    expect(validateEnv({ ...valid, TRUST_PROXY: '1' }).TRUST_PROXY).toBe(1);
+    expect(() => validateEnv({ ...valid, TRUST_PROXY: '-1' })).toThrow(/TRUST_PROXY/);
+  });
+
   it('lists every problem at once', () => {
     expect(() => validateEnv({})).toThrow(/DATABASE_URL[\s\S]*JWT_ACCESS_SECRET/);
   });

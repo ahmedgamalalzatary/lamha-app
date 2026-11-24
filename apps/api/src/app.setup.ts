@@ -2,9 +2,11 @@ import path from 'node:path';
 import { type INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
+import { HttpAdapterHost } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { UPLOADS_DIR } from '@tawsela/shared';
 import helmet from 'helmet';
+import { DbErrorFilter } from './common/filters/db-error.filter.js';
 import { ApiValidationPipe } from './common/pipes/api-validation.pipe.js';
 import type { Env } from './core/config/env.js';
 
@@ -12,6 +14,10 @@ import type { Env } from './core/config/env.js';
 export function configureApp(app: INestApplication): void {
   const config = app.get(ConfigService<Env, true>);
   const dev = config.get('NODE_ENV', { infer: true }) !== 'production';
+
+  // Behind nginx: read the client's address from X-Forwarded-For, so rate limits count each client.
+  const hops = config.get('TRUST_PROXY', { infer: true });
+  if (hops > 0) (app as NestExpressApplication).set('trust proxy', hops);
 
   app.use(helmet());
   // The phone app needs no CORS. Browsers get the listed origins; with none listed,
@@ -32,6 +38,8 @@ export function configureApp(app: INestApplication): void {
   }
 
   app.useGlobalPipes(new ApiValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  // A write that lost a race (duplicate, row deleted meanwhile, deadlock) answers 409, not 500.
+  app.useGlobalFilters(new DbErrorFilter(app.get(HttpAdapterHost).httpAdapter));
 
   app.enableShutdownHooks();
 

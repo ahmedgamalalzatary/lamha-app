@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { Role } from '@tawsela/shared';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
+import { addresses } from '../addresses/addresses.schema.js';
+import { refreshTokens } from '../auth/auth.schema.js';
 import { type NewUser, type UserRow, users } from './users.schema.js';
 
 /** Database access for accounts. "Live" means not deleted (a disabled account is still live). */
@@ -70,6 +72,29 @@ export class UsersRepository {
       .update(users)
       .set({ ...values, sessionVersion: sql`${users.sessionVersion} + 1` })
       .where(eq(users.id, id));
+  }
+
+  /**
+   * "حذف الحساب" in one transaction (review F04): the account row is locked (address writes lock it
+   * too, so none lands after), its personal data goes, every session ends and its addresses go. An
+   * interruption leaves the account as it was, so the customer can try again. False when already gone.
+   */
+  async deleteAccount(id: number, scrub: Partial<NewUser>): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.id, id), isNull(users.deletedAt)))
+        .for('update');
+      if (!row) return false;
+      await tx
+        .update(users)
+        .set({ ...scrub, sessionVersion: sql`${users.sessionVersion} + 1` })
+        .where(eq(users.id, id));
+      await tx.update(refreshTokens).set({ revokedAt: new Date() }).where(and(eq(refreshTokens.userId, id), isNull(refreshTokens.revokedAt)));
+      await tx.delete(addresses).where(eq(addresses.userId, id));
+      return true;
+    });
   }
 
   /**

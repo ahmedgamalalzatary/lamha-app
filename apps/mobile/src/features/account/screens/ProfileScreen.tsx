@@ -13,6 +13,7 @@ import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT } from '@/core/i18n';
 import { colors, fonts, radius, spacing } from '@/core/theme';
 import { meApi } from '../api/me';
+import { EmailCodeSheet } from '../components/EmailCodeSheet';
 import { PhoneChangeSheet } from '../components/PhoneChangeSheet';
 import { PhotoSheet } from '../components/PhotoSheet';
 
@@ -27,10 +28,15 @@ export function ProfileScreen() {
   const [gender, setGender] = useState<Gender | null>(user?.gender ?? null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<'phone' | 'photo' | null>(null);
+  /** The new email waiting for its code (review F01). */
+  const [codeFor, setCodeFor] = useState<string | null>(null);
 
-  const save = useSubmit(async (body: { email?: string; gender?: Gender }) => {
-    session.setUser(await meApi.update(body));
-    toast.show(t('profile.saved'), 'success');
+  const save = useSubmit(async ({ email: newEmail, gender: newGender }: { email?: string; gender?: Gender }) => {
+    if (newGender) {
+      session.setUser(await meApi.update({ gender: newGender }));
+      if (!newEmail) toast.show(t('profile.saved'), 'success');
+    }
+    if (newEmail) setCodeFor((await meApi.sendEmailCode(newEmail)).email);
   });
 
   if (!user) return null;
@@ -137,6 +143,7 @@ export function ProfileScreen() {
         <Button label={t('common.save')} disabled={!Object.keys(changes).length} loading={save.busy} onPress={submit} />
       </View>
       <PhoneChangeSheet visible={sheet === 'phone'} onClose={() => setSheet(null)} />
+      <EmailCodeSheet email={codeFor} onClose={() => setCodeFor(null)} />
       <PhotoSheet visible={sheet === 'photo'} onClose={() => setSheet(null)} />
     </SafeAreaView>
   );

@@ -109,6 +109,35 @@ describe('addresses and delivery zones (e2e, contract §8.9)', () => {
     expect((await list()).map((a) => [a.id, a.isDefault])).toEqual([[second.id, true]]);
   });
 
+  it('keeps one default when first addresses are saved at the same moment, and answers 404 for an edit that loses to a delete (review F22, F23)', async () => {
+    await addZone('الفيوم', FAYOUM);
+    const saves = await Promise.all(Array.from({ length: 5 }, () => http().post('/v1/me/addresses').set(customer).send(TEMP)));
+    expect(saves.map((r) => r.status)).toEqual([201, 201, 201, 201, 201]);
+    const rows = await sql<{ is_default: number }[]>('SELECT is_default FROM addresses');
+    expect(rows.filter((r) => r.is_default)).toHaveLength(1);
+
+    const id = saves[0]!.body.id as number;
+    const [edit] = await Promise.all([
+      http().put(`/v1/me/addresses/${id}`).set(customer).send({ ...TEMP, floor: '4' }),
+      http().delete(`/v1/me/addresses/${id}`).set(customer).expect(204),
+    ]);
+    if (edit.status === 200) expect(edit.body).toMatchObject({ id, floor: '4' });
+    else expect(edit.status).toBe(404);
+  });
+
+  it('leaves no address behind when saves race the account deletion (review F04)', async () => {
+    await addZone('الفيوم', FAYOUM);
+    await http().post('/v1/me/addresses').set(customer).send(TEMP).expect(201);
+    const res = await Promise.all([
+      ...Array.from({ length: 4 }, () => http().post('/v1/me/addresses').set(customer).send(TEMP)),
+      http().delete('/v1/me').set(customer).send({ password: PASSWORD }),
+      ...Array.from({ length: 4 }, () => http().post('/v1/me/addresses').set(customer).send(TEMP)),
+    ]);
+    expect(res[4]!.status).toBe(204);
+    expect(res.map((r) => r.status)).not.toContain(500);
+    expect(await sql<unknown[]>('SELECT id FROM addresses')).toHaveLength(0);
+  });
+
   it("lists only the stores of the chosen address's zone, nearest first, in lists and search (§8.3, §8.13)", async () => {
     const fayoum = await addZone('الفيوم', FAYOUM);
     const giza = await addZone('الجيزة', GIZA);

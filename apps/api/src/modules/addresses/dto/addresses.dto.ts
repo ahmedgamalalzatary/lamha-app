@@ -55,7 +55,7 @@ export class ZoneDto {
   active: boolean;
 }
 
-export class UpdateZoneDto extends PartialType(ZoneDto) {}
+export class UpdateZoneDto extends PartialType(ZoneDto, { skipNullProperties: false }) {}
 
 const Optional = (max: number) =>
   applyDecorators(ApiPropertyOptional({ type: String, nullable: true, maxLength: max }), IsOptional(), Transform(trimOrNull), IsString(), MaxLength(max));

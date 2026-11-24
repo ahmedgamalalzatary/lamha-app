@@ -87,6 +87,14 @@ export async function signInAs(phone: string, password = PASSWORD): Promise<Auth
   return (await res.json()) as AuthResponse;
 }
 
+/**
+ * Moves every refresh token a minute into the past: a rotated token sent again within
+ * AUTH.refreshGraceSeconds still works (a lost answer), so tests that check rotation step past that.
+ */
+export async function pastRefreshGrace(): Promise<void> {
+  await sql('UPDATE refresh_tokens SET created_at = created_at - INTERVAL 1 MINUTE');
+}
+
 /** Whether this refresh token still works on the server. */
 export async function refreshWorks(refreshToken: string): Promise<boolean> {
   const res = await fetch(`${API_URL}/auth/refresh`, {

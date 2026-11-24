@@ -155,7 +155,7 @@ export class CreateStoreDto extends StoreFieldsDto {
   partner: StorePartnerDto;
 }
 
-export class UpdateStoreDto extends PartialType(StoreFieldsDto) {}
+export class UpdateStoreDto extends PartialType(StoreFieldsDto, { skipNullProperties: false }) {}
 
 export class StoreListQuery {
   @ApiPropertyOptional({ enum: VERTICALS })
@@ -239,7 +239,7 @@ export class NamedImageDto {
   image?: string | null;
 }
 
-export class UpdateNamedImageDto extends PartialType(NamedImageDto) {}
+export class UpdateNamedImageDto extends PartialType(NamedImageDto, { skipNullProperties: false }) {}
 
 /** A store category: a sub-category names its main category (one level, same store). */
 export class CategoryDto extends NamedImageDto {
@@ -249,7 +249,7 @@ export class CategoryDto extends NamedImageDto {
   parentId?: number | null;
 }
 
-export class UpdateCategoryDto extends PartialType(CategoryDto) {}
+export class UpdateCategoryDto extends PartialType(CategoryDto, { skipNullProperties: false }) {}
 
 /** A row of an option group: "ربع كيلو (+58.75 ج.م)". */
 export class OptionDto {
@@ -354,7 +354,7 @@ export class CreateProductDto {
   ingredients?: string[];
 }
 
-export class UpdateProductDto extends PartialType(CreateProductDto) {}
+export class UpdateProductDto extends PartialType(CreateProductDto, { skipNullProperties: false }) {}
 
 export class HomeTileDto {
   @ApiProperty({ maxLength: CATALOG.nameMaxLength })
@@ -389,4 +389,4 @@ export class HomeTileDto {
   targetStoreId?: number | null;
 }
 
-export class UpdateHomeTileDto extends PartialType(HomeTileDto) {}
+export class UpdateHomeTileDto extends PartialType(HomeTileDto, { skipNullProperties: false }) {}

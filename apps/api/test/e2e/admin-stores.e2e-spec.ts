@@ -125,6 +125,15 @@ describe('/v1/admin/stores (e2e, contract §11 الموردين, §2 partner acc
     await http().patch('/v1/admin/stores/9999').set(auth()).send({ active: true }).expect(404);
   });
 
+  it('refuses null for a field that must have a value, while a field that may be empty still takes null (review F35)', async () => {
+    const id = await insertStore();
+    for (const field of ['name', 'deliveryFee', 'layout', 'active']) {
+      await http().patch(`/v1/admin/stores/${id}`).set(auth()).send({ [field]: null }).expect(400);
+    }
+    await http().patch(`/v1/admin/stores/${id}`).set(auth()).send({ logo: null }).expect(200);
+    await http().patch('/v1/admin/zones/1').set(auth()).send({ name: null }).expect(400);
+  });
+
   it.each(['customer', 'partner', 'driver'] as const)('refuses a %s', async (role) => {
     await insertUser(role, '01011111111', PASSWORD);
     const { accessToken } = await signIn('01011111111');

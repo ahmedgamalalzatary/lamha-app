@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { and, asc, desc, eq, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, ne } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
+import { users } from '../users/users.schema.js';
 import { type AddressRow, addresses, type ZoneRow, zones } from './addresses.schema.js';
 
 type AddressValues = Omit<typeof addresses.$inferInsert, 'id' | 'userId' | 'createdAt' | 'isDefault'>;
@@ -55,12 +56,16 @@ export class AddressesRepository {
   }
 
   /**
-   * Saves an address. The customer's addresses are locked first, so two saves at once still leave
-   * exactly one default: the first address is the default, and a new default takes over from the old.
+   * Saves an address. The customer's own account row is locked first (it always exists, unlike their
+   * first address), so saves, deletes and the account's deletion take turns (review F04, F23): two
+   * saves at once still leave exactly one default, the first address is the default, and a new
+   * default takes over from the old. Undefined when the address (or the account) is gone (F22).
    */
-  async save(userId: number, id: number | undefined, values: AddressValues, wantsDefault: boolean): Promise<number> {
+  async save(userId: number, id: number | undefined, values: AddressValues, wantsDefault: boolean): Promise<number | undefined> {
     return this.db.transaction(async (tx) => {
+      if (!(await lockLiveUser(tx, userId))) return undefined;
       const mine = await tx.select({ id: addresses.id, isDefault: addresses.isDefault }).from(addresses).where(eq(addresses.userId, userId)).for('update');
+      if (id !== undefined && !mine.some((a) => a.id === id)) return undefined;
       const others = mine.filter((a) => a.id !== id);
       // Turning the default off is ignored: some address must stay the default.
       const isDefault = wantsDefault || !others.some((a) => a.isDefault);
@@ -83,6 +88,7 @@ export class AddressesRepository {
   /** Deleting the default makes the newest one left the default. False when it is not theirs. */
   async delete(userId: number, id: number): Promise<boolean> {
     return this.db.transaction(async (tx) => {
+      if (!(await lockLiveUser(tx, userId))) return false;
       const mine = await tx.select({ id: addresses.id, isDefault: addresses.isDefault }).from(addresses).where(eq(addresses.userId, userId)).orderBy(desc(addresses.id)).for('update');
       const gone = mine.find((a) => a.id === id);
       if (!gone) return false;
@@ -92,9 +98,16 @@ export class AddressesRepository {
       return true;
     });
   }
+}
 
-  /** "حذف الحساب": a deleted account keeps no addresses. */
-  async deleteAllOf(userId: number): Promise<void> {
-    await this.db.delete(addresses).where(eq(addresses.userId, userId));
-  }
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+
+/** Locks the account's row until the transaction ends; false when the account is deleted. */
+async function lockLiveUser(tx: Tx, userId: number): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .for('update');
+  return !!row;
 }

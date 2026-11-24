@@ -87,6 +87,7 @@ export const ar = {
   'profile.newPhone': 'أدخل رقم الهاتف الجديد',
   'profile.confirmPhone': 'تأكيد رقم الهاتف',
   'profile.phoneChanged': 'تم تغيير رقم الهاتف',
+  'profile.emailChanged': 'تم تغيير البريد الإلكتروني',
   'profile.changePhoto': 'تغيير الصورة',
   'profile.choosePhoto': 'اختر صورة',
   'profile.takePhoto': 'التقاط صورة',
@@ -258,6 +259,7 @@ export const ar = {
   'map.confirm': 'تأكيد الموقع',
   'map.noMap': 'الخريطة غير متاحة بعد، سيُستخدم موقعك الحالي',
   'errors.OUT_OF_ZONE': 'التوصيل غير متاح لهذا الموقع',
+  'errors.CONFLICT': 'حدث تغيير في نفس اللحظة، حاول مرة أخرى',
 } as const;
 
 export type TranslationKey = keyof typeof ar;

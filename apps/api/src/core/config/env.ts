@@ -65,6 +65,16 @@ export class Env {
   @IsString()
   MAIL_FROM?: string;
 
+  /**
+   * How many proxies (nginx) stand in front of the API. With 1, the client's address comes from
+   * X-Forwarded-For, so rate limits count each customer, not the proxy. 0 (the default) trusts none.
+   */
+  @Transform(({ value }) => (value === undefined || value === '' ? 0 : Number(value)))
+  @IsInt()
+  @Min(0)
+  @Max(10)
+  TRUST_PROXY = 0;
+
   /** Password for the seeded admin, partner and driver. Only the seed script reads it. */
   @IsOptional()
   @IsString()
@@ -75,8 +85,14 @@ export class Env {
 export function validateEnv(raw: Record<string, unknown>): Env {
   const env = plainToInstance(Env, raw, { exposeDefaultValues: true });
   const errors = validateSync(env, { skipMissingProperties: false });
-  if (errors.length) {
-    const lines = errors.map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`);
+  const lines = errors.map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`);
+  // Production sends real sign-up and reset codes: without a mail server they would never arrive.
+  if (env.NODE_ENV === 'production') {
+    for (const key of ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'] as const) {
+      if (!env[key]) lines.push(`${key}: required in production (codes are emailed)`);
+    }
+  }
+  if (lines.length) {
     throw new Error(`Invalid environment:\n  ${lines.join('\n  ')}`);
   }
   return env;
