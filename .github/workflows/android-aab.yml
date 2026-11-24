@@ -24,6 +24,9 @@ jobs:
     steps:
       - name: Check the release settings
         run: |
+          # The build number is main's commit count: from another branch it could be lower or repeated,
+          # and Google Play refuses the upload (review F56).
+          test "$GITHUB_REF" = "refs/heads/main" || { echo "::error::Store builds run from main only (this is $GITHUB_REF)"; exit 1; }
           test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable to the production API"; exit 1; }
           case "$EXPO_PUBLIC_API_URL" in https://*/v1) ;; *) echo "::error::A store build needs the production API: https://<host>/v1"; exit 1 ;; esac
           case "$EXPO_PUBLIC_API_URL" in *localhost*|*127.0.0.1*|*10.0.2.2*|*192.168.*) echo "::error::A store build must not point at a local address"; exit 1 ;; esac

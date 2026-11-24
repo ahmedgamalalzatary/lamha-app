@@ -27,10 +27,18 @@ const IDENTITY = {
 const VERSION = '1.0.0';
 
 /**
- * The store build number. CI sets APP_BUILD_NUMBER to the commit count, so each upload is
- * higher than the last; local builds use 1.
+ * The store build number: Android's versionCode and iOS's buildNumber. CI sets APP_BUILD_NUMBER to
+ * main's commit count (store builds run from main only), so each upload is higher than the last;
+ * local builds use 1. Play takes whole numbers from 1 to 2,100,000,000; anything else stops the
+ * build here rather than at the store (review F56, as in realestate). Read when the config is.
  */
-const BUILD_NUMBER = Number(process.env.APP_BUILD_NUMBER ?? 1);
+function buildNumber(): number {
+  const raw = process.env.APP_BUILD_NUMBER;
+  if (raw === undefined || raw === '') return 1;
+  const n = Number(raw);
+  if (!/^\d+$/.test(raw) || n < 1 || n > 2_100_000_000) throw new Error(`APP_BUILD_NUMBER must be a whole number from 1 to 2100000000, not "${raw}"`);
+  return n;
+}
 
 /** Google Maps for Android (contract §8.9), from the root .env or a CI secret. Not a public value. */
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY ?? '';
@@ -47,7 +55,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     icon: './assets/expo.icon',
     bundleIdentifier: IDENTITY.id,
-    buildNumber: String(BUILD_NUMBER),
+    buildNumber: String(buildNumber()),
     supportsTablet: false,
     infoPlist: {
       CFBundleDisplayName: IDENTITY.name,
@@ -57,7 +65,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: IDENTITY.id,
-    versionCode: BUILD_NUMBER,
+    versionCode: buildNumber(),
     adaptiveIcon: {
       backgroundColor: IDENTITY.brandColor,
       foregroundImage: './assets/images/android-icon-foreground.png',
