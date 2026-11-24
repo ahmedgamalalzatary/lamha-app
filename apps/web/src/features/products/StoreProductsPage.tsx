@@ -19,6 +19,7 @@ import {
   useUpdateCategory,
   useUpdateProduct,
 } from '../catalog/api';
+import { draftOf, draftReady, draftToInput, ProductChoicesFields } from './ProductChoicesFields';
 
 /**
  * المنتجات والكتالوج › منتجات الموردين (contract §11, §1.1 A10): pick a store, then its categories
@@ -89,9 +90,12 @@ function Categories({ storeId }: { storeId: number }) {
         <ul aria-label="الأقسام" className="flex flex-col">
           {categories.data.map((c, i) => (
             <li key={c.id} className="flex items-center gap-2 border-t border-tw-line py-2 first:border-t-0">
-              <div className="min-w-0 flex-1">
+              <div className={`min-w-0 flex-1 ${c.parentId ? 'ps-4' : ''}`}>
                 <p className="truncate font-semibold">{c.name}</p>
                 <p className="text-xs text-tw-ink-2">{c.productCount} منتج</p>
+                {c.parentId ? (
+                  <p className="text-xs text-tw-ink-2">قسم فرعي من {categories.data.find((p) => p.id === c.parentId)?.name}</p>
+                ) : null}
               </div>
               <IconButton label="تحريك لأعلى" disabled={i === 0 || order.isPending} onClick={() => move(i, -1)}>
                 <ArrowUp className="size-4" aria-hidden />
@@ -109,7 +113,9 @@ function Categories({ storeId }: { storeId: number }) {
           ))}
         </ul>
       )}
-      {editing ? <CategoryDialog storeId={storeId} category={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} /> : null}
+      {editing ? (
+        <CategoryDialog storeId={storeId} categories={categories.data ?? []} category={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />
+      ) : null}
       {deleting ? (
         <ConfirmDialog
           title="حذف القسم"
@@ -126,20 +132,36 @@ function Categories({ storeId }: { storeId: number }) {
   );
 }
 
-function CategoryDialog({ storeId, category, onClose }: { storeId: number; category?: Category; onClose: () => void }) {
+/** No main category: the category is a main one. */
+const MAIN = '';
+
+function CategoryDialog({ storeId, categories, category, onClose }: { storeId: number; categories: Category[]; category?: Category; onClose: () => void }) {
   const create = useCreateCategory();
   const update = useUpdateCategory();
   const [name, setName] = useState(category?.name ?? '');
   const [image, setImage] = useState<string | null>(category?.image ?? null);
+  const [parent, setParent] = useState(category?.parentId ? String(category.parentId) : MAIN);
+  // Sub-categories are one level deep: only main categories can hold them, and one that holds some stays main.
+  const mains = categories.filter((c) => c.parentId === null && c.id !== category?.id);
+  const holdsSubcategories = category ? categories.some((c) => c.parentId === category.id) : false;
   const save = () => {
     const done = { onSuccess: onClose };
-    if (category) update.mutate({ id: category.id, name: name.trim(), image }, done);
-    else create.mutate({ storeId, name: name.trim(), ...(image ? { image } : {}) }, done);
+    const parentId = parent === MAIN ? null : Number(parent);
+    if (category) update.mutate({ id: category.id, name: name.trim(), image, parentId }, done);
+    else create.mutate({ storeId, name: name.trim(), parentId, ...(image ? { image } : {}) }, done);
   };
   const failed = create.error ?? update.error;
   return (
     <Dialog title={category ? 'تعديل القسم' : 'إضافة قسم'} onClose={onClose}>
       <TextField label="اسم القسم" value={name} onChange={(e) => setName(e.target.value)} maxLength={CATALOG.nameMaxLength} autoFocus />
+      {holdsSubcategories || mains.length === 0 ? null : (
+        <SelectField
+          label="القسم الرئيسي"
+          value={parent}
+          options={[{ value: MAIN, label: 'بدون (قسم رئيسي)' }, ...mains.map((c) => ({ value: String(c.id), label: c.name }))]}
+          onChange={setParent}
+        />
+      )}
       <ImageField label="صورة القسم (للماركت)" value={image} onChange={setImage} />
       {failed ? <ErrorLine>{errorMessage(failed)}</ErrorLine> : null}
       <DialogActions ready={name.trim() !== ''} busy={create.isPending || update.isPending} onSave={save} onClose={onClose} />
@@ -185,6 +207,11 @@ function Products({ storeId }: { storeId: number }) {
                   <div>
                     <p className="font-semibold">{p.name}</p>
                     {p.unit ? <p className="text-xs text-tw-ink-2">{p.unit}</p> : null}
+                    {p.optionGroups.length || p.ingredients.length ? (
+                      <p className="text-xs text-tw-ink-2">
+                        {p.optionGroups.length} مجموعة · {p.ingredients.length} مكوّن
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </td>
@@ -246,7 +273,8 @@ function ProductDialog({ storeId, categories, product, onClose }: { storeId: num
   const [description, setDescription] = useState(product?.description ?? '');
   const [image, setImage] = useState<string | null>(product?.image ?? null);
   const [active, setActive] = useState(product?.active ?? true);
-  const ready = name.trim() !== '' && PRICE.test(price.trim());
+  const [choices, setChoices] = useState(() => draftOf(product));
+  const ready = name.trim() !== '' && PRICE.test(price.trim()) && draftReady(choices);
 
   const save = () => {
     const fields = {
@@ -257,6 +285,7 @@ function ProductDialog({ storeId, categories, product, onClose }: { storeId: num
       description: description.trim() || null,
       image,
       active,
+      ...draftToInput(choices),
     };
     if (product) update.mutate({ id: product.id, ...fields }, { onSuccess: onClose });
     else create.mutate({ storeId, ...fields }, { onSuccess: onClose });
@@ -274,6 +303,7 @@ function ProductDialog({ storeId, categories, product, onClose }: { storeId: num
       <TextField label="الوصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={CATALOG.descriptionMaxLength} />
       <ImageField label="صورة المنتج" value={image} onChange={setImage} />
       <Switch label="متاح للعملاء" checked={active} onChange={setActive} />
+      <ProductChoicesFields draft={choices} onChange={setChoices} />
       {failed ? <ErrorLine>{errorMessage(failed)}</ErrorLine> : null}
       <DialogActions ready={ready} busy={create.isPending || update.isPending} onSave={save} onClose={onClose} />
     </Dialog>

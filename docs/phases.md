@@ -31,7 +31,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 4 | Catalog: verticals, stores, categories, products | 🔍 in-verify | |
 | 5 | Customer home | 🔍 in-verify | |
 | 6 | Store lists, filters and search | 🔍 in-verify | |
-| 7 | Store page and product sheet | ⬜ | |
+| 7 | Store page and product sheet | 🔍 in-verify | |
 | 8 | Addresses, zones and the map picker | ⬜ | |
 | 9 | Cart | ⬜ | |
 | 10 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
@@ -164,6 +164,34 @@ Contract §8.3 and §8.13: per-vertical lists, cuisine circles, chips, sort and 
 ## Phase 7: Store page and product sheet
 
 Contract §8.4–§8.5: cover, info row, category grid, category pages, product sheet, minimum-order bar, favourites, layout per store type. Adds product option groups and base ingredients (moved from Phase 4), with their admin editing.
+
+**Built:**
+
+- **Database:** `product_option_groups`, `product_options`, `product_ingredients`, `favorite_stores`; `store_categories.parent_id` (a sub-category, one level deep).
+- **Shared:** `product.ts` holds the sheet and cart rules, with unit tests:
+  - Customizable items, "السعر حسب الاختيار" and picking in a group (a radio swaps; ticks stop at the limit).
+  - Required groups, the item price and "تُطلب معًا".
+  - Merging cart lines, the bar's count and total, and what is left to reach the minimum order.
+- **API:**
+  - Products carry `optionGroups` and `ingredients` everywhere. Creating or editing a product with them replaces the old ones (`OPTION_GROUP` when a group asks for more choices than it has rows).
+  - Categories take `parentId` (`CATEGORY_DEPTH`, `CATEGORY_OTHER_STORE`). A category with sub-categories cannot be deleted.
+  - The store page keeps a main category whose products are in its sub-categories.
+  - `GET/PUT/DELETE /v1/me/favorites[/:storeId]` (customers).
+- **Dashboard (منتجات الموردين):**
+  - The category form picks a main category ("قسم فرعي من …" in the list).
+  - The product form edits option groups (name, مطلوب, the most choices, rows with a price change) and base ingredients.
+  - Dialogs scroll when long.
+- **Mobile:**
+  - **Store page** (`/store/<id>`):
+    - Cover with back, search and the heart; "مغلق" pill; logo, name, rating; the info row مدة التوصيل · رسوم التوصيل · التوصيل بواسطة.
+    - Restaurant layout: category tabs that pin under the white bar once scrolled, ☰ with item counts, and products as a list ("قابل للتخصيص", "+" or "‹").
+    - Market layout: the "الأقسام" grid.
+  - **Category page** (`/store/<id>/category/<id>`): product search, sub-category circles (الكل shows a section each), and the product grid.
+  - **Product sheet:** option groups with "مطلوب" and "اختر 1", ingredient chips that strike through, "تُطلب معًا", the stepper and "أضف للسلة <price>" (grey with "أكمل الاختيارات للإضافة للسلة" until complete).
+  - **Bottom bar:** the minimum order, then "عرض السلة · <count> · <total>" (opens the cart tab).
+  - **المفضلة** from حسابي (الخدمات المفضلة).
+- **Seed:** a few demo items get choices (شاورما فراخ, وجبة شاورما فراخ عربي, كلاسيك سماش, موز priced by weight). توصيلة ماركت's خضار وفاكهة gets الخضار and الفاكهة as sub-categories. This step also fills an existing dev database.
+- **Stand-ins and later work:** see contract §8.4, §8.5 and §8.14. The cart stays in the app's memory until Phase 9.
 
 ## Phase 8: Addresses, zones and the map picker
 

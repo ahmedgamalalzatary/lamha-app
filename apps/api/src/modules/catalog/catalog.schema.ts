@@ -1,5 +1,6 @@
 import { DELIVERED_BY, HOME_TILE_ROWS, STORE_LAYOUTS, VERTICALS } from '@tawsela/shared';
 import {
+  type AnyMySqlColumn,
   boolean,
   decimal,
   index,
@@ -61,7 +62,10 @@ export const storeCuisines = mysqlTable(
   (t) => [primaryKey({ columns: [t.storeId, t.cuisineId] }), index('store_cuisines_cuisine_idx').on(t.cuisineId)],
 );
 
-/** A store's menu sections (§8.4): tabs in the restaurant layout, image tiles in the market layout. */
+/**
+ * A store's menu sections (§8.4): tabs in the restaurant layout, image tiles in the market layout.
+ * A sub-category (parent set) is a circle on its main category's page; one level only.
+ */
 export const storeCategories = mysqlTable(
   'store_categories',
   {
@@ -69,14 +73,15 @@ export const storeCategories = mysqlTable(
     storeId: int('store_id', { unsigned: true })
       .notNull()
       .references(() => stores.id, { onDelete: 'cascade' }),
+    parentId: int('parent_id', { unsigned: true }).references((): AnyMySqlColumn => storeCategories.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 120 }).notNull(),
     image: varchar('image', { length: 255 }),
     sortOrder: int('sort_order').notNull().default(0),
   },
-  (t) => [index('store_categories_store_idx').on(t.storeId, t.sortOrder)],
+  (t) => [index('store_categories_store_idx').on(t.storeId, t.sortOrder), index('store_categories_parent_idx').on(t.parentId)],
 );
 
-/** Option groups and ingredients (§8.5) arrive with the product sheet (Phase 7). */
+/** A product; its choices are in product_option_groups, product_options and product_ingredients (§8.5). */
 export const products = mysqlTable(
   'products',
   {
@@ -100,6 +105,51 @@ export const products = mysqlTable(
   (t) => [index('products_store_idx').on(t.storeId, t.categoryId, t.sortOrder), index('products_active_idx').on(t.active)],
 );
 
+/** An option group on the product sheet (§8.5): "الوزن", مطلوب, "اختر 1". */
+export const productOptionGroups = mysqlTable(
+  'product_option_groups',
+  {
+    id: int('id', { unsigned: true }).autoincrement().primaryKey(),
+    productId: int('product_id', { unsigned: true })
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 120 }).notNull(),
+    required: boolean('required').notNull().default(false),
+    maxChoices: smallint('max_choices', { unsigned: true }).notNull().default(1),
+    sortOrder: int('sort_order').notNull().default(0),
+  },
+  (t) => [index('product_option_groups_product_idx').on(t.productId, t.sortOrder)],
+);
+
+/** A row in an option group: "ربع كيلو (+58.75 ج.م)". */
+export const productOptions = mysqlTable(
+  'product_options',
+  {
+    id: int('id', { unsigned: true }).autoincrement().primaryKey(),
+    groupId: int('group_id', { unsigned: true })
+      .notNull()
+      .references(() => productOptionGroups.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 120 }).notNull(),
+    priceDelta: money('price_delta').notNull().default(0),
+    sortOrder: int('sort_order').notNull().default(0),
+  },
+  (t) => [index('product_options_group_idx').on(t.groupId, t.sortOrder)],
+);
+
+/** A base ingredient (§8.5 "المكونات الاساسية") the customer may strike out. */
+export const productIngredients = mysqlTable(
+  'product_ingredients',
+  {
+    id: int('id', { unsigned: true }).autoincrement().primaryKey(),
+    productId: int('product_id', { unsigned: true })
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 120 }).notNull(),
+    sortOrder: int('sort_order').notNull().default(0),
+  },
+  (t) => [index('product_ingredients_product_idx').on(t.productId, t.sortOrder)],
+);
+
 /** Home tiles (§8.2): order and images set by the admin [Client]. A tile opens a vertical or one store. */
 export const homeTiles = mysqlTable('home_tiles', {
   id: int('id', { unsigned: true }).autoincrement().primaryKey(),
@@ -117,4 +167,7 @@ export type NewStore = typeof stores.$inferInsert;
 export type CategoryRow = typeof storeCategories.$inferSelect;
 export type ProductRow = typeof products.$inferSelect;
 export type CuisineRow = typeof cuisines.$inferSelect;
+export type OptionGroupRow = typeof productOptionGroups.$inferSelect;
+export type OptionRow = typeof productOptions.$inferSelect;
+export type IngredientRow = typeof productIngredients.$inferSelect;
 export type HomeTileRow = typeof homeTiles.$inferSelect;

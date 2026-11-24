@@ -1,0 +1,260 @@
+import type { Category, StorePage } from '@tawsela/shared';
+import { Image } from 'expo-image';
+import { type Href, router, useLocalSearchParams } from 'expo-router';
+import { LayoutGrid, PackageOpen } from 'lucide-react-native';
+import { type ComponentRef, type ReactNode, useRef, useState } from 'react';
+import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
+import { EmptyState } from '@/components/EmptyState';
+import { PressableScale } from '@/components/PressableScale';
+import { Skeleton } from '@/components/Skeleton';
+import { errorMessage } from '@/core/api/error-message';
+import { mediaUrl } from '@/core/api/client';
+import { useT } from '@/core/i18n';
+import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { useFavorites, useStorePage, useToggleFavorite } from '../api/store';
+import { CartBar } from '../components/CartBar';
+import { CategoriesSheet } from '../components/CategoriesSheet';
+import { CategoryTabs, TABS_HEIGHT } from '../components/CategoryTabs';
+import { type ProductActions, ProductRow } from '../components/ProductItems';
+import { ProductSheet } from '../components/ProductSheet';
+import { SectionTitle } from '../components/SectionTitle';
+import { COVER_HEIGHT, StoreHeader } from '../components/StoreHeader';
+import { BAR_HEIGHT, StoreTopBar } from '../components/StoreTopBar';
+import { useProductTaps } from '../hooks/useProductTaps';
+
+/** Room under the content for the bottom bar. */
+const BOTTOM_ROOM = 140;
+
+/**
+ * A store page (contract §8.4). The admin's layout decides the body: the restaurant layout lists the
+ * products under sticky category tabs; the market layout shows the "الأقسام" grid, each opening its
+ * category page. The bottom bar shows the minimum order, then the cart.
+ * [Open] The voucher, free-delivery and discount cards under the info row arrive with offers (Phase 19);
+ * the market's "العروض" and themed rails too.
+ */
+export function StoreScreen() {
+  const t = useT();
+  const insets = useSafeAreaInsets();
+  const storeId = Number(useLocalSearchParams<{ id: string }>().id);
+  const page = useStorePage(storeId);
+  const favorites = useFavorites();
+  const toggle = useToggleFavorite();
+  const { cart, actions, sheet, setSheet } = useProductTaps(storeId);
+  const [solid, setSolid] = useState(false);
+
+  const isFavorite = favorites.data?.some((s) => s.id === storeId) ?? false;
+  const store = page.data;
+  const menu = store?.categories.flatMap((c) => c.products) ?? [];
+
+  /** The bar turns white with the name once the cover has scrolled under it. */
+  const trackCover = (y: number) => {
+    const next = y > COVER_HEIGHT - BAR_HEIGHT - insets.top;
+    if (next !== solid) setSolid(next);
+  };
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => trackCover(e.nativeEvent.contentOffset.y);
+
+  if (!store) {
+    return (
+      <View style={styles.screen}>
+        {page.isError ? (
+          <View style={[styles.errorBox, { paddingTop: insets.top + BAR_HEIGHT + spacing.lg }]}>
+            <AppText color={colors.danger}>{errorMessage(page.error)}</AppText>
+            <Button label={t('common.retry')} variant="soft" onPress={() => void page.refetch()} />
+          </View>
+        ) : (
+          <View>
+            <Skeleton style={{ height: COVER_HEIGHT, borderRadius: 0 }} />
+            <View style={styles.skeletonRows}>
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} style={{ height: 96, borderRadius: radius.md }} />
+              ))}
+            </View>
+          </View>
+        )}
+        <StoreTopBar title="" solid={false} />
+      </View>
+    );
+  }
+
+  const favorite = {
+    on: isFavorite,
+    busy: toggle.isPending || favorites.isPending,
+    onPress: () => toggle.mutate({ storeId, on: !isFavorite }),
+  };
+
+  return (
+    <View style={styles.screen}>
+      {store.layout === 'list' ? (
+        <MenuList
+          store={store}
+          actions={actions}
+          solid={solid}
+          onScrollY={trackCover}
+          renderTopBar={(tabs) => (
+            <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/category/all` as Href)}>
+              {tabs}
+            </StoreTopBar>
+          )}
+        />
+      ) : (
+        <>
+          <ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: BOTTOM_ROOM }}>
+            <StoreHeader store={store} />
+            <CategoryGrid store={store} />
+          </ScrollView>
+          <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/category/all` as Href)} />
+        </>
+      )}
+      <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
+      <ProductSheet product={sheet} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
+    </View>
+  );
+}
+
+/**
+ * The restaurant layout: header, category tabs (pinned under the bar once scrolled to), then each
+ * category's products as a list. A tab or a ☰ row scrolls to its category.
+ */
+function MenuList({
+  store,
+  actions,
+  solid,
+  onScrollY,
+  renderTopBar,
+}: {
+  store: StorePage;
+  actions: ProductActions;
+  solid: boolean;
+  /** Hands each scroll offset to the screen (the bar over the cover). */
+  onScrollY: (y: number) => void;
+  renderTopBar: (tabs: ReactNode) => ReactNode;
+}) {
+  const t = useT();
+  const insets = useSafeAreaInsets();
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const sections = store.categories.filter((c) => c.products.length > 0);
+  const [active, setActive] = useState(sections[0]?.id);
+  const [pinned, setPinned] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const tabsY = useRef(0);
+  const sectionY = useRef(new Map<number, number>());
+  const topOffset = insets.top + BAR_HEIGHT + TABS_HEIGHT;
+
+  // Pin the tabs once they reach the bar, and follow the category in view.
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    onScrollY(y);
+    const nextPinned = y >= tabsY.current - insets.top - BAR_HEIGHT;
+    if (nextPinned !== pinned) setPinned(nextPinned);
+    let current = sections[0]?.id;
+    for (const s of sections) if ((sectionY.current.get(s.id) ?? Infinity) <= y + topOffset + 1) current = s.id;
+    if (current !== active) setActive(current);
+  };
+
+  const goTo = (id: number) => {
+    setActive(id);
+    const y = sectionY.current.get(id);
+    if (y !== undefined) scroll.current?.scrollTo({ y: Math.max(0, y - topOffset), animated: true });
+  };
+
+  const tabs = <CategoryTabs categories={sections} active={active} onSelect={goTo} onAll={() => setSheetOpen(true)} />;
+
+  return (
+    <>
+      <ScrollView ref={scroll} onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: BOTTOM_ROOM }}>
+        <StoreHeader store={store} />
+        {sections.length ? (
+          <View onLayout={(e) => (tabsY.current = e.nativeEvent.layout.y)}>{tabs}</View>
+        ) : (
+          <EmptyState icon={PackageOpen} title={t('store.empty')} message={t('store.emptyText')} />
+        )}
+        {sections.map((c) => (
+          <View key={c.id} onLayout={(e) => sectionY.current.set(c.id, e.nativeEvent.layout.y)}>
+            <SectionTitle title={c.name} />
+            {c.products.map((p) => (
+              <ProductRow key={p.id} product={p} actions={actions} />
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+      {renderTopBar(solid && pinned ? tabs : null)}
+      <CategoriesSheet
+        visible={sheetOpen}
+        title={store.name}
+        categories={sections.map((c) => ({ id: c.id, name: c.name, count: c.products.length }))}
+        active={active}
+        onPick={(id) => {
+          setSheetOpen(false);
+          goTo(id);
+        }}
+        onClose={() => setSheetOpen(false)}
+      />
+    </>
+  );
+}
+
+/** The market layout's "الأقسام" (contract §8.4): main categories as pictures; each opens its page. */
+function CategoryGrid({ store }: { store: StorePage }) {
+  const t = useT();
+  const mains = store.categories.filter((c) => c.parentId === null);
+  if (!mains.length) return <EmptyState icon={PackageOpen} title={t('store.empty')} message={t('store.emptyText')} />;
+  const rows: Category[][] = [];
+  for (let i = 0; i < mains.length; i += 3) rows.push(mains.slice(i, i + 3));
+  return (
+    <View>
+      <SectionTitle title={t('store.categories')} bar={false} />
+      <View style={styles.grid}>
+        {rows.map((row) => (
+          <View key={row[0]!.id} style={styles.gridRow}>
+            {row.map((c) => (
+              <CategoryTile key={c.id} storeId={store.id} category={c} />
+            ))}
+            {Array.from({ length: 3 - row.length }, (_, i) => (
+              <View key={`gap${i}`} style={styles.tile} />
+            ))}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function CategoryTile({ storeId, category }: { storeId: number; category: Category }) {
+  const uri = mediaUrl(category.image);
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={category.name}
+      onPress={() => router.push(`/store/${storeId}/category/${category.id}` as Href)}
+      scaleTo={0.97}
+      style={styles.tile}
+    >
+      <View style={styles.tileImage}>{uri ? <Image source={{ uri }} contentFit="cover" style={StyleSheet.absoluteFill} /> : <LayoutGrid size={32} color={colors.line} />}</View>
+      <AppText weight="semibold" size={fontSizes.body} numberOfLines={2} style={styles.center}>
+        {category.name}
+      </AppText>
+    </PressableScale>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
+  errorBox: { padding: spacing.lg, gap: spacing.md },
+  skeletonRows: { padding: spacing.lg, gap: spacing.md },
+  grid: { gap: spacing.lg, paddingHorizontal: spacing.lg },
+  gridRow: { flexDirection: 'row', gap: spacing.lg },
+  tile: { flex: 1, gap: spacing.sm, alignItems: 'center' },
+  tileImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  center: { textAlign: 'center' },
+});

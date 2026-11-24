@@ -10,6 +10,8 @@ Object.defineProperty(globalThis, 'fetch', { value: nodeFetch, writable: true, c
 // waits on timers: every test starts on real ones (a test may still switch to fake timers).
 beforeEach(() => {
   jest.useRealTimers();
+  // The store-page cart lives in memory, and a reset database gives the next test the same store ids.
+  require('@/features/cart/cart-store').cartStore.clear();
 });
 
 // React Query hands its updates on with setTimeout. renderRouter renders under fake timers and the

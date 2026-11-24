@@ -5,12 +5,14 @@ import { type AuthUser, CurrentUser } from '../../common/decorators/current-user
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AdminCatalogService } from './admin-catalog.service.js';
 import {
+  CategoryDto,
   CreateProductDto,
   CreateStoreDto,
   HomeTileDto,
   NamedImageDto,
   OrderDto,
   StoreListQuery,
+  UpdateCategoryDto,
   UpdateHomeTileDto,
   UpdateNamedImageDto,
   UpdateProductDto,
@@ -52,7 +54,7 @@ export class AdminCatalogController {
   }
 
   @Post('stores/:id/categories')
-  createCategory(@Param('id', ParseIntPipe) id: number, @Body() body: NamedImageDto): Promise<Category> {
+  createCategory(@Param('id', ParseIntPipe) id: number, @Body() body: CategoryDto): Promise<Category> {
     return this.admin.createCategory(id, body);
   }
 
@@ -62,7 +64,7 @@ export class AdminCatalogController {
   }
 
   @Patch('categories/:id')
-  updateCategory(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateNamedImageDto): Promise<Category> {
+  updateCategory(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateCategoryDto): Promise<Category> {
     return this.admin.updateCategory(id, body);
   }
 

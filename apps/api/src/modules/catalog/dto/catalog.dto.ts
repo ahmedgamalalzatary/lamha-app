@@ -5,6 +5,7 @@ import {
   DELIVERED_BY,
   type DeliveredBy,
   HOME_TILE_ROWS,
+  PRODUCT_OPTIONS,
   RATING_FLOORS,
   SEARCH_SCOPES,
   type SearchScope,
@@ -18,6 +19,8 @@ import {
 } from '@tawsela/shared';
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   ArrayUnique,
   IsArray,
   IsBoolean,
@@ -216,6 +219,55 @@ export class NamedImageDto {
 
 export class UpdateNamedImageDto extends PartialType(NamedImageDto) {}
 
+/** A store category: a sub-category names its main category (one level, same store). */
+export class CategoryDto extends NamedImageDto {
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'The main category; null for a main category' })
+  @IsOptional()
+  @IsInt()
+  parentId?: number | null;
+}
+
+export class UpdateCategoryDto extends PartialType(CategoryDto) {}
+
+/** A row of an option group: "ربع كيلو (+58.75 ج.م)". */
+export class OptionDto {
+  @Name()
+  name: string;
+
+  @ApiProperty({ minimum: 0 })
+  @IsNumber(MONEY)
+  @Min(0)
+  @Max(MAX_MONEY)
+  priceDelta: number;
+}
+
+/** An option group on the product sheet (§8.5). */
+export class OptionGroupDto {
+  @ApiProperty({ maxLength: CATALOG.nameMaxLength, example: 'الوزن' })
+  @Transform(trim)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(CATALOG.nameMaxLength)
+  title: string;
+
+  @ApiProperty({ description: 'مطلوب' })
+  @IsBoolean()
+  required: boolean;
+
+  @ApiProperty({ minimum: 1, description: '1 is "اختر 1"; never more than its options' })
+  @IsInt()
+  @Min(1)
+  maxChoices: number;
+
+  @ApiProperty({ type: [OptionDto] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(PRODUCT_OPTIONS.maxOptions)
+  @ValidateNested({ each: true })
+  @Type(() => OptionDto)
+  options: OptionDto[];
+}
+
 /** PUT …/order: every id of the list, in the new order. */
 export class OrderDto {
   @ApiProperty({ type: [Number] })
@@ -260,6 +312,24 @@ export class CreateProductDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({ type: [OptionGroupDto], description: 'Replaces every group when given' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_OPTIONS.maxGroups)
+  @ValidateNested({ each: true })
+  @Type(() => OptionGroupDto)
+  optionGroups?: OptionGroupDto[];
+
+  @ApiPropertyOptional({ type: [String], description: 'المكونات الاساسية; replaces them when given', example: ['٥ اسبايسي ليمون'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_OPTIONS.maxIngredients)
+  @Transform(({ value }: { value: unknown }) => (Array.isArray(value) ? value.map((v) => (typeof v === 'string' ? v.trim() : v)) : value))
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(CATALOG.nameMaxLength, { each: true })
+  ingredients?: string[];
 }
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {}

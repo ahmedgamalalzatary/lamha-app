@@ -12,6 +12,7 @@ import type {
   HomeTile,
   PartnerAccount,
   Product,
+  ProductOptionsInput,
   StoreInput,
 } from '@tawsela/shared';
 import { api } from '@/core/api/client';
@@ -65,12 +66,12 @@ export const useCategories = (storeId: number | undefined) =>
   useQuery({ queryKey: key('categories', storeId), queryFn: () => api.request<Category[]>(`/admin/stores/${storeId}/categories`), enabled: storeId !== undefined });
 
 export const useCreateCategory = () =>
-  useCatalogMutation(({ storeId, ...body }: { storeId: number; name: string }) =>
+  useCatalogMutation(({ storeId, ...body }: { storeId: number; name: string; image?: string | null; parentId?: number | null }) =>
     api.request<Category>(`/admin/stores/${storeId}/categories`, { method: 'POST', body }),
   );
 
 export const useUpdateCategory = () =>
-  useCatalogMutation(({ id, ...body }: { id: number; name?: string; image?: string | null }) =>
+  useCatalogMutation(({ id, ...body }: { id: number; name?: string; image?: string | null; parentId?: number | null }) =>
     api.request<Category>(`/admin/categories/${id}`, { method: 'PATCH', body }),
   );
 
@@ -86,7 +87,7 @@ export const useProducts = (storeId: number | undefined) =>
 
 export const useInactiveProducts = () => useQuery({ queryKey: key('inactive'), queryFn: () => api.request<AdminProduct[]>('/admin/products/inactive') });
 
-export type ProductFields = Pick<Product, 'categoryId' | 'name' | 'description' | 'price' | 'unit' | 'image' | 'active'>;
+export type ProductFields = Pick<Product, 'categoryId' | 'name' | 'description' | 'price' | 'unit' | 'image' | 'active'> & Partial<ProductOptionsInput>;
 
 export const useCreateProduct = () =>
   useCatalogMutation(({ storeId, ...body }: ProductFields & { storeId: number }) =>

@@ -89,10 +89,14 @@ export type ApiErrorCode =
   | 'ACCOUNT_NOT_FOUND'
   /** A store, category, product, cuisine or home tile that does not exist. */
   | 'NOT_FOUND'
-  /** A category that still holds products cannot be deleted. */
+  /** A category that still holds products or sub-categories cannot be deleted. */
   | 'CATEGORY_NOT_EMPTY'
-  /** A product's category belongs to another store. */
+  /** A product's category, or a sub-category's main category, belongs to another store. */
   | 'CATEGORY_OTHER_STORE'
+  /** Sub-categories are one level deep (§8.4). */
+  | 'CATEGORY_DEPTH'
+  /** An option group asks for more choices than it has rows (§8.5). */
+  | 'OPTION_GROUP'
   /** A partner account with no store (contract §2). */
   | 'NO_STORE'
   /** The upload is not an image the server can read. */

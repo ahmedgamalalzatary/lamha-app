@@ -1,4 +1,14 @@
-import { type CatalogStore, type Category, type Cuisine, type HomeTile, isOpenAt, type Product, type StoreInput } from '@tawsela/shared';
+import {
+  type CatalogStore,
+  type Category,
+  type Cuisine,
+  type HomeTile,
+  type Ingredient,
+  isOpenAt,
+  type OptionGroup,
+  type Product,
+  type StoreInput,
+} from '@tawsela/shared';
 import type { CategoryRow, CuisineRow, HomeTileRow, ProductRow, StoreRow } from './catalog.schema.js';
 
 const cairoClock = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -61,13 +71,22 @@ export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date): 
 export const toCategory = (row: CategoryRow, productCount: number): Category => ({
   id: row.id,
   storeId: row.storeId,
+  parentId: row.parentId,
   name: row.name,
   image: row.image,
   sortOrder: row.sortOrder,
   productCount,
 });
 
-export const toProduct = (row: ProductRow): Product => ({
+export interface Choices {
+  optionGroups: OptionGroup[];
+  ingredients: Ingredient[];
+}
+
+const NO_CHOICES: Choices = { optionGroups: [], ingredients: [] };
+
+export const toProduct = (row: ProductRow, choices: Choices = NO_CHOICES): Product => ({
+  ...choices,
   id: row.id,
   storeId: row.storeId,
   categoryId: row.categoryId,

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SearchScope, Vertical } from '@tawsela/shared';
+import type { Ingredient, OptionGroup, Product, ProductOptionsInput, SearchScope, Vertical } from '@tawsela/shared';
 import { and, asc, count, eq, inArray, isNull, like, max, min, ne, or, type SQL } from 'drizzle-orm';
 import type { MySqlTable } from 'drizzle-orm/mysql-core';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
@@ -9,6 +9,9 @@ import {
   homeTiles,
   type HomeTileRow,
   type NewStore,
+  productIngredients,
+  productOptionGroups,
+  productOptions,
   products,
   type ProductRow,
   storeCategories,
@@ -16,8 +19,10 @@ import {
   type StoreRow,
   stores,
 } from './catalog.schema.js';
+import { toProduct } from './store-view.js';
 
 type Sortable = typeof storeCategories | typeof cuisines | typeof homeTiles;
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /** Most products one search returns. */
 const SEARCH_LIMIT = 200;
@@ -128,17 +133,22 @@ export class CatalogRepository {
     return new Map(rows.map((r) => [r.categoryId, r.n]));
   }
 
-  async createCategory(storeId: number, values: { name: string; image?: string | null }): Promise<number> {
+  async createCategory(storeId: number, values: { name: string; image?: string | null; parentId?: number | null }): Promise<number> {
     const sortOrder = await this.nextSortOrder(storeCategories, eq(storeCategories.storeId, storeId));
     const [row] = await this.db
       .insert(storeCategories)
-      .values({ storeId, name: values.name, image: values.image ?? null, sortOrder })
+      .values({ storeId, name: values.name, image: values.image ?? null, parentId: values.parentId ?? null, sortOrder })
       .$returningId();
     return row!.id;
   }
 
-  async updateCategory(id: number, values: { name?: string; image?: string | null }): Promise<void> {
+  async updateCategory(id: number, values: { name?: string; image?: string | null; parentId?: number | null }): Promise<void> {
     if (Object.keys(values).length) await this.db.update(storeCategories).set(values).where(eq(storeCategories.id, id));
+  }
+
+  async countSubcategories(id: number): Promise<number> {
+    const [row] = await this.db.select({ n: count() }).from(storeCategories).where(eq(storeCategories.parentId, id));
+    return row?.n ?? 0;
   }
 
   async deleteCategory(id: number): Promise<void> {
@@ -200,17 +210,92 @@ export class CatalogRepository {
       .orderBy(asc(stores.name), asc(products.name));
   }
 
-  async createProduct(values: typeof products.$inferInsert): Promise<number> {
+  /** The product with its choices, together: all or nothing. */
+  async createProduct(values: typeof products.$inferInsert, choices: Partial<ProductOptionsInput> = {}): Promise<number> {
     const sortOrder = await this.nextSortOrder(products, eq(products.categoryId, values.categoryId));
-    const [row] = await this.db
-      .insert(products)
-      .values({ ...values, sortOrder })
-      .$returningId();
-    return row!.id;
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(products)
+        .values({ ...values, sortOrder })
+        .$returningId();
+      await this.replaceChoices(tx, row!.id, choices);
+      return row!.id;
+    });
   }
 
-  async updateProduct(id: number, values: Partial<typeof products.$inferInsert>): Promise<void> {
-    if (Object.keys(values).length) await this.db.update(products).set(values).where(eq(products.id, id));
+  /** Given option groups or ingredients replace the old ones; left out, they stay. */
+  async updateProduct(id: number, values: Partial<typeof products.$inferInsert>, choices: Partial<ProductOptionsInput> = {}): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      if (Object.keys(values).length) await tx.update(products).set(values).where(eq(products.id, id));
+      await this.replaceChoices(tx, id, choices);
+    });
+  }
+
+  private async replaceChoices(tx: Tx, productId: number, choices: Partial<ProductOptionsInput>): Promise<void> {
+    if (choices.optionGroups) {
+      // Deleting a group deletes its options (cascade).
+      await tx.delete(productOptionGroups).where(eq(productOptionGroups.productId, productId));
+      for (const [gi, g] of choices.optionGroups.entries()) {
+        const [group] = await tx
+          .insert(productOptionGroups)
+          .values({ productId, title: g.title, required: g.required, maxChoices: g.maxChoices, sortOrder: gi })
+          .$returningId();
+        await tx.insert(productOptions).values(g.options.map((o, oi) => ({ groupId: group!.id, name: o.name, priceDelta: o.priceDelta, sortOrder: oi })));
+      }
+    }
+    if (choices.ingredients) {
+      await tx.delete(productIngredients).where(eq(productIngredients.productId, productId));
+      if (choices.ingredients.length) {
+        await tx.insert(productIngredients).values(choices.ingredients.map((name, i) => ({ productId, name, sortOrder: i })));
+      }
+    }
+  }
+
+  /** Products as the API sends them: each with its choices. */
+  async withChoices(rows: ProductRow[]): Promise<Product[]> {
+    const choices = await this.choicesOf(rows.map((r) => r.id));
+    return rows.map((r) => toProduct(r, choices.get(r.id)));
+  }
+
+  /** Each product's option groups (with their options) and ingredients, in order. */
+  async choicesOf(productIds: number[]): Promise<Map<number, { optionGroups: OptionGroup[]; ingredients: Ingredient[] }>> {
+    const map = new Map(productIds.map((id) => [id, { optionGroups: [] as OptionGroup[], ingredients: [] as Ingredient[] }]));
+    if (!productIds.length) return map;
+    const [groups, ingredients] = await Promise.all([
+      this.db
+        .select()
+        .from(productOptionGroups)
+        .where(inArray(productOptionGroups.productId, productIds))
+        .orderBy(asc(productOptionGroups.sortOrder), asc(productOptionGroups.id)),
+      this.db
+        .select()
+        .from(productIngredients)
+        .where(inArray(productIngredients.productId, productIds))
+        .orderBy(asc(productIngredients.sortOrder), asc(productIngredients.id)),
+    ]);
+    const options = groups.length
+      ? await this.db
+          .select()
+          .from(productOptions)
+          .where(
+            inArray(
+              productOptions.groupId,
+              groups.map((g) => g.id),
+            ),
+          )
+          .orderBy(asc(productOptions.sortOrder), asc(productOptions.id))
+      : [];
+    for (const g of groups) {
+      map.get(g.productId)?.optionGroups.push({
+        id: g.id,
+        title: g.title,
+        required: g.required,
+        maxChoices: g.maxChoices,
+        options: options.filter((o) => o.groupId === g.id).map((o) => ({ id: o.id, name: o.name, priceDelta: o.priceDelta })),
+      });
+    }
+    for (const i of ingredients) map.get(i.productId)?.ingredients.push({ id: i.id, name: i.name });
+    return map;
   }
 
   async deleteProduct(id: number): Promise<void> {

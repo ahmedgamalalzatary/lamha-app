@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, ChevronLeft, LogOut, Trash2, User } from 'lucide-react-native';
+import { Bell, ChevronLeft, Heart, LogOut, Trash2, User } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -69,6 +69,7 @@ export function AccountScreen() {
           {t('account.groupAccount')}
         </AppText>
         <AccountRow icon={User} label={t('account.settings')} onPress={() => router.push('/profile')} />
+        {user.role === 'customer' ? <AccountRow icon={Heart} label={t('account.favorites')} onPress={() => router.push('/favorites')} /> : null}
 
         {user.role === 'customer' ? (
           <>

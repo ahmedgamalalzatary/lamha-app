@@ -10,6 +10,6 @@ import { CatalogService } from './catalog.service.js';
   imports: [UsersModule],
   controllers: [CatalogController, AdminCatalogController],
   providers: [CatalogRepository, CatalogService, AdminCatalogService],
-  exports: [CatalogRepository, AdminCatalogService],
+  exports: [CatalogRepository, CatalogService, AdminCatalogService],
 })
 export class CatalogModule {}

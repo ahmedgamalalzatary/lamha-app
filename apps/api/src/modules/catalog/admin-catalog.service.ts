@@ -8,16 +8,18 @@ import { UsersRepository } from '../users/users.repository.js';
 import { cuisines as cuisinesTable, type HomeTileRow, homeTiles as homeTilesTable, storeCategories as storeCategoriesTable, type StoreRow } from './catalog.schema.js';
 import { CatalogRepository } from './catalog.repository.js';
 import type {
+  CategoryDto,
   CreateProductDto,
   CreateStoreDto,
   HomeTileDto,
   NamedImageDto,
+  UpdateCategoryDto,
   UpdateHomeTileDto,
   UpdateNamedImageDto,
   UpdateProductDto,
   UpdateStoreDto,
 } from './dto/catalog.dto.js';
-import { toCategory, toCuisine, toHomeTile, toProduct, toStoreInput, storeIsOpen } from './store-view.js';
+import { toCategory, toCuisine, toHomeTile, toStoreInput, storeIsOpen } from './store-view.js';
 
 const notFound = (what: string) => new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', `No ${what} has this id`);
 
@@ -105,23 +107,38 @@ export class AdminCatalogService {
     return rows.map((r) => toCategory(r, counts.get(r.id) ?? 0));
   }
 
-  async createCategory(storeId: number, body: NamedImageDto): Promise<Category> {
+  async createCategory(storeId: number, body: CategoryDto): Promise<Category> {
     await this.storeOrThrow(storeId);
+    if (body.parentId != null) await this.assertParent(storeId, body.parentId);
     return this.category(await this.catalog.createCategory(storeId, body));
   }
 
-  async updateCategory(id: number, body: UpdateNamedImageDto): Promise<Category> {
-    await this.categoryOrThrow(id);
+  async updateCategory(id: number, body: UpdateCategoryDto): Promise<Category> {
+    const row = await this.categoryOrThrow(id);
+    if (body.parentId != null) {
+      if (body.parentId === id || (await this.catalog.countSubcategories(id))) throw depthError();
+      await this.assertParent(row.storeId, body.parentId);
+    }
     await this.catalog.updateCategory(id, body);
     return this.category(id);
   }
 
   async deleteCategory(id: number): Promise<void> {
     const row = await this.categoryOrThrow(id);
-    if ((await this.catalog.categoryCounts(row.storeId)).get(id)) {
-      throw new ApiException(HttpStatus.CONFLICT, 'CATEGORY_NOT_EMPTY', 'Move or delete its products first');
+    if ((await this.catalog.categoryCounts(row.storeId)).get(id) || (await this.catalog.countSubcategories(id))) {
+      throw new ApiException(HttpStatus.CONFLICT, 'CATEGORY_NOT_EMPTY', 'Move or delete its products and sub-categories first');
     }
     await this.catalog.deleteCategory(id);
+  }
+
+  /** A main category of the same store: sub-categories are one level deep (§8.4). */
+  private async assertParent(storeId: number, parentId: number): Promise<void> {
+    const parent = await this.catalog.findCategory(parentId);
+    if (!parent) throw notFound('category');
+    if (parent.storeId !== storeId) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'CATEGORY_OTHER_STORE', 'That category belongs to another store');
+    }
+    if (parent.parentId !== null) throw depthError();
   }
 
   async orderCategories(storeId: number, ids: number[]): Promise<Category[]> {
@@ -149,26 +166,37 @@ export class AdminCatalogService {
 
   async listProducts(storeId: number): Promise<Product[]> {
     await this.storeOrThrow(storeId);
-    return (await this.catalog.listProducts(storeId)).map(toProduct);
+    return this.catalog.withChoices(await this.catalog.listProducts(storeId));
   }
 
   async listInactiveProducts(): Promise<AdminProduct[]> {
-    return (await this.catalog.listInactiveProducts()).map((r) => ({ ...toProduct(r.product), storeName: r.storeName, categoryName: r.categoryName }));
+    const rows = await this.catalog.listInactiveProducts();
+    const products = await this.catalog.withChoices(rows.map((r) => r.product));
+    return rows.map((r, i) => ({ ...products[i]!, storeName: r.storeName, categoryName: r.categoryName }));
   }
 
   async createProduct(storeId: number, body: CreateProductDto): Promise<Product> {
     await this.storeOrThrow(storeId);
     await this.assertCategoryOf(storeId, body.categoryId);
-    const id = await this.catalog.createProduct({ ...body, storeId });
-    return toProduct((await this.catalog.findProduct(id))!);
+    const { optionGroups, ingredients, ...fields } = body;
+    assertGroups(optionGroups);
+    const id = await this.catalog.createProduct({ ...fields, storeId }, { optionGroups, ingredients });
+    return this.product(id);
   }
 
   async updateProduct(id: number, body: UpdateProductDto): Promise<Product> {
     const row = await this.catalog.findProduct(id);
     if (!row) throw notFound('product');
     if (body.categoryId !== undefined) await this.assertCategoryOf(row.storeId, body.categoryId);
-    await this.catalog.updateProduct(id, body);
-    return toProduct((await this.catalog.findProduct(id))!);
+    const { optionGroups, ingredients, ...fields } = body;
+    assertGroups(optionGroups);
+    await this.catalog.updateProduct(id, fields, { optionGroups, ingredients });
+    return this.product(id);
+  }
+
+  private async product(id: number): Promise<Product> {
+    const [product] = await this.catalog.withChoices([(await this.catalog.findProduct(id))!]);
+    return product!;
   }
 
   async deleteProduct(id: number): Promise<void> {
@@ -271,6 +299,15 @@ export class AdminCatalogService {
     const row = await this.catalog.findHomeTile(id);
     if (!row) throw notFound('home tile');
     return row;
+  }
+}
+
+const depthError = () => new ApiException(HttpStatus.BAD_REQUEST, 'CATEGORY_DEPTH', 'Sub-categories are one level deep');
+
+/** A group can never ask for more choices than it has rows. */
+function assertGroups(groups: { maxChoices: number; options: unknown[] }[] | undefined): void {
+  if (groups?.some((g) => g.maxChoices > g.options.length)) {
+    throw new ApiException(HttpStatus.BAD_REQUEST, 'OPTION_GROUP', 'maxChoices is more than the group has options');
   }
 }
 

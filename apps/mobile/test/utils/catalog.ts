@@ -5,14 +5,56 @@ import { sql } from './db';
 export async function insertStore(
   name: string,
   vertical = 'restaurant',
-  over: { deliveryMinutes?: number; closedNow?: boolean; pickupAllowed?: boolean } = {},
+  over: { deliveryMinutes?: number; closedNow?: boolean; pickupAllowed?: boolean; layout?: 'list' | 'grid' } = {},
 ): Promise<number> {
   const res = await sql<ResultSetHeader>(
     `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at, closed_now, pickup_allowed)
-     VALUES (?, ?, ?, 15, 60, 'list', '00:00', '00:00', ?, ?)`,
-    [vertical, name, over.deliveryMinutes ?? 25, over.closedNow ?? false, over.pickupAllowed ?? false],
+     VALUES (?, ?, ?, 15, 60, ?, '00:00', '00:00', ?, ?)`,
+    [vertical, name, over.deliveryMinutes ?? 25, over.layout ?? 'list', over.closedNow ?? false, over.pickupAllowed ?? false],
   );
   return res.insertId;
+}
+
+/** A menu section; a sub-category names its main category (§8.4). */
+export async function insertCategory(storeId: number, name: string, sortOrder = 0, parentId: number | null = null): Promise<number> {
+  const res = await sql<ResultSetHeader>('INSERT INTO store_categories (store_id, name, sort_order, parent_id) VALUES (?, ?, ?, ?)', [
+    storeId,
+    name,
+    sortOrder,
+    parentId,
+  ]);
+  return res.insertId;
+}
+
+/** A product in this category, after the ones already there. */
+export async function insertMenuItem(storeId: number, categoryId: number, name: string, price: number, sortOrder = 0): Promise<number> {
+  const res = await sql<ResultSetHeader>('INSERT INTO products (store_id, category_id, name, price, sort_order) VALUES (?, ?, ?, ?, ?)', [
+    storeId,
+    categoryId,
+    name,
+    price,
+    sortOrder,
+  ]);
+  return res.insertId;
+}
+
+/** An option group with its rows, as the admin's product form saves it (§8.5). */
+export async function insertOptionGroup(productId: number, title: string, required: boolean, maxChoices: number, options: [string, number][]): Promise<void> {
+  const group = await sql<ResultSetHeader>('INSERT INTO product_option_groups (product_id, title, required, max_choices) VALUES (?, ?, ?, ?)', [
+    productId,
+    title,
+    required,
+    maxChoices,
+  ]);
+  for (const [i, [name, delta]] of options.entries()) {
+    await sql('INSERT INTO product_options (group_id, name, price_delta, sort_order) VALUES (?, ?, ?, ?)', [group.insertId, name, delta, i]);
+  }
+}
+
+export async function insertIngredients(productId: number, names: string[]): Promise<void> {
+  for (const [i, name] of names.entries()) {
+    await sql('INSERT INTO product_ingredients (product_id, name, sort_order) VALUES (?, ?, ?)', [productId, name, i]);
+  }
 }
 
 /** A cuisine circle (§8.3), optionally on some stores. */

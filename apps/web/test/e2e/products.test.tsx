@@ -19,6 +19,9 @@ function renderWith(page: ReactNode) {
 
 const rowOf = async (name: string) => (await screen.findByRole('cell', { name: new RegExp(name) })).closest('tr')!;
 
+/** The product dialog opens only once the store's categories are in (a product needs one). */
+const categoriesLoaded = async (name: string) => within(await screen.findByRole('list', { name: 'الأقسام' })).findByText(name);
+
 let store: number;
 
 beforeEach(async () => {
@@ -70,15 +73,27 @@ describe('منتجات الموردين: categories (contract §11, §1.1 A10; r
     await vi.waitFor(() => expect(within(categories).queryByText('وجبات')).toBeNull());
   });
 
-  it('says why a category with products cannot be deleted', async () => {
-    const cat = await insertCategory(store, 'سندوتشات');
-    await insertProduct(store, cat, 'شاورما فراخ', 85);
+  it('adds a sub-category under a main one (§8.4 circles), and says why a full category cannot be deleted', async () => {
+    const cat = await insertCategory(store, 'فاكهه وخضروات');
+    await insertProduct(store, cat, 'طماطم', 20);
     renderWith(<StoreProductsPage initialStoreId={store} />);
     const user = userEvent.setup();
-    const item = (await within(await screen.findByRole('list', { name: 'الأقسام' })).findByText('سندوتشات')).closest('li')!;
-    await user.click(within(item).getByRole('button', { name: 'حذف القسم' }));
+    await user.click(await screen.findByRole('button', { name: 'إضافة قسم' }));
+    const dialog = await screen.findByRole('dialog', { name: 'إضافة قسم' });
+    await user.type(within(dialog).getByLabelText('اسم القسم'), 'الخضار');
+    await user.selectOptions(within(dialog).getByLabelText('القسم الرئيسي'), String(cat));
+    await user.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+
+    const categories = screen.getByRole('list', { name: 'الأقسام' });
+    const veg = (await within(categories).findByText('الخضار')).closest('li')!;
+    expect(within(veg).getByText('قسم فرعي من فاكهه وخضروات')).toBeInTheDocument();
+    const [row] = await sql<{ parent_id: number }[]>("SELECT parent_id FROM store_categories WHERE name = 'الخضار'");
+    expect(row!.parent_id).toBe(cat);
+
+    const main = within(categories).getByText('فاكهه وخضروات').closest('li')!;
+    await user.click(within(main).getByRole('button', { name: 'حذف القسم' }));
     await user.click(within(await screen.findByRole('dialog', { name: 'حذف القسم' })).getByRole('button', { name: 'تأكيد' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('احذف منتجات القسم أو انقلها أولاً');
+    expect(await screen.findByRole('alert')).toHaveTextContent('احذف منتجات القسم وأقسامه الفرعية أو انقلها أولاً');
   });
 });
 
@@ -87,7 +102,9 @@ describe('منتجات الموردين: products (real API)', () => {
     await insertCategory(store, 'سندوتشات');
     renderWith(<StoreProductsPage initialStoreId={store} />);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'إضافة منتج' }));
+    // The button waits for the categories (a product needs one).
+    await categoriesLoaded('سندوتشات');
+    await user.click(screen.getByRole('button', { name: 'إضافة منتج' }));
     const dialog = await screen.findByRole('dialog', { name: 'إضافة منتج' });
     const save = within(dialog).getByRole('button', { name: 'حفظ' });
     expect(save).toBeDisabled();
@@ -118,6 +135,7 @@ describe('منتجات الموردين: products (real API)', () => {
     await insertProduct(store, cat, 'شاورما فراخ', 85);
     renderWith(<StoreProductsPage initialStoreId={store} />);
     const user = userEvent.setup();
+    await categoriesLoaded('سندوتشات');
     await user.click(within(await rowOf('شاورما فراخ')).getByRole('button', { name: 'تعديل' }));
     const dialog = await screen.findByRole('dialog', { name: 'تعديل منتج' });
     const price = within(dialog).getByLabelText('السعر (ج.م)');
@@ -129,6 +147,41 @@ describe('منتجات الموردين: products (real API)', () => {
     await user.click(within(await rowOf('شاورما فراخ')).getByRole('button', { name: 'حذف' }));
     await user.click(within(await screen.findByRole('dialog', { name: 'حذف المنتج' })).getByRole('button', { name: 'تأكيد' }));
     expect(await screen.findByText('لا توجد منتجات')).toBeInTheDocument();
+  });
+
+  it("sets a product's choices: a required option group and base ingredients (§8.5)", async () => {
+    const cat = await insertCategory(store, 'حلويات');
+    await insertProduct(store, cat, 'بونبوني توفيكس', 0);
+    renderWith(<StoreProductsPage initialStoreId={store} />);
+    const user = userEvent.setup();
+    await categoriesLoaded('حلويات');
+    await user.click(within(await rowOf('بونبوني توفيكس')).getByRole('button', { name: 'تعديل' }));
+    const dialog = await screen.findByRole('dialog', { name: 'تعديل منتج' });
+
+    await user.click(within(dialog).getByRole('button', { name: 'إضافة مجموعة اختيارات' }));
+    const group = within(dialog).getByRole('group', { name: 'مجموعة 1' });
+    await user.type(within(group).getByLabelText('اسم المجموعة'), 'الوزن');
+    await user.click(within(group).getByRole('switch', { name: 'مطلوب' }));
+    await user.type(within(group).getByLabelText('اسم الاختيار 1'), 'ربع كيلو');
+    await user.type(within(group).getByLabelText('فرق السعر 1 (ج.م)'), '58.75');
+    await user.click(within(group).getByRole('button', { name: 'إضافة اختيار' }));
+    await user.type(within(group).getByLabelText('اسم الاختيار 2'), 'نصف كيلو');
+    await user.type(within(group).getByLabelText('فرق السعر 2 (ج.م)'), '116');
+
+    await user.click(within(dialog).getByRole('button', { name: 'إضافة مكوّن' }));
+    await user.type(within(dialog).getByLabelText('مكوّن 1'), '٥ اسبايسي ليمون');
+    await user.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+
+    const row = await rowOf('بونبوني توفيكس');
+    expect(await within(row).findByText('1 مجموعة · 1 مكوّن')).toBeInTheDocument();
+    const options = await sql<{ name: string; price_delta: string; title: string; required: number }[]>(
+      'SELECT o.name, o.price_delta, g.title, g.required FROM product_options o JOIN product_option_groups g ON g.id = o.group_id ORDER BY o.sort_order',
+    );
+    expect(options).toEqual([
+      { name: 'ربع كيلو', price_delta: '58.75', title: 'الوزن', required: 1 },
+      { name: 'نصف كيلو', price_delta: '116.00', title: 'الوزن', required: 1 },
+    ]);
+    expect(await sql('SELECT name FROM product_ingredients')).toEqual([{ name: '٥ اسبايسي ليمون' }]);
   });
 
   it('asks for a category before the first product', async () => {

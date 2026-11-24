@@ -1,6 +1,7 @@
 // Catalog rules and API shapes (contract §8.3–§8.5, §11 الموردين, المنتجات والكتالوج).
 import type { CreatedAccount, StaffAccount } from './auth.js';
 import type { Vertical } from './enums.js';
+import type { Ingredient, OptionGroup } from './product.js';
 
 /** How a store page shows its products (contract §8.4, set by the admin per store). */
 export const STORE_LAYOUTS = ['list', 'grid'] as const;
@@ -132,6 +133,11 @@ export interface CatalogStore {
 export interface Category {
   id: number;
   storeId: number;
+  /**
+   * A sub-category's main category: the market layout's category page shows the sub-categories as
+   * circles (الكل, الخضار, الفاكهة…, §8.4). One level only; null for a main category.
+   */
+  parentId: number | null;
   name: string;
   /** The market layout's "الأقسام" grid shows it (§8.4). */
   image: string | null;
@@ -152,6 +158,16 @@ export interface Product {
   /** Off means "منتجات غير فعالة" (§11): customers do not see it. */
   active: boolean;
   sortOrder: number;
+  /** The product sheet's choices (§8.5), in order. */
+  optionGroups: OptionGroup[];
+  /** "المكونات الاساسية" (§8.5), in order. */
+  ingredients: Ingredient[];
+}
+
+/** What the admin sets for a product's choices; saving replaces the old ones (§8.5). */
+export interface ProductOptionsInput {
+  optionGroups: { title: string; required: boolean; maxChoices: number; options: { name: string; priceDelta: number }[] }[];
+  ingredients: string[];
 }
 
 /** A product in an admin list that spans stores (منتجات غير فعالة). */

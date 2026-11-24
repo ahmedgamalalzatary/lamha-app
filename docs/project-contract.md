@@ -383,6 +383,16 @@ Built in Phase 6: the list, opened from a home tile, with the tile's label as it
 - [Client] The product layout (list or grid) is set per store type by the admin (restaurants list, markets and pharmacies grid).
 - [Client] A store can have its own background/cover inside the store page.
 
+Built in Phase 7: the store page at `/store/<id>` with both layouts, the category page at `/store/<id>/category/<id>`, the ☰ sheet, the product sheet (§8.5), the bottom bar and the heart (§8.14 المفضلة). Sub-categories are one level deep and set by the admin (`store_categories.parent_id`).
+
+- [Open] The cart lives in the app's memory, one list per store, until the cart screen and the server cart arrive (Phase 9). Tapping a product's count badge adds one more.
+- [Open] The search button opens the category page with every product of the store under the store's name; Tawsilty's store search is not captured.
+- [Open] A store with no minimum order shows no bottom bar until something is in the cart.
+- [Open] "التوصيل بواسطة" reads "توصيلة" for the platform and "المتجر" when the store delivers.
+- [Open] The heart turns red and filled once the store is a favourite.
+- The voucher, free-delivery and discount cards, the قسائمي sheet, the market's "العروض" rail and its themed rails arrive with the offers and banners (Phase 19).
+- [Open] A closed store's cover is darkened, not turned grey (as in the store lists).
+
 ### 8.5 Product sheet [Tawsilty]
 
 Full-width image, ✕ close, name, optional description, quantity stepper (− 1 +), "أضف للسلة <price>".
@@ -390,6 +400,13 @@ Full-width image, ✕ close, name, optional description, quantity stepper (− 1
 - **Option groups**: a title ("الوزن"), a black "مطلوب" (required) tag, "اختر 1", and radio rows with a price change ("ربع كيلو (+58.75 ج.م)"). While a required group is empty the button is grey and the bar says "أكمل الاختيارات للإضافة للسلة".
 - **Base ingredients** ("المكونات الاساسية"): outlined chips with ✓; tapping one strikes it through (removed). The cart line then shows a red "بدون: ٥ اسبايسي ليمون".
 - **"تُطلب معًا"** row ("عادةً ما يطلب المستخدمون هذه المنتجات أيضًا"): other products with "+" buttons, on every product sheet.
+
+Built in Phase 7: the admin sets each product's option groups (title, required, how many to pick, rows with a price change) and base ingredients in منتجات الموردين; saving replaces the old ones. The rules are in shared `product.ts`.
+
+- [Open] Tawsilty only shows required "اختر 1" groups. Tawsela also allows optional groups and "اختر حتى N" (ticks instead of radios).
+- [Open] "السعر حسب الاختيار" shows when the product's own price is 0 and a required group sets it.
+- [Open] "تُطلب معًا" shows the next 10 products of the store's menu after this one, wrapping round to the start. Tawsilty does not say how it picks them.
+- [Open] The admin's product form for choices is not captured; its fields follow what the sheet shows.
 
 ### 8.6 Cart (السلة) [Tawsilty]
 
@@ -477,7 +494,7 @@ Built in Phase 6, from the home search box. A store matches by its name or by on
 Sub-screens [Tawsilty]:
 - **الملف الشخصي**: avatar with camera, full name (locked), phone with "تغيير", email, gender ذكر/أنثى, region (locked). Phase 1 builds the email and gender edits; the phone's "تغيير" (needs a new code) and the avatar photo are [Open].
 - **إعدادات الإشعارات**: "تفعيل الإشعار" and "ايقاف رسائل SMS من التطبيق" toggles with explanations. Tawsela keeps only "تفعيل الإشعار" because it sends no SMS.
-- **المفضلة**: favourite stores; empty "لا توجد خدمات مفضلة".
+- **المفضلة**: favourite stores; empty "لا توجد خدمات مفضلة". Built in Phase 7 (`/v1/me/favorites`, the الخدمات المفضلة row): store rows, the newest first [Open]; a store the admin hides drops out until it is shown again.
 - **الإشعارات**: list; empty "لا توجد إشعارات".
 - **عن توصيلتي**: logo, description, "تواصل معنا عبر واتساب", social links (Facebook, Twitter, Instagram, YouTube).
 - **تقديم اقتراح / تقديم شكوى**: illustration, one text field, "ارسال".
@@ -632,7 +649,8 @@ First draft; each phase finalises its tables.
 - `addresses` (label, type, building, apartment, floor, street, landmark, phone, lat/lng, is_default)
 - `zones` (delivery areas; Phase 8, with each store's zone and location)
 - `home_tiles` (label, image, badge, row fixed/scroll, order, target vertical or store) (built in Phase 4)
-- `stores` (vertical, name, logo, cover, delivery minutes, fee, minimum order, delivered_by, layout, pickup_allowed, opens_at, closes_at, closed_now, active), `store_categories` (name, image, order), `products` (category, name, description, price, unit, image, active, order), `cuisines` (name, image, order), `store_cuisines` (built in Phase 4; ratings come from `ratings`, Phase 14; option groups Phase 7)
+- `stores` (vertical, name, logo, cover, delivery minutes, fee, minimum order, delivered_by, layout, pickup_allowed, opens_at, closes_at, closed_now, active), `store_categories` (name, image, order, parent for a sub-category), `products` (category, name, description, price, unit, image, active, order), `cuisines` (name, image, order), `store_cuisines` (built in Phase 4; ratings come from `ratings`, Phase 14)
+- `product_option_groups` (title, required, max choices, order), `product_options` (name, price change, order), `product_ingredients` (name, order), `favorite_stores` (customer, store) (built in Phase 7)
 - `carts`, `cart_lines`
 - `orders` (customer, store, driver, address, mode delivery/pickup, scheduled time, status, items total, delivery fee, service fee, payment-method fee, discount and its source (coupon or invite credit), customer total, payment method, store commission and the amount the store collects from the captain, note), `order_lines`, `order_events` (status history)
 - `ratings` (stars, tags, text)
@@ -717,3 +735,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-24 | Phase 4 done (§11, §11.2, §12): stores with their partner accounts (a store may have several), categories, products, inactive products, cuisines and home tiles in the dashboard; the admin's الحسابات tab in the app. Stand-ins marked [Open]: one daily hours range, the stores and products admin pages, the أنواع الأكل and مربعات الرئيسية names, the accounts tab, حلويات as a pinned store, the send-anything terms. `verticals` became `home_tiles`; zones move to Phase 8, product options to Phase 7. |
 | 2026-11-24 | Phase 5 done (§8.2): the customer home with the header, rotating search, tiles and invite card. Stand-ins marked [Open]: the address line until Phase 8, and the closed invite card staying hidden. |
 | 2026-11-24 | Phase 6 done (§8.3, §8.13): store lists with the cuisine circles, chips, sort and rating sheets, closed look and empty state; search with tabs, suggestions and results. Stand-ins marked [Open]: توصيل سريع as 30 minutes or less, the darkened closed picture, the no-results screen, "في <type>" suggestions. Offer chips and badges wait for Phase 19. |
+| 2026-11-24 | Phase 7 done (§8.4, §8.5, §8.14, §12): the store page in both layouts, category pages with sub-categories, the product sheet with option groups, removable ingredients and "تُطلب معًا", the bottom bar, favourites; the admin sets choices and sub-categories. Stand-ins marked [Open]: the in-memory cart until Phase 9, the store search as a category page, optional and multi-choice groups, "تُطلب معًا" as the next items of the menu. Store offer cards and rails wait for Phase 19. |

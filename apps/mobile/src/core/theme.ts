@@ -18,6 +18,10 @@ export const colors = {
   success: '#46B66F',
   success50: '#E8F6ED',
   danger: '#F44336',
+  /** The store page's info row values: "30 دقيقة", "توصيلتي". */
+  info: '#1E5BD8',
+  /** "مطلوب" tag and the selected sub-category ring. */
+  black: '#141414',
   backdrop: 'rgba(0,0,0,0.45)',
   toastDark: '#2B2B2B',
 } as const;

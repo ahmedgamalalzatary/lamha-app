@@ -9,7 +9,17 @@ import { drizzle } from 'drizzle-orm/mysql2';
 import { createConnection } from 'mysql2/promise';
 import { defaultLayout, type Role, type TileRow, UPLOADS_DIR, type Vertical } from '@tawsela/shared';
 import { hashPassword } from '../../modules/auth/password.js';
-import { cuisines, homeTiles, products, storeCategories, storeCuisines, stores } from '../../modules/catalog/catalog.schema.js';
+import {
+  cuisines,
+  homeTiles,
+  productIngredients,
+  productOptionGroups,
+  productOptions,
+  products,
+  storeCategories,
+  storeCuisines,
+  stores,
+} from '../../modules/catalog/catalog.schema.js';
 import { users } from '../../modules/users/users.schema.js';
 
 config({ path: '../../.env', quiet: true });
@@ -28,7 +38,7 @@ const ACCOUNTS: { role: Role; phone: string; firstName: string; lastName?: strin
   { role: 'admin', phone: '01000000005', firstName: 'محمود', lastName: 'حسن' },
 ];
 
-/** The demo's synthetic stores and menus (apps/demo/src/lib/data/stores.ts), without option groups (Phase 7). */
+/** The demo's synthetic stores and menus (apps/demo/src/lib/data/stores.ts); choices are added below. */
 interface SeedCatalog {
   cuisines: { key: string; name: string; image: string | null }[];
   stores: {
@@ -45,6 +55,40 @@ interface SeedCatalog {
     categories: { name: string; products: { name: string; description: string | null; price: number; unit: string | null; image: string | null }[] }[];
   }[];
 }
+
+/** Demo choices in Tawsilty's patterns (§8.5): a required "اختر 1" group, extras, removable ingredients. */
+const CHOICES: {
+  store: string;
+  product: string;
+  /** 0 makes the price come from the choice ("السعر حسب الاختيار"). */
+  price?: number;
+  groups?: { title: string; required: boolean; maxChoices: number; options: [string, number][] }[];
+  ingredients?: string[];
+}[] = [
+  { store: 'شاورما الساقية', product: 'شاورما فراخ', ingredients: ['ثومية', 'مخلل', 'بطاطس'] },
+  {
+    store: 'شاورما الساقية',
+    product: 'وجبة شاورما فراخ عربي',
+    groups: [{ title: 'الحجم', required: true, maxChoices: 1, options: [['عادي', 0], ['كبير', 40]] }],
+  },
+  {
+    store: 'سماش لاب',
+    product: 'كلاسيك سماش',
+    groups: [{ title: 'إضافات', required: false, maxChoices: 2, options: [['جبنة شيدر', 20], ['بيكون', 35], ['هالبينو', 10]] }],
+    ingredients: ['خس', 'طماطم', 'بصل', 'صوص سماش'],
+  },
+  {
+    store: 'توصيلة ماركت',
+    product: 'موز',
+    price: 0,
+    groups: [{ title: 'الوزن', required: true, maxChoices: 1, options: [['نصف كيلو', 19], ['كيلو', 38]] }],
+  },
+];
+
+/** The market's category page shows sub-categories as circles (§8.4). */
+const SUBCATEGORIES: { store: string; parent: string; children: Record<string, string[]> }[] = [
+  { store: 'توصيلة ماركت', parent: 'خضار وفاكهة', children: { الخضار: ['طماطم', 'خضار سلطة مشكل'], الفاكهة: ['موز', 'سلة فاكهة الموسم'] } },
+];
 
 /** The demo's photos (Unsplash, listed in apps/demo/public/img/SOURCES.json). */
 const DEMO_IMAGES = path.resolve('../demo/public/img');
@@ -160,6 +204,52 @@ if (anyStore) {
     });
   }
   console.log(`catalog: ${data.stores.length + 1} stores, ${data.cuisines.length} cuisines, ${tiles.length} home tiles`);
+}
+
+// Phase 7: product choices and sub-categories on a few demo items, so the product sheet and the
+// market's category page have something to show. Each step skips what is already there.
+const storeId = async (name: string) => (await db.select({ id: stores.id }).from(stores).where(eq(stores.name, name)))[0]?.id;
+
+for (const c of CHOICES) {
+  const sid = await storeId(c.store);
+  if (!sid) continue;
+  const [product] = await db.select({ id: products.id }).from(products).where(and(eq(products.storeId, sid), eq(products.name, c.product)));
+  if (!product) continue;
+  const [hasGroup] = await db.select({ id: productOptionGroups.id }).from(productOptionGroups).where(eq(productOptionGroups.productId, product.id)).limit(1);
+  const [hasIngredient] = await db.select({ id: productIngredients.id }).from(productIngredients).where(eq(productIngredients.productId, product.id)).limit(1);
+  if (hasGroup || hasIngredient) continue;
+  if (c.price !== undefined) await db.update(products).set({ price: c.price }).where(eq(products.id, product.id));
+  for (const [gi, g] of (c.groups ?? []).entries()) {
+    const [group] = await db
+      .insert(productOptionGroups)
+      .values({ productId: product.id, title: g.title, required: g.required, maxChoices: g.maxChoices, sortOrder: gi })
+      .$returningId();
+    await db.insert(productOptions).values(g.options.map(([name, priceDelta], oi) => ({ groupId: group!.id, name, priceDelta, sortOrder: oi })));
+  }
+  if (c.ingredients?.length) await db.insert(productIngredients).values(c.ingredients.map((name, i) => ({ productId: product.id, name, sortOrder: i })));
+  console.log(`choices: ${c.product}`);
+}
+
+for (const s of SUBCATEGORIES) {
+  const sid = await storeId(s.store);
+  if (!sid) continue;
+  const [parent] = await db.select().from(storeCategories).where(and(eq(storeCategories.storeId, sid), eq(storeCategories.name, s.parent)));
+  if (!parent || parent.parentId !== null) continue;
+  const [already] = await db.select({ id: storeCategories.id }).from(storeCategories).where(eq(storeCategories.parentId, parent.id)).limit(1);
+  if (already) continue;
+  for (const [i, [name, items]] of Object.entries(s.children).entries()) {
+    const [child] = await db
+      .insert(storeCategories)
+      .values({ storeId: sid, parentId: parent.id, name, sortOrder: parent.sortOrder + i + 1 })
+      .$returningId();
+    for (const item of items) {
+      await db
+        .update(products)
+        .set({ categoryId: child!.id })
+        .where(and(eq(products.categoryId, parent.id), eq(products.name, item)));
+    }
+  }
+  console.log(`sub-categories: ${s.parent}`);
 }
 
 // The seeded partner runs the first store (contract §2: a partner belongs to a store).
