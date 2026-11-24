@@ -34,7 +34,7 @@ Needs Node 22 or newer (the builds use 24), pnpm and MySQL 8.
 
 To try the app on a phone, the phone and the PC must share a Wi-Fi network, and `EXPO_PUBLIC_API_URL` must use the PC's address (for example `http://192.168.1.14:4000/v1`; `ipconfig` shows it), not `localhost`.
 
-Database changes always go through a migration (`npx drizzle-kit generate --name …` in `apps/api`, then `pnpm db:migrate`). `pnpm db:push` is only for a throwaway database of your own.
+Database changes always go through a migration (`npx drizzle-kit generate --name …` in `apps/api`, then `pnpm db:migrate`); there is no schema push.
 
 ## Checks
 
