@@ -118,6 +118,13 @@ export const en: Record<TranslationKey, string> = {
   'errors.ACCOUNT_DISABLED': 'This account is disabled. Contact the admin',
   'errors.SESSION_EXPIRED': 'Your session ended. Sign in again',
   'errors.WRONG_PASSWORD': 'Wrong password',
+  'home.deliverTo': 'Deliver to',
+  'home.chooseAddress': 'Set your location',
+  'home.searchFor': 'Search for',
+  'home.searchWords': 'pizza|restaurants|favourite dishes|the best offers',
+  'home.inviteTitle': 'Earn {amount} for every friend',
+  'home.inviteText': 'and your friend gets {amount} on signing up',
+  'home.hideInvite': 'Hide',
   'errors.network': 'Could not reach the server',
   'errors.generic': 'Something went wrong. Try again',
 };

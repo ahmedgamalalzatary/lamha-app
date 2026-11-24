@@ -1,5 +1,5 @@
 import type { HealthResponse } from '@tawsela/shared';
-import { api, ApiRequestError } from '@/core/api/client';
+import { api, ApiRequestError, mediaUrl } from '@/core/api/client';
 import { emailedCode, insertUser, resetDb } from '../utils/db';
 
 beforeEach(async () => {
@@ -43,5 +43,21 @@ describe('api (real API)', () => {
     } finally {
       process.env.EXPO_PUBLIC_API_URL = url;
     }
+  });
+});
+
+describe('mediaUrl', () => {
+  const url = process.env.EXPO_PUBLIC_API_URL;
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_API_URL = url;
+  });
+
+  it("serves an upload from the API's host, not under /v1", () => {
+    process.env.EXPO_PUBLIC_API_URL = 'http://192.168.1.5:4000/v1';
+    expect(mediaUrl('/uploads/seed/maky.jpg')).toBe('http://192.168.1.5:4000/uploads/seed/maky.jpg');
+  });
+
+  it('leaves no image as none', () => {
+    expect(mediaUrl(null)).toBeNull();
   });
 });

@@ -71,35 +71,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "build": "expo export --platform android --platform ios --output-dir dist"
+    "build": "expo export --platform android --platform ios --output-dir dist",
+    "test:e2e": "jest --config jest.config.e2e.js"
   },
-  "private": true,
-  "jest": {
-    "preset": "jest-expo",
-    "globalSetup": "<rootDir>/test/utils/global-setup.ts",
-    "globalTeardown": "<rootDir>/test/utils/global-teardown.ts",
-    "testEnvironment": "<rootDir>/test/utils/environment.js",
-    "maxWorkers": 1,
-    "testTimeout": 20000,
-    "setupFiles": [
-      "<rootDir>/jest.env.js",
-      "react-native-gesture-handler/jestSetup"
-    ],
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.ts"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/"
-    ],
-    "transformIgnorePatterns": [
-      "node_modules/(?!(?:.pnpm/[^/]+/node_modules/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|react-native-svg|three|@tanstack/.*|zustand|lucide-react-native|standard-navigation))"
-    ],
-    "testMatch": [
-      "<rootDir>/test/**/*.test.ts?(x)"
-    ],
-    "moduleNameMapper": {
-      "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"
-    },
-    "resolver": "react-native-reanimated/jest/resolver"
-  }
+  "private": true
 }

@@ -10,6 +10,11 @@ export function formatMoney(amount: number, locale: Locale = 'ar'): string {
   return `${amount.toFixed(2)} ${CURRENCY[locale]}`;
 }
 
+/** "300 ج.م": whole amounts without decimals, as in Tawsilty's offer text. Fractions keep two. */
+export function formatAmount(amount: number, locale: Locale = 'ar'): string {
+  return Number.isInteger(amount) ? `${amount} ${CURRENCY[locale]}` : formatMoney(amount, locale);
+}
+
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 
 /** Any way a customer types an Egyptian mobile number becomes the local 11-digit form "01xxxxxxxxx". */

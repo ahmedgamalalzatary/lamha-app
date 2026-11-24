@@ -12,6 +12,11 @@ beforeEach(() => {
   jest.useRealTimers();
 });
 
+// React Query hands its updates on with setTimeout. renderRouter renders under fake timers and the
+// tests then go back to real ones, which drops any update queued in between (the screen stays on
+// its skeleton). A microtask is not a timer, so updates always land.
+require('@tanstack/react-query').notifyManager.setScheduler(queueMicrotask);
+
 // AsyncStorage has no native module under Jest, so use its official mock.
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),

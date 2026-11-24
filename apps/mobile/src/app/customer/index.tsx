@@ -1,5 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { HomeScreen } from '@/features/home/screens/HomeScreen';
 
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.home" />;
-}
+export default HomeScreen;

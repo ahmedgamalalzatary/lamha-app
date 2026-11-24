@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatAmount,
   formatMinutes,
   formatMinutesRange,
   formatMoney,
@@ -25,6 +26,16 @@ describe('formatMoney (contract §7: "285.00 ج.م")', () => {
 
   it('shows a minus sign for deductions', () => {
     expect(formatMoney(-20)).toBe('-20.00 ج.م');
+  });
+});
+
+describe('formatAmount (offer text: "اربح 300 ج.م عن كل صديق")', () => {
+  it.each([
+    [300, 'ar', '300 ج.م'],
+    [25, 'en', '25 EGP'],
+    [12.5, 'ar', '12.50 ج.م'],
+  ] as const)('%s in %s is %s', (amount, locale, want) => {
+    expect(formatAmount(amount, locale)).toBe(want);
   });
 });
 

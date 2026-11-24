@@ -211,7 +211,7 @@ The same setup as the owner's Maqar project, so both are run the same way.
 | Dashboard | Next.js 16 (App Router), Tailwind 4, React Query |
 | API | NestJS 12 (ESM) with `@nestjs/config`, `@nestjs/swagger`, `class-validator`, JWT + passport, argon2, throttler, helmet, `@nestjs/schedule` (shifts, timers), `@nestjs/websockets` + socket.io (live orders and driver location), `sharp`, `nodemailer` (sign-in codes by Gmail SMTP), `nestjs-pino`, `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Database | MySQL 8, Drizzle ORM, `drizzle-kit` migrations |
-| Tests | API: vitest (`test/unit`, `test/e2e` with supertest against `tawsela_test`). Mobile: Jest + `jest-expo` + React Native Testing Library (`test/unit`, `test/ui`). Dashboard and shared: vitest |
+| Tests | API: vitest (`test/unit`, `test/e2e` with supertest against `tawsela_test`). Mobile: Jest + `jest-expo` + React Native Testing Library. Dashboard and shared: vitest. In every app `test` runs `test/unit` (no database, every core) and `test:e2e` runs `test/e2e` (the real API on the app's test database, one file at a time) |
 | Lint | API and shared: oxlint. Mobile: ESLint 9 + `eslint-config-expo`. Dashboard: ESLint 9 + `eslint-config-next` |
 | Production | Docker Compose on a server (see §15.1 #6), nginx with Let's Encrypt in front |
 
@@ -342,6 +342,13 @@ Built in Phase 1:
 - [Client] **Lucky wheel** (عجلة الحظ): one spin a day; prizes set by the admin. **Excluded for now** [Owner, 2026-11-23]: not built until the owner says otherwise.
 - [Client] Categories are not shown on the home screen; banners take their place.
 - [Client] Discounts are not shown as a flat badge; offers are grouped by the customer's coupon (§8.10).
+
+Built in Phase 5: the header, the rotating search (every 3 seconds), the two tile rows and the invite card, all from `GET /v1/catalog/home`. A tile opens its type's store list or its pinned store.
+
+- [Open] The address reads "حدد موقعك" and opens nothing until saved addresses arrive (Phase 8).
+- [Open] Tawsilty's capture does not show when a closed invite card comes back. Here it stays hidden on that phone.
+- The invite rewards are Tawsilty's 300 and 25 ج.م until Phase 18 makes them admin settings.
+- The search box opens the search screen in Phase 6, and the invite card opens ادعُ أصدقاءك in Phase 18.
 
 ### 8.3 Store lists (per vertical) [Tawsilty]
 
@@ -691,3 +698,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-23 | Phase 1 done (§8.1): the app opens on sign-in [Derived]; the uncaptured sign-in, sign-up step 1, forgot and new-password screens follow Tawsilty's sign-up pattern [Open]; errors are codes the app translates; admins also get the حسابي tab to sign out; profile phone change and avatar photo [Open]. |
 | 2026-11-23 | Phase 3 done (§11): one `/sign-in` for admins and partners [Open look]; the admin sidebar as in the Tawsilty photo plus حسابات الإدارة (A23); the partner sidebar (§11.1); admin accounts with a generated password shown once. The partner store guard moves to Phase 4, with the stores. |
 | 2026-11-24 | Phase 4 done (§11, §11.2, §12): stores with their partner accounts (a store may have several), categories, products, inactive products, cuisines and home tiles in the dashboard; the admin's الحسابات tab in the app. Stand-ins marked [Open]: one daily hours range, the stores and products admin pages, the أنواع الأكل and مربعات الرئيسية names, the accounts tab, حلويات as a pinned store, the send-anything terms. `verticals` became `home_tiles`; zones move to Phase 8, product options to Phase 7. |
+| 2026-11-24 | Phase 5 done (§8.2): the customer home with the header, rotating search, tiles and invite card. Stand-ins marked [Open]: the address line until Phase 8, and the closed invite card staying hidden. |

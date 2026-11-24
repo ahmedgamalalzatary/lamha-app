@@ -25,6 +25,9 @@ interface RequestOptions {
 /** EXPO_PUBLIC_API_URL from the root .env (e.g. http://192.168.1.5:4000/v1 for a phone on the same Wi-Fi). */
 const baseUrl = () => process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
 
+/** Where an uploaded image is served: the API's host, next to /v1 (e.g. /uploads/catalog/x.jpg). */
+export const mediaUrl = (path: string | null): string | null => (path ? new URL(path, baseUrl()).href : null);
+
 async function send(path: string, options: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';

@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import type { CatalogStore, Cuisine, HomeTile, StorePage, Vertical } from '@tawsela/shared';
+import { type CatalogStore, type Cuisine, type HomeScreen, INVITE_REWARDS, type StorePage, type Vertical } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
 import { CatalogRepository } from './catalog.repository.js';
 import { toCatalogStore, toCategory, toCuisine, toHomeTile, toProduct } from './store-view.js';
@@ -39,8 +39,10 @@ export class CatalogService {
     };
   }
 
-  async homeTiles(): Promise<HomeTile[]> {
-    return (await this.catalog.listVisibleHomeTiles()).map(toHomeTile);
+  /** The customer home (§8.2): the tiles customers may open and the invite card's rewards. */
+  async home(): Promise<HomeScreen> {
+    const tiles = (await this.catalog.listVisibleHomeTiles()).map(toHomeTile);
+    return { tiles, invite: INVITE_REWARDS };
   }
 
   async cuisines(): Promise<Cuisine[]> {

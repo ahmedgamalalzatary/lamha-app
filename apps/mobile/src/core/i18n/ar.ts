@@ -116,6 +116,13 @@ export const ar = {
   'errors.ACCOUNT_DISABLED': 'هذا الحساب موقوف، تواصل مع الإدارة',
   'errors.SESSION_EXPIRED': 'انتهت الجلسة، سجّل الدخول مرة أخرى',
   'errors.WRONG_PASSWORD': 'كلمة المرور غير صحيحة',
+  'home.deliverTo': 'التوصيل إلى',
+  'home.chooseAddress': 'حدد موقعك',
+  'home.searchFor': 'ابحث عن',
+  'home.searchWords': 'بيتزا|المطاعم|الأكلات المفضلة|أفضل العروض',
+  'home.inviteTitle': 'اربح {amount} عن كل صديق',
+  'home.inviteText': 'وصديقك يحصل على {amount} فور تسجيله',
+  'home.hideInvite': 'إخفاء',
   'errors.network': 'تعذر الاتصال بالخادم',
   'errors.generic': 'حدث خطأ، حاول مرة أخرى',
 } as const;

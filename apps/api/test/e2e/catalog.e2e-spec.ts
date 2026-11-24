@@ -74,7 +74,7 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
     await get('/v1/catalog/stores/9999').expect(404);
   });
 
-  it('gives the home tiles by row and order, leaving out tiles of hidden stores', async () => {
+  it('gives the home screen: tiles by row and order, leaving out tiles of hidden stores (§8.2)', async () => {
     const hidden = await insertStore({ active: false });
     const shown = await insertStore({ name: 'Maky' });
     await sql(
@@ -82,8 +82,18 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
        ('صيدليات', 'scroll', 1, 'pharmacy', NULL), ('Maky', 'scroll', 0, NULL, ?), ('مخفي', 'scroll', 2, NULL, ?), ('المطاعم', 'fixed', 0, 'restaurant', NULL)`,
       [shown, hidden],
     );
-    const res = await get('/v1/catalog/home-tiles').expect(200);
-    expect(res.body.map((t: { label: string }) => t.label)).toEqual(['المطاعم', 'Maky', 'صيدليات']);
+    const res = await get('/v1/catalog/home').expect(200);
+    expect(res.body.tiles.map((t: { label: string; row: string }) => [t.row, t.label])).toEqual([
+      ['fixed', 'المطاعم'],
+      ['scroll', 'Maky'],
+      ['scroll', 'صيدليات'],
+    ]);
+    expect(res.body.tiles[1]).toMatchObject({ targetStoreId: shown, targetVertical: null });
+  });
+
+  it("gives the invite card's rewards with the home screen (§8.2: 300 for you, 25 for your friend)", async () => {
+    const res = await get('/v1/catalog/home').expect(200);
+    expect(res.body.invite).toEqual({ reward: 300, friendReward: 25 });
   });
 
   it('gives the cuisines in order', async () => {

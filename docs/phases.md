@@ -29,7 +29,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 2 | Production server and deploys (moved to just before the first real mobile build) | ⬜ | owner provides the VPS (#6) |
 | 3 | Dashboard shell and sign-in (admin and partner areas) | ✅ | |
 | 4 | Catalog: verticals, stores, categories, products | ✅ | |
-| 5 | Customer home | ⬜ | |
+| 5 | Customer home | ✅ | |
 | 6 | Store lists, filters and search | ⬜ | |
 | 7 | Store page and product sheet | ⬜ | |
 | 8 | Addresses, zones and the map picker | ⬜ | |
@@ -133,6 +133,17 @@ Contract §8.3–§8.5, §11 (الموردين, المنتجات والكتال�
 ## Phase 5: Customer home
 
 Contract §8.2: header with the address, rotating search, vertical tiles, invite card. (Banners and the wheel arrive in Phases 19–20.)
+
+**Built:**
+
+- **API:** `GET /v1/catalog/home` gives the tiles customers may open (a tile pinned to a hidden store is left out) and the invite card's rewards. It replaces `GET /v1/catalog/home-tiles`. The rewards are Tawsilty's 300 and 25 ج.م (`INVITE_REWARDS` in shared) until Phase 18 makes them admin settings.
+- **Shared:** `formatAmount` writes whole amounts without decimals ("300 ج.م"), as the invite card does.
+- **Mobile (customer الرئيسية):**
+  - The orange header with "التوصيل إلى" and the search box. The search word changes every 3 seconds: بيتزا · المطاعم · الأكلات المفضلة · أفضل العروض.
+  - The tiles: a fixed first row, four across, then a row that scrolls sideways. Each tile has its image, its label (up to 2 lines) and an optional dark badge. A tile opens its type's store list (`/stores/<type>`) or its pinned store (`/store/<id>`); both are placeholders until Phases 6 and 7.
+  - The invite card with ✕; pull to refresh; grey skeleton tiles while loading; the error with "إعادة المحاولة".
+- **Tests:** React Query now hands its updates on in a microtask under Jest (`jest.setup.ts`). Before that, an update queued while `renderRouter`'s fake timers were on was lost, and the screen stayed on its skeleton.
+- **[Open] stand-ins (contract §8.2):** the address reads "حدد موقعك" and opens nothing until Phase 8; the search box opens nothing until Phase 6; the invite card opens nothing until Phase 18, and once closed it stays hidden on that phone.
 
 ## Phase 6: Store lists, filters and search
 

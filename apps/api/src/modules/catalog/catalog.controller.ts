@@ -1,6 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { CatalogStore, Cuisine, HomeTile, StorePage } from '@tawsela/shared';
+import type { CatalogStore, Cuisine, HomeScreen, StorePage } from '@tawsela/shared';
 import { CatalogService } from './catalog.service.js';
 import { CatalogStoresQuery } from './dto/catalog.dto.js';
 
@@ -11,9 +11,9 @@ import { CatalogStoresQuery } from './dto/catalog.dto.js';
 export class CatalogController {
   constructor(private readonly catalog: CatalogService) {}
 
-  @Get('home-tiles')
-  homeTiles(): Promise<HomeTile[]> {
-    return this.catalog.homeTiles();
+  @Get('home')
+  home(): Promise<HomeScreen> {
+    return this.catalog.home();
   }
 
   @Get('cuisines')
