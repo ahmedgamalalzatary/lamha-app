@@ -351,7 +351,7 @@ Built in Phase 1:
 
 Built in Phase 5: the header, the rotating search (every 3 seconds), the two tile rows and the invite card, all from `GET /v1/catalog/home`. A tile opens its type's store list or its pinned store.
 
-- [Open] The address reads "حدد موقعك" and opens nothing until saved addresses arrive (Phase 8).
+- The address reads "التوصيل إلى <landmark>" of the chosen address and opens the saved addresses (§8.9); with none saved it reads "حدد موقعك" and opens the map.
 - [Open] Tawsilty's capture does not show when a closed invite card comes back. Here it stays hidden on that phone.
 - The invite rewards are Tawsilty's 300 and 25 ج.م until Phase 18 makes them admin settings.
 - The search box opens the search screen in Phase 6, and the invite card opens ادعُ أصدقاءك in Phase 18.
@@ -369,7 +369,8 @@ Built in Phase 5: the header, the rotating search (every 3 seconds), the two til
 Built in Phase 6: the list, opened from a home tile, with the tile's label as its title ("ابحث عن حلويات و desserts"). The search box narrows this list by name.
 
 - [Open] **توصيل سريع** means delivery in 30 minutes or less (`FAST_DELIVERY_MINUTES`). Tawsilty does not say.
-- **الأقرب إليك** keeps the admin's order until stores have a location (Phase 8).
+- **الأقرب إليك** sorts by straight-line distance from the chosen address; stores with no location go last (§8.9).
+- Lists and search show only the stores of the chosen address's zone (§8.9). With no address saved, every store shows.
 - New stores show "جديد", so every rating floor leaves them out until ratings exist (Phase 14).
 - The "خصومات" and "عروض التوصيل" chips, and the voucher and free-delivery badges on the rows, arrive with the offers (Phase 19).
 - "اطلب من جديد" arrives once customers have past orders.
@@ -458,6 +459,21 @@ E-wallet and card providers: excluded for now (§15.1 #2).
 - Saved addresses sheet: label, "شارع، مبنى، شقه - المنطقة", selected tick, "تعديل" and "حذف", and "التوصيل إلى عنوان آخر — اختر موقع على الخريطة".
 - Map picker: Google Map, layers button, "تخطي", banner when location services are off ("خدمة الموقع غير مفعّلة… تفعيل"), centre pin, "قرّب الخريطة لتحديد الموقع بدقة", the plus code of the spot, and "تأكيد الموقع" disabled until zoomed in enough.
 - Address form (عنوان جديد / تعديل العنوان): mini map, "الموقع" with "تعديل" and "التوصيل متاح لهذا الموقع" (green) when inside a delivery zone, type chips شقة · مكتب · فيلا, building name (optional), apartment number, floor (optional), street (optional), mobile number with +2, **landmark (required)** with the error "يرجى إدخال علامة مميزة للعنوان", "تعيين كعنوان افتراضي" toggle (the first address is set automatically), "حفظ العنوان".
+
+**Built in Phase 8:**
+
+- **Zones** (الإعدادات › المناطق in the dashboard): a name and an outline drawn on the map (three corners at least), switched on or off, never deleted. Each store has one zone and a map location (الموردين).
+- **Addresses** (`/v1/me/addresses`): an address is saved only inside a switched-on zone (`OUT_OF_ZONE`). Its zone is the one its spot was in when saved. The first address is the default, and one address is the default at a time. Deleting the default makes the newest left the default. Deleting the account deletes its addresses.
+- **Sheet:** the title line is the landmark. The second line is "شارع، مبنى، شقه - <zone name>" [Derived from the captures]. Tapping an address delivers there. The choice is remembered on the phone per account and starts as the default [Derived]. Delete asks "حذف العنوان — هل تريد حذف هذا العنوان؟" and then shows "تم حذف العنوان". حسابي › عناويني opens the same sheet.
+- **Map picker:** "تخطي" replaces ✕ while no address is saved [Derived]. "تفعيل" asks for location, or opens the phone's settings when it can no longer ask. The plus code is computed on the phone, and the area name comes from the phone's reverse geocoding.
+- **Form:** the phone starts as the account's. Outside every zone, the form shows "التوصيل غير متاح لهذا الموقع" in red and cannot save. A new address becomes the chosen one [Derived].
+- [Open] **Google Maps key:** none yet. Android reads `GOOGLE_MAPS_API_KEY` at build time. Without it, the picker shows a stand-in and takes the phone's location as the spot. iOS uses Apple's map.
+- [Open] **Not captured:**
+  - the zoom level that turns "تأكيد الموقع" on (16 here);
+  - the red "not available" line;
+  - the apartment and phone error wording;
+  - the empty sheet;
+  - the dashboard zones page, which uses Leaflet with OpenStreetMap and needs no key.
 
 ### 8.10 Offers and coupons [Client]
 
@@ -749,3 +765,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-24 | CodeRabbit review of Phases 0–7 (§8.1, §11, §12): sessions end through a per-account session version (reset, disable, deletion, copied token), reset tickets work once and only for their account, code tries are counted before the check, the last enabled admin cannot be disabled (`LAST_ADMIN`), Arabic-keyboard digits in the code boxes. Both apps drop answers that arrive after sign-out and start an empty data cache for each account. The app shows a retry when the server cannot be reached at launch [Open]. Dashboard dialogs keep keyboard focus inside. |
 | 2026-11-24 | Third phone capture (signed out, offline, store details): screens built from it. §8.1: the welcome screen and one phone step for every role (`POST /v1/auth/phone`), "أهلاً بعودتك", "إسترجاع بيانات الدخول" and "كلمة مرور الحساب" with the confirm field; the new-phone email step stays [Open] (no SMS: codes go by email). The no-connection screen. §8.4: the store's "البحث" page, switched-off products greyed with "غير متوفر" (no longer hidden, §11), "لا توجد منتجات حاليا", "مجاني" for a 0 fee, the heart and "التوصيل بواسطة" confirmed. §8.13: the no-results screen and "في المتاجر". §8.14: the phone change by an emailed code and the avatar photo (`/v1/me/phone`, `/v1/me/avatar`, migration 0004), the sign-out confirm (§6.3 third dialog look), favourites newest first confirmed. |
 | 2026-11-24 | CodeRabbit round 2 (§8.4, §8.5, §8.13, §11, §12): partner search matches the full name; search lists every store with a matching product (not only those among the first 200 products); category changes of one store run one at a time and a main category with sub-categories cannot be deleted even by a racing request (migration 0005, `CATEGORY_NOT_EMPTY`); saving a product with unchanged choices keeps their ids; a growing cart line takes the current price; HEIC is no longer offered (the server cannot read it); the seed's catalog runs in one transaction. Apps: a late launch restore or sign-in no longer overrides a newer sign-in or sign-out; the dashboard keeps a session the browser would not store when it renews it; dashboard Save waits for an image upload; the store picker and the cuisines list show a retry when they fail. |
+| 2026-11-24 | Phase 8 built (§8.2, §8.3, §8.9, §11): delivery zones outlined in the dashboard (الإعدادات › المناطق), each store's zone and location, saved addresses (migration 0006) with the sheet, map picker and form, store lists and search limited to the chosen address's zone, "الأقرب إليك" by distance. Stand-ins marked [Open]: no Google Maps key yet (a stand-in instead of the map on Android), the confirm zoom level, the uncaptured wording and the dashboard map. |

@@ -5,7 +5,8 @@ import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 import { createTestApp, lastCodeTo, mailbox } from '../utils/app.js';
-import { insertUser, resetDb } from '../utils/db.js';
+import type { ResultSetHeader } from 'mysql2/promise';
+import { insertUser, resetDb, sql } from '../utils/db.js';
 
 const PASSWORD = 'secret123';
 
@@ -57,8 +58,13 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     expect(res.body.code).toBe('EMAIL_TAKEN');
   });
 
-  it('deletes a customer account with its password: sessions end and the phone is free again', async () => {
-    await insertUser('customer', '01554459196', PASSWORD, 'ahmed@gmail.com');
+  it('deletes a customer account with its password: sessions end, addresses go and the phone is free again', async () => {
+    const id = await insertUser('customer', '01554459196', PASSWORD, 'ahmed@gmail.com');
+    const zone = await sql<ResultSetHeader>(`INSERT INTO zones (name, polygon) VALUES ('الفيوم', '[]')`);
+    await sql(
+      "INSERT INTO addresses (user_id, zone_id, type, apartment, landmark, phone, lat, lng) VALUES (?, ?, 'apartment', '2', 'علامه', '01554459196', 29.3, 30.8)",
+      [id, zone.insertId],
+    );
     const { accessToken, refreshToken } = await signIn('01554459196');
     const wrong = await http().delete('/v1/me').set('Authorization', `Bearer ${accessToken}`).send({ password: 'wrongpass' }).expect(403);
     expect(wrong.body.code).toBe('WRONG_PASSWORD');
@@ -66,6 +72,7 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     await http().delete('/v1/me').set('Authorization', `Bearer ${accessToken}`).send({ password: PASSWORD }).expect(204);
     await http().get('/v1/me').set('Authorization', `Bearer ${accessToken}`).expect(401);
     await http().post('/v1/auth/refresh').send({ refreshToken }).expect(401);
+    expect(await sql<unknown[]>('SELECT id FROM addresses WHERE user_id = ?', [id])).toHaveLength(0);
     await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(401);
     await http().post('/v1/auth/signup/code').send({ phone: '01554459196', email: 'ahmed@gmail.com' }).expect(201);
   });

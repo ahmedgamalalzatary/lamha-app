@@ -1,4 +1,5 @@
 // Catalog rules and API shapes (contract §8.3–§8.5, §11 الموردين, المنتجات والكتالوج).
+import type { LatLng } from './address.js';
 import type { CreatedAccount, StaffAccount } from './auth.js';
 import type { Vertical } from './enums.js';
 import type { Ingredient, OptionGroup } from './product.js';
@@ -83,6 +84,10 @@ export interface StoreInput extends StoreHours {
   /** Hidden from customers when false. */
   active: boolean;
   cuisineIds: number[];
+  /** The delivery zone it serves (§8.9): customers see it only when their address is in this zone. */
+  zoneId: number | null;
+  /** Where the store is, for "الأقرب إليك". */
+  location: LatLng | null;
 }
 
 /** A store as the admin dashboard sees it. */
@@ -128,6 +133,7 @@ export interface CatalogStore {
   rating: number | null;
   ratingCount: number;
   cuisineIds: number[];
+  location: LatLng | null;
 }
 
 export interface Category {

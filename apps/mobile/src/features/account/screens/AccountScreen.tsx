@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, ChevronLeft, Heart, LogOut, Trash2, User } from 'lucide-react-native';
+import { Bell, ChevronLeft, Heart, LogOut, MapPin, Trash2, User } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { session, useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { meApi } from '../api/me';
 import { AccountRow } from '../components/AccountRow';
 
@@ -28,6 +29,7 @@ export function AccountScreen() {
   const [deleting, setDeleting] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmOut, setConfirmOut] = useState(false);
+  const [addressesOpen, setAddressesOpen] = useState(false);
 
   const signOut = useSubmit(async () => {
     await session.signOut();
@@ -71,7 +73,13 @@ export function AccountScreen() {
           {t('account.groupAccount')}
         </AppText>
         <AccountRow icon={User} label={t('account.settings')} onPress={() => router.push('/profile')} />
-        {user.role === 'customer' ? <AccountRow icon={Heart} label={t('account.favorites')} onPress={() => router.push('/favorites')} /> : null}
+        {user.role === 'customer' ? (
+          <>
+            <AccountRow icon={Heart} label={t('account.favorites')} onPress={() => router.push('/favorites')} />
+            <AccountRow icon={MapPin} label={t('account.addresses')} onPress={() => setAddressesOpen(true)} />
+            <AddressesSheet visible={addressesOpen} onClose={() => setAddressesOpen(false)} />
+          </>
+        ) : null}
 
         {user.role === 'customer' ? (
           <>

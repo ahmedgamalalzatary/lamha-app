@@ -1,6 +1,7 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
-import type { AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, OptionGroup, Product, ProductOptionsInput, Vertical } from '@tawsela/shared';
+import type { AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, LatLng, OptionGroup, Product, ProductOptionsInput, Vertical } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
+import { AddressesService } from '../addresses/addresses.service.js';
 import { hashPassword } from '../auth/password.js';
 import { generatePassword } from '../users/generated-password.js';
 import { toStaffAccount } from '../users/staff-account.js';
@@ -23,6 +24,10 @@ import { toCategory, toCuisine, toHomeTile, toStoreInput, storeIsOpen } from './
 
 const notFound = (what: string) => new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', `No ${what} has this id`);
 
+/** The store's location as its columns: left out keeps it, null clears it. */
+const spot = (location: LatLng | null | undefined) =>
+  location === undefined ? {} : { lat: location?.lat ?? null, lng: location?.lng ?? null };
+
 /**
  * The admin's catalog (contract §11 الموردين, المنتجات والكتالوج; §1.1 A6, A10–A12). Making a store
  * also makes its partner account, with a generated password shown once (§2).
@@ -32,6 +37,7 @@ export class AdminCatalogService {
   constructor(
     private readonly catalog: CatalogRepository,
     private readonly users: UsersRepository,
+    private readonly addresses: AddressesService,
   ) {}
 
   // Stores
@@ -46,13 +52,14 @@ export class AdminCatalogService {
   }
 
   async createStore(meId: number, body: CreateStoreDto): Promise<CreatedStore> {
-    const { partner, cuisineIds, ...fields } = body;
+    const { partner, cuisineIds, location, ...fields } = body;
     if (await this.users.phoneInUse(partner.phone)) {
       throw new ApiException(HttpStatus.CONFLICT, 'PHONE_TAKEN', 'This phone already has an account');
     }
     await this.assertCuisines(cuisineIds);
+    if (fields.zoneId != null) await this.addresses.assertZone(fields.zoneId);
     const password = generatePassword();
-    const { storeId, partnerId } = await this.catalog.createStoreWithPartner(fields, cuisineIds, {
+    const { storeId, partnerId } = await this.catalog.createStoreWithPartner({ ...fields, ...spot(location) }, cuisineIds, {
       role: 'partner',
       phone: partner.phone,
       firstName: partner.firstName,
@@ -65,9 +72,10 @@ export class AdminCatalogService {
 
   async updateStore(meId: number, id: number, body: UpdateStoreDto): Promise<AdminStore> {
     await this.storeOrThrow(id);
-    const { cuisineIds, ...fields } = body;
+    const { cuisineIds, location, ...fields } = body;
     if (cuisineIds) await this.assertCuisines(cuisineIds);
-    await this.catalog.updateStore(id, fields, cuisineIds);
+    if (fields.zoneId != null) await this.addresses.assertZone(fields.zoneId);
+    await this.catalog.updateStore(id, { ...fields, ...spot(location) }, cuisineIds);
     return this.getStore(meId, id);
   }
 

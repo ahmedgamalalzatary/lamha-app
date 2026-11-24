@@ -6,6 +6,7 @@ import {
   type HomeScreen,
   INVITE_REWARDS,
   inSearchScope,
+  type LatLng,
   type SearchResult,
   type SearchScope,
   type SearchSuggestion,
@@ -14,6 +15,7 @@ import {
   type Vertical,
 } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
+import { AddressesService } from '../addresses/addresses.service.js';
 import { CatalogRepository } from './catalog.repository.js';
 import type { StoreRow } from './catalog.schema.js';
 import { toCatalogStore, toCategory, toCuisine, toHomeTile } from './store-view.js';
@@ -27,16 +29,29 @@ const SUGGESTIONS = 8;
  */
 @Injectable()
 export class CatalogService {
-  constructor(private readonly catalog: CatalogRepository) {}
+  constructor(
+    private readonly catalog: CatalogRepository,
+    private readonly addresses: AddressesService,
+  ) {}
+
+  /** The chosen address's zone and spot; none chosen lists every store (§8.9). */
+  private async deliverTo(userId: number, addressId?: number): Promise<{ zoneId?: number; from?: LatLng }> {
+    if (addressId === undefined) return {};
+    const address = await this.addresses.findOf(userId, addressId);
+    return { zoneId: address.zoneId, from: { lat: address.lat, lng: address.lng } };
+  }
 
   /** A store list (§8.3): its type, cuisine and search box, then the sort sheet, rating sheet and chips. */
-  async stores(query: { vertical?: Vertical; cuisineId?: number; q?: string } & StoreFilter): Promise<CatalogStore[]> {
-    const { sort, minRating, fast, pickup, ...where } = query;
-    return applyStoreFilter(await this.toStores(await this.catalog.listStores({ ...where, activeOnly: true })), { sort, minRating, fast, pickup });
+  async stores(userId: number, query: { vertical?: Vertical; cuisineId?: number; q?: string; addressId?: number } & StoreFilter): Promise<CatalogStore[]> {
+    const { sort, minRating, fast, pickup, addressId, ...where } = query;
+    const { zoneId, from } = await this.deliverTo(userId, addressId);
+    const rows = await this.catalog.listStores({ ...where, zoneId, activeOnly: true });
+    return applyStoreFilter(await this.toStores(rows), { sort, minRating, fast, pickup }, from);
   }
 
   /** Search (§8.13): stores whose name matches, and stores with matching products, each with those products. */
-  async search(q: string, scope: SearchScope): Promise<SearchResult[]> {
+  async search(userId: number, q: string, scope: SearchScope, addressId?: number): Promise<SearchResult[]> {
+    const { zoneId } = await this.deliverTo(userId, addressId);
     const [byName, byProduct, rows] = await Promise.all([
       this.catalog.listStores({ q, activeOnly: true }),
       this.catalog.storeIdsWithProduct(q, scope),
@@ -44,7 +59,7 @@ export class CatalogService {
     ]);
     const products = await this.catalog.withChoices(rows);
     const ids = new Set([...byName.map((s) => s.id), ...byProduct]);
-    const stores = (await this.toStores(await this.catalog.listStores({ ids: [...ids], activeOnly: true }))).filter((s) =>
+    const stores = (await this.toStores(await this.catalog.listStores({ ids: [...ids], zoneId, activeOnly: true }))).filter((s) =>
       inSearchScope(s.vertical, scope),
     );
     return stores.map((store) => ({ store, products: products.filter((p) => p.storeId === store.id) }));

@@ -3,3 +3,4 @@ export * from '../../modules/users/users.schema.js';
 export * from '../../modules/auth/auth.schema.js';
 export * from '../../modules/catalog/catalog.schema.js';
 export * from '../../modules/favorites/favorites.schema.js';
+export * from '../../modules/addresses/addresses.schema.js';

@@ -32,7 +32,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 5 | Customer home | 🔍 in-verify | |
 | 6 | Store lists, filters and search | 🔍 in-verify | |
 | 7 | Store page and product sheet | 🔍 in-verify | |
-| 8 | Addresses, zones and the map picker | ⬜ | |
+| 8 | Addresses, zones and the map picker | 🔍 in-verify | Google Maps key |
 | 9 | Cart | ⬜ | |
 | 10 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
 | 11 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens), 11 |
@@ -196,6 +196,22 @@ Contract §8.4–§8.5: cover, info row, category grid, category pages, product 
 ## Phase 8: Addresses, zones and the map picker
 
 Contract §8.9: saved addresses sheet, map picker with zoom gate and location banner, address form with validation, delivery zone check. Adds the `zones` table (moved from Phase 4) and each store's zone and location.
+
+- **API:**
+  - Migration 0006 adds `zones`, `addresses`, and `zone_id`, `lat` and `lng` on stores.
+  - `/v1/me/addresses` lists, adds, replaces and deletes addresses; `POST /v1/zones/check` checks a spot.
+  - `/v1/admin/zones` lists, adds and edits zones.
+  - Store lists and search take `addressId`.
+- **Dashboard:** الإعدادات › المناطق (outline on the map); the store form's zone and location.
+- **App:**
+  - The "العناوين المحفوظة" sheet, from the home, the store lists and حسابي › عناويني.
+  - The map picker (`/address/map`).
+  - The address form (`/address/new`, `/address/<id>`).
+- **Seed:** one zone, الفيوم, holding every store, each at its own spot.
+- **Stand-ins and later work:**
+  - See contract §8.9.
+  - The map needs `GOOGLE_MAPS_API_KEY` in the root `.env`, or as a CI secret, for Android builds.
+  - Delivery fees per zone wait for checkout (§15.1 #3).
 
 ## Phase 9: Cart
 

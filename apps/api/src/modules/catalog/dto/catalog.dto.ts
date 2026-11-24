@@ -36,6 +36,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { LatLngDto } from '../../addresses/dto/addresses.dto.js';
 import { CreateAdminDto } from '../../admins/dto/admins.dto.js';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -131,6 +132,17 @@ export class StoreFieldsDto {
   @ArrayUnique()
   @IsInt({ each: true })
   cuisineIds: number[];
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'The delivery zone it serves (§8.9)' })
+  @IsOptional()
+  @IsInt()
+  zoneId?: number | null;
+
+  @ApiPropertyOptional({ type: LatLngDto, nullable: true, description: 'Where the store is, for "الأقرب إليك"' })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LatLngDto)
+  location?: LatLngDto | null;
 }
 
 /** The partner account made with the store: name and phone; the password is generated (contract §2). */
@@ -158,8 +170,15 @@ const queryBool = ({ value }: { value: unknown }) => (value === 'true' ? true : 
 const SearchText = () =>
   applyDecorators(ApiProperty({ maxLength: SEARCH_MAX_LENGTH }), Transform(trim), IsString(), IsNotEmpty(), MaxLength(SEARCH_MAX_LENGTH));
 
+/** The customer's chosen address (§8.9): only stores of its zone are listed, "الأقرب إليك" measures from it. */
+const AddressId = () =>
+  applyDecorators(ApiPropertyOptional({ description: "The customer's chosen address" }), IsOptional(), Type(() => Number), IsInt());
+
 /** GET /v1/catalog/stores: a store list with its search box, sort sheet, rating sheet and chips (§8.3). */
 export class CatalogStoresQuery extends StoreListQuery {
+  @AddressId()
+  addressId?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
@@ -206,6 +225,9 @@ export class SearchQuery {
   @IsOptional()
   @IsIn(SEARCH_SCOPES)
   scope: SearchScope = 'all';
+
+  @AddressId()
+  addressId?: number;
 }
 
 /** A store category, a cuisine: a name and an optional image. */

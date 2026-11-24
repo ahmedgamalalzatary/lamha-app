@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Me } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
+import { AddressesRepository } from '../addresses/addresses.repository.js';
 import { verifyPassword } from '../auth/password.js';
 import { SessionsRepository } from '../auth/sessions.repository.js';
 import type { UpdateMeDto } from './dto/me.dto.js';
@@ -30,6 +31,7 @@ export class UsersService {
   constructor(
     private readonly users: UsersRepository,
     private readonly sessions: SessionsRepository,
+    private readonly addresses: AddressesRepository,
   ) {}
 
   async getMe(id: number): Promise<Me> {
@@ -75,6 +77,7 @@ export class UsersService {
       deletedAt: new Date(),
     });
     await this.sessions.revokeAllForUser(id);
+    await this.addresses.deleteAllOf(id);
   }
 
   /** A fresh invite code no one has yet. */

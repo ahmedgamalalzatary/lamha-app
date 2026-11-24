@@ -36,7 +36,15 @@ export const ADMIN_NAV: NavGroup[] = [
   },
   { label: 'التسويق والعروض', icon: Megaphone, items: [{ label: 'الإشعارات التفاعلية', href: '/marketing/notifications' }] },
   { label: 'التقارير', icon: ChartLine, items: [{ label: 'التقارير', href: '/reports' }] },
-  { label: 'الإعدادات', icon: Settings, items: [{ label: 'حسابات الإدارة', href: '/settings/admins' }] },
+  {
+    label: 'الإعدادات',
+    icon: Settings,
+    items: [
+      // Phase 8: delivery zones (§8.9) [Open: name and layout ours].
+      { label: 'المناطق', href: '/settings/zones' },
+      { label: 'حسابات الإدارة', href: '/settings/admins' },
+    ],
+  },
 ];
 
 /**

@@ -32,6 +32,9 @@ const VERSION = '1.0.0';
  */
 const BUILD_NUMBER = Number(process.env.APP_BUILD_NUMBER ?? 1);
 
+/** Google Maps for Android (contract §8.9), from the root .env or a CI secret. Not a public value. */
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY ?? '';
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: IDENTITY.name,
@@ -62,6 +65,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
+    // [Open] No key yet (contract §8.9): without one the app shows a stand-in instead of the map.
+    ...(GOOGLE_MAPS_API_KEY ? { config: { googleMaps: { apiKey: GOOGLE_MAPS_API_KEY } } } : {}),
   },
   web: {
     output: 'server',
@@ -81,6 +86,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Arabic RTL from the first launch (contract §7). The English switch (LTR) comes with the account screen.
     ['expo-localization', { supportsRTL: true, forcesRTL: true }],
     'expo-sharing',
+    ['expo-location', { locationWhenInUsePermission: 'توصيلة تستخدم موقعك لتحديد عنوان التوصيل على الخريطة.' }],
     'expo-asset',
     './plugins/with-release-signing.js',
   ],
@@ -90,5 +96,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     nameAr: IDENTITY.nameAr,
+    /** The map picker draws Google's map only with a key (src/features/addresses/map-available.ts). */
+    googleMaps: Boolean(GOOGLE_MAPS_API_KEY),
   },
 });

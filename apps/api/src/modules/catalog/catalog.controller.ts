@@ -1,6 +1,7 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { CatalogStore, Cuisine, HomeScreen, SearchResult, SearchSuggestion, StorePage } from '@tawsela/shared';
+import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { CatalogService } from './catalog.service.js';
 import { CatalogStoresQuery, SearchQuery } from './dto/catalog.dto.js';
 
@@ -21,14 +22,15 @@ export class CatalogController {
     return this.catalog.cuisines();
   }
 
+  /** With `addressId`, only the stores of that address's zone (404 when it is not the customer's). */
   @Get('stores')
-  stores(@Query() query: CatalogStoresQuery): Promise<CatalogStore[]> {
-    return this.catalog.stores(query);
+  stores(@CurrentUser() me: AuthUser, @Query() query: CatalogStoresQuery): Promise<CatalogStore[]> {
+    return this.catalog.stores(me.id, query);
   }
 
   @Get('search')
-  search(@Query() query: SearchQuery): Promise<SearchResult[]> {
-    return this.catalog.search(query.q, query.scope);
+  search(@CurrentUser() me: AuthUser, @Query() query: SearchQuery): Promise<SearchResult[]> {
+    return this.catalog.search(me.id, query.q, query.scope, query.addressId);
   }
 
   @Get('search/suggestions')

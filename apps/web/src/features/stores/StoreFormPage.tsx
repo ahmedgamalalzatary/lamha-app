@@ -13,6 +13,7 @@ import {
   verticalLabel,
 } from '@tawsela/shared';
 import { ArrowRight } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useRef, useState } from 'react';
@@ -21,7 +22,10 @@ import { ImageField, useUploading } from '@/components/ImageField';
 import { PasswordShown } from '@/components/PasswordShown';
 import { Button, ErrorLine, LoadState, SelectField, Switch, TextField } from '@/components/ui';
 import { useCreateStore, useCuisines, useStore, useUpdateStore } from '../catalog/api';
+import { useZones } from '../zones/api';
 import { PartnerAccounts } from './PartnerAccounts';
+
+const MapView = dynamic(() => import('@/components/MapView').then((m) => m.MapView), { ssr: false });
 
 const LAYOUT_LABELS = { list: 'قائمة (مطاعم)', grid: 'شبكة (ماركت وصيدليات)' } as const;
 const DELIVERED_BY_LABELS = { platform: 'توصيلة', store: 'المتجر نفسه' } as const;
@@ -49,6 +53,8 @@ const EMPTY: Draft = {
   closedNow: false,
   active: true,
   cuisineIds: [],
+  zoneId: null,
+  location: null,
 };
 
 /** Only the fields the admin edits; the API refuses the read-only ones (id, partners…). */
@@ -65,6 +71,8 @@ const toDraft = (s: AdminStore): Draft => ({
   closedNow: s.closedNow,
   active: s.active,
   cuisineIds: s.cuisineIds,
+  zoneId: s.zoneId,
+  location: s.location,
   deliveryMinutes: String(s.deliveryMinutes),
   deliveryFee: String(s.deliveryFee),
   minimumOrder: String(s.minimumOrder),
@@ -85,6 +93,7 @@ export function StoreFormPage({ storeId }: { storeId?: number }) {
 function StoreForm({ store }: { store?: AdminStore }) {
   const router = useRouter();
   const cuisines = useCuisines();
+  const zones = useZones();
   const create = useCreateStore();
   const update = useUpdateStore();
   const [draft, setDraft] = useState<Draft>(store ? toDraft(store) : EMPTY);
@@ -197,6 +206,30 @@ function StoreForm({ store }: { store?: AdminStore }) {
           onChange={(v) => set('deliveredBy', v)}
         />
         <Switch label="الاستلام من المحل" checked={draft.pickupAllowed} onChange={(v) => set('pickupAllowed', v)} />
+      </Section>
+
+      <Section title="المنطقة والموقع" note="يظهر المتجر للعملاء الذين عنوانهم داخل منطقته فقط. الموقع يرتّب «الأقرب إليك».">
+        {zones.isError ? <LoadState error={errorMessage(zones.error)} onRetry={() => void zones.refetch()} /> : null}
+        <SelectField
+          label="منطقة التوصيل"
+          value={draft.zoneId === null ? '' : String(draft.zoneId)}
+          options={[
+            { value: '', label: 'بدون منطقة' },
+            ...(zones.data ?? []).map((z) => ({ value: String(z.id), label: z.active ? z.name : `${z.name} (موقوفة)` })),
+          ]}
+          onChange={(v) => set('zoneId', v === '' ? null : Number(v))}
+        />
+        <MapView label="موقع المتجر" pin={draft.location} onPin={(p) => set('location', p)} />
+        <div className="flex items-center gap-3 text-sm">
+          <span dir="ltr" className="font-semibold">
+            {draft.location ? `${draft.location.lat.toFixed(6)}, ${draft.location.lng.toFixed(6)}` : 'لم يُحدد الموقع'}
+          </span>
+          {draft.location ? (
+            <Button tone="soft" className="h-9 px-4" onClick={() => set('location', null)}>
+              إزالة الموقع
+            </Button>
+          ) : null}
+        </div>
       </Section>
 
       <Section title="المواعيد" note="بتوقيت القاهرة. إذا كان الإغلاق قبل الفتح فالمواعيد تمتد بعد منتصف الليل.">

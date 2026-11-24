@@ -12,6 +12,7 @@ beforeEach(() => {
   jest.useRealTimers();
   // The store-page cart lives in memory, and a reset database gives the next test the same store ids.
   require('@/features/cart/cart-store').cartStore.clear();
+  require('@/features/addresses/chosen-address').resetChosenAddresses();
   // Screens rendered without a test client share the app's own: no data carries into the next test.
   require('@/core/query').queryClient.clear();
 });

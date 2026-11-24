@@ -42,8 +42,11 @@ export class CatalogRepository {
 
   // Stores
 
-  async listStores(filter: { vertical?: Vertical; cuisineId?: number; activeOnly?: boolean; q?: string; ids?: number[] } = {}): Promise<StoreRow[]> {
+  async listStores(
+    filter: { vertical?: Vertical; cuisineId?: number; activeOnly?: boolean; q?: string; ids?: number[]; zoneId?: number } = {},
+  ): Promise<StoreRow[]> {
     const where: SQL[] = [];
+    if (filter.zoneId !== undefined) where.push(eq(stores.zoneId, filter.zoneId));
     if (filter.ids) {
       if (!filter.ids.length) return [];
       where.push(inArray(stores.id, filter.ids));

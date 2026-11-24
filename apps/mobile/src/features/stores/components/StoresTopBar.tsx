@@ -4,30 +4,39 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
+import { useDeliverTo } from '@/features/addresses/components/useDeliverTo';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 
 /**
- * A store list's top bar (contract §8.3): back, "التوصيل إلى <address>", the cart.
- * [Open] As on the home, the address reads "حدد موقعك" until saved addresses arrive (Phase 8).
+ * A store list's top bar (contract §8.3): back, "التوصيل إلى <address>" (opens the saved addresses,
+ * §8.9), the cart.
  */
 export function StoresTopBar() {
   const t = useT();
+  const deliverTo = useDeliverTo();
   return (
     <View style={styles.bar}>
       <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} hitSlop={8} scaleTo={0.9}>
         <ArrowRight size={26} color={colors.ink} />
       </PressableScale>
-      <View style={styles.address}>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={`${t('home.deliverTo')} ${deliverTo.label}`}
+        onPress={deliverTo.press}
+        scaleTo={0.98}
+        style={styles.address}
+      >
         <AppText color={colors.ink2} size={fontSizes.caption}>
           {t('home.deliverTo')}
         </AppText>
         <View style={styles.addressRow}>
           <AppText weight="bold" size={fontSizes.listTitle} numberOfLines={1}>
-            {t('home.chooseAddress')}
+            {deliverTo.label}
           </AppText>
           <ChevronDown size={16} color={colors.ink} />
         </View>
-      </View>
+      </PressableScale>
+      {deliverTo.sheet}
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={t('tabs.cart')}

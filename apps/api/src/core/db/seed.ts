@@ -21,6 +21,7 @@ import {
   stores,
 } from '../../modules/catalog/catalog.schema.js';
 import { users } from '../../modules/users/users.schema.js';
+import { zones } from '../../modules/addresses/addresses.schema.js';
 
 config({ path: '../../.env', quiet: true });
 
@@ -262,5 +263,31 @@ if (first) {
     .update(users)
     .set({ storeId: first.id })
     .where(and(eq(users.phone, '01000000002'), isNull(users.storeId)));
+}
+
+// Phase 8: one delivery zone around Fayoum city (Tawsilty's area, §8.9), holding every store that has
+// none, each placed at its own spot in the city so "الأقرب إليك" has distances to sort by.
+const [anyZone] = await db.select({ id: zones.id }).from(zones).limit(1);
+if (!anyZone) {
+  const FAYOUM = { lat: 29.3084, lng: 30.8428 };
+  const [zone] = await db
+    .insert(zones)
+    .values({
+      name: 'الفيوم',
+      polygon: [
+        { lat: 29.27, lng: 30.79 },
+        { lat: 29.35, lng: 30.79 },
+        { lat: 29.35, lng: 30.89 },
+        { lat: 29.27, lng: 30.89 },
+      ],
+    })
+    .$returningId();
+  const unzoned = await db.select({ id: stores.id }).from(stores).where(isNull(stores.zoneId));
+  for (const { id } of unzoned) {
+    const lat = FAYOUM.lat + ((id % 5) - 2) * 0.006;
+    const lng = FAYOUM.lng + ((Math.floor(id / 5) % 5) - 2) * 0.006;
+    await db.update(stores).set({ zoneId: zone!.id, lat, lng }).where(eq(stores.id, id));
+  }
+  console.log(`zones: الفيوم with ${unzoned.length} stores`);
 }
 await conn.end();

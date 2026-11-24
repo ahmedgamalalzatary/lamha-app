@@ -44,8 +44,12 @@ export function toStoreInput(row: StoreRow, cuisineIds: number[]): StoreInput {
     closedNow: row.closedNow,
     active: row.active,
     cuisineIds,
+    zoneId: row.zoneId,
+    location: locationOf(row),
   };
 }
+
+const locationOf = (row: StoreRow) => (row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng });
 
 /** A store as the apps list it. Ratings arrive in Phase 14; until then every store is "جديد". */
 export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date): CatalogStore {
@@ -65,6 +69,7 @@ export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date): 
     rating: null,
     ratingCount: 0,
     cuisineIds,
+    location: locationOf(row),
   };
 }
 

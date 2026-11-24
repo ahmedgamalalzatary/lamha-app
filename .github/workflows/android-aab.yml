@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 60
     env:
       EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+      # Empty until the secret is set: the map picker then shows its stand-in (contract §8.9).
+      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
       NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - name: Check the release settings

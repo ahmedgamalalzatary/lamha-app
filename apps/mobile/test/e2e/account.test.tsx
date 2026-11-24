@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { fireEvent, screen } from 'expo-router/testing-library';
-import { renderApp } from '../utils/render';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { renderApp, testQueryClient } from '../utils/render';
 import { Text } from 'react-native';
 import { ToastHost, toast } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
@@ -8,12 +9,13 @@ import { AccountScreen } from '@/features/account/screens/AccountScreen';
 import { ProfileScreen } from '@/features/account/screens/ProfileScreen';
 import { emailedCode, insertUser, PASSWORD, refreshWorks, resetDb, signInAs, sql } from '../utils/db';
 
+// حسابي › عناويني reads the saved addresses, so the screens need a query client, as the app's root gives them.
 function Root() {
   return (
-    <>
+    <QueryClientProvider client={testQueryClient()}>
       <Stack screenOptions={{ headerShown: false }} />
       <ToastHost />
-    </>
+    </QueryClientProvider>
   );
 }
 

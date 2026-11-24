@@ -14,6 +14,7 @@ import {
   timestamp,
   varchar,
 } from 'drizzle-orm/mysql-core';
+import { degrees, zones } from '../addresses/addresses.schema.js';
 
 const money = (name: string) => decimal(name, { precision: 10, scale: 2, mode: 'number' });
 
@@ -37,6 +38,10 @@ export const stores = mysqlTable('stores', {
   closesAt: time('closes_at').notNull(),
   closedNow: boolean('closed_now').notNull().default(false),
   active: boolean('active').notNull().default(true),
+  // Customers see the store only when their chosen address is in this zone (§8.9).
+  zoneId: int('zone_id', { unsigned: true }).references(() => zones.id),
+  lat: degrees('lat'),
+  lng: degrees('lng'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
 });

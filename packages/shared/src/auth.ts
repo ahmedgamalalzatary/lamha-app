@@ -115,6 +115,8 @@ export type ApiErrorCode =
   | 'IMAGE_INVALID'
   /** A home tile must open exactly one vertical or one store. */
   | 'TILE_TARGET'
+  /** The address's spot is in no delivery zone (§8.9). */
+  | 'OUT_OF_ZONE'
   | 'PHONE_TAKEN'
   | 'EMAIL_TAKEN'
   | 'PHONE_NOT_FOUND'

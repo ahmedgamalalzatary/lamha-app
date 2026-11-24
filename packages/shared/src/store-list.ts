@@ -1,5 +1,6 @@
 // Store lists (contract §8.3) and search (§8.13): the sort sheet, the rating sheet and the chips.
 
+import { distanceKm, type LatLng } from './address.js';
 import type { CatalogStore, Product } from './catalog.js';
 import type { Vertical } from './enums.js';
 
@@ -22,7 +23,9 @@ export interface StoreFilter {
   pickup?: boolean;
 }
 
-export type ListedStore = Pick<CatalogStore, 'id' | 'rating' | 'ratingCount' | 'deliveryMinutes' | 'pickupAllowed'>;
+export type ListedStore = Pick<CatalogStore, 'id' | 'rating' | 'ratingCount' | 'deliveryMinutes' | 'pickupAllowed'> & {
+  location?: LatLng | null;
+};
 
 const byRating = (a: ListedStore, b: ListedStore) => {
   if (a.rating === b.rating) return b.ratingCount - a.ratingCount || a.id - b.id;
@@ -33,10 +36,10 @@ const byRating = (a: ListedStore, b: ListedStore) => {
 
 /**
  * Filters and sorts a store list, given in the admin's order. A new store (no rating yet, "جديد")
- * passes no rating floor and goes last when sorting by rating. "الأقرب إليك" keeps the admin's order
- * until stores have a location (Phase 8).
+ * passes no rating floor and goes last when sorting by rating. "الأقرب إليك" sorts by distance from
+ * the chosen address (`from`); stores with no location go last, and with no address it keeps the admin's order.
  */
-export function applyStoreFilter<T extends ListedStore>(stores: readonly T[], filter: StoreFilter): T[] {
+export function applyStoreFilter<T extends ListedStore>(stores: readonly T[], filter: StoreFilter, from?: LatLng): T[] {
   const kept = stores.filter(
     (s) =>
       (filter.minRating === undefined || (s.rating !== null && s.rating >= filter.minRating)) &&
@@ -45,6 +48,10 @@ export function applyStoreFilter<T extends ListedStore>(stores: readonly T[], fi
   );
   if (filter.sort === 'rating') return kept.sort(byRating);
   if (filter.sort === 'newest') return kept.sort((a, b) => b.id - a.id);
+  if (filter.sort === 'nearest' && from) {
+    const away = (s: T) => (s.location ? distanceKm(from, s.location) : Number.POSITIVE_INFINITY);
+    return kept.sort((a, b) => away(a) - away(b));
+  }
   return kept;
 }
 

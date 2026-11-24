@@ -1,6 +1,7 @@
 import type { CatalogStore, Cuisine, SearchResult, SearchScope, SearchSuggestion, StoreFilter, Vertical } from '@tawsela/shared';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '@/core/api/client';
+import { useDeliveryScope } from '@/features/addresses/chosen-address';
 
 export interface StoresQuery extends StoreFilter {
   vertical: Vertical;
@@ -15,25 +16,33 @@ const qs = (params: Record<string, string | number | boolean | undefined>) =>
     .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
     .join('&');
 
-/** A store list (contract §8.3). The old list stays up while a new filter loads. */
-export const useStores = (query: StoresQuery) =>
-  useQuery({
-    queryKey: ['stores', query],
-    queryFn: () => api<CatalogStore[]>(`/catalog/stores?${qs({ ...query })}`),
+/**
+ * A store list (contract §8.3): only the stores of the chosen address's zone, "الأقرب إليك" measured
+ * from it (§8.9). The old list stays up while a new filter loads.
+ */
+export function useStores(query: StoresQuery) {
+  const { ready, addressId } = useDeliveryScope();
+  return useQuery({
+    queryKey: ['stores', query, addressId],
+    queryFn: () => api<CatalogStore[]>(`/catalog/stores?${qs({ ...query, addressId })}`),
+    enabled: ready,
     placeholderData: keepPreviousData,
   });
+}
 
 /** Cuisine circles (restaurants only). */
 export const useCuisines = (enabled: boolean) =>
   useQuery({ queryKey: ['cuisines'], queryFn: () => api<Cuisine[]>('/catalog/cuisines'), enabled, staleTime: 5 * 60_000 });
 
-/** Search results (contract §8.13): each store with its matching products. */
-export const useSearch = (q: string, scope: SearchScope) =>
-  useQuery({
-    queryKey: ['search', q, scope],
-    queryFn: () => api<SearchResult[]>(`/catalog/search?${qs({ q, scope })}`),
-    enabled: q.trim().length > 0,
+/** Search results (contract §8.13): each store of the chosen address's zone with its matching products. */
+export function useSearch(q: string, scope: SearchScope) {
+  const { ready, addressId } = useDeliveryScope();
+  return useQuery({
+    queryKey: ['search', q, scope, addressId],
+    queryFn: () => api<SearchResult[]>(`/catalog/search?${qs({ q, scope, addressId })}`),
+    enabled: ready && q.trim().length > 0,
   });
+}
 
 /** Product names while typing. */
 export const useSuggestions = (q: string, scope: SearchScope) =>
