@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
 import { AreaShell } from '@/features/shell/AreaShell';
-import { insertUser, resetDb, signInAs } from '../utils/db';
-import { API_URL } from '../utils/env';
+import { cookieJar } from '../utils/cookies';
+import { cookieRenews, insertUser, resetDb, signInAs } from '../utils/db';
 
 const replace = vi.fn();
 let pathname = '/';
@@ -53,13 +53,14 @@ describe('the area shell (sidebar + role gate; real API)', () => {
 
   it('signs out from the sidebar: the session ends on the server and the page goes', async () => {
     await insertUser('admin', '01000000001');
-    const { refreshToken } = await signInAs('01000000001');
+    await signInAs('01000000001');
+    const cookie = cookieJar.get('tawsela_rt');
     pathname = '/';
     render(<AreaShell area="admin">الرئيسية هنا</AreaShell>);
     await userEvent.click(await screen.findByRole('button', { name: 'تسجيل الخروج' }));
     await vi.waitFor(() => expect(replace).toHaveBeenCalledWith('/sign-in'));
     expect(screen.queryByText('الرئيسية هنا')).toBeNull();
-    const refresh = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refreshToken }) });
-    expect(refresh.status).toBe(401);
+    await vi.waitFor(() => expect(cookieJar.get('tawsela_rt')).toBeUndefined());
+    expect(await cookieRenews(cookie)).toBe(false);
   });
 });

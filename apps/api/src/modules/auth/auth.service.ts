@@ -224,10 +224,22 @@ export class AuthService {
     throw this.sessionExpired();
   }
 
-  /** Whether `row`'s replacement is fresh and unused; if so it is revoked, to be issued again. */
-  private async retryWithinGrace(row: { replacedById: number | null }): Promise<boolean> {
-    if (!row.replacedById) return false;
-    const next = await this.sessions.find(row.replacedById);
+  /**
+   * Whether `row`'s replacement is fresh and unused; if so it is revoked, to be issued again. A
+   * renewal of the same token at the same moment (two tabs) may still be making that replacement:
+   * its link is waited for briefly before the token counts as copied.
+   */
+  private async retryWithinGrace(row: { id: number; replacedById: number | null; revokedAt: Date | null }): Promise<boolean> {
+    let replacedById = row.replacedById;
+    // Only a token revoked a moment ago can still be getting its replacement: one that was still live
+    // when this renewal read it (another renewal won the race), or revoked in the last 2 seconds.
+    const justRevoked = !row.revokedAt || Date.now() - row.revokedAt.getTime() < 2000;
+    for (let wait = 0; !replacedById && justRevoked && wait < 10; wait++) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      replacedById = (await this.sessions.find(row.id))?.replacedById ?? null;
+    }
+    if (!replacedById) return false;
+    const next = await this.sessions.find(replacedById);
     if (!next || next.revokedAt || Date.now() - next.createdAt.getTime() > AUTH.refreshGraceSeconds * 1000) return false;
     return this.sessions.revoke(next.id);
   }
@@ -292,6 +304,11 @@ export class AuthService {
 
   private badTicket() {
     return new ApiException(HttpStatus.UNAUTHORIZED, 'TICKET_INVALID', 'Start again: the code check has expired');
+  }
+
+  /** "Session expired": for a renewal that brought no token at all. */
+  sessionExpiredError() {
+    return this.sessionExpired();
   }
 
   private sessionExpired() {

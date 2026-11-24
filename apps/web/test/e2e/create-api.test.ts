@@ -1,8 +1,8 @@
 import type { AuthResponse, Me } from '@tawsela/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { api as dashboardApi, forgetSession, sessionStore } from '@/core/api/client';
 import { ApiRequestError, createApi, type TokenStore } from '@/core/api/create-api';
-import { insertUser, PASSWORD, resetDb, sql } from '../utils/db';
+import { cookieJar } from '../utils/cookies';
+import { cookieRenews, insertUser, PASSWORD, resetDb, sql } from '../utils/db';
 import { API_URL } from '../utils/env';
 import { pngFile, removeUpload } from '../utils/image';
 
@@ -23,21 +23,23 @@ const client = (store = memoryStore(), onSignedOut?: () => void) => createApi({ 
 /** A session whose access token the API no longer accepts, as after 15 minutes. */
 const expired = (auth: AuthResponse): AuthResponse => ({ ...auth, accessToken: `${auth.accessToken}x` });
 
-/** Whether this refresh token still works on the server. */
-const refreshWorks = async (refreshToken: string) =>
-  (await fetch(`${API_URL}/auth/refresh`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refreshToken }) })).ok;
+const sessionCookie = () => cookieJar.get('tawsela_rt');
 
 beforeEach(async () => {
   await resetDb();
+  cookieJar.clear();
 });
 
 describe("the dashboard's API client (real API)", () => {
-  it('signs an admin in with phone and password, then sends the access token', async () => {
+  it('signs an admin in: page scripts never hold the refresh token, the browser keeps it as a cookie (review F11)', async () => {
     await insertUser('admin', '01000000001', 'أحمد');
     const store = memoryStore();
     const api = client(store);
     await api.signIn('01000000001', PASSWORD);
     expect(store.saved?.user).toMatchObject({ role: 'admin', firstName: 'أحمد' });
+    expect(store.saved?.refreshToken).toBe('');
+    expect(window.localStorage.length).toBe(0);
+    expect(await cookieRenews(sessionCookie())).toBe(true);
     await expect(api.request<Me>('/me')).resolves.toMatchObject({ phone: '01000000001' });
   });
 
@@ -53,6 +55,7 @@ describe("the dashboard's API client (real API)", () => {
     const store = memoryStore();
     await expect(client(store).signIn('01011111111', PASSWORD)).rejects.toMatchObject({ status: 403, code: 'DASHBOARD_ROLE' });
     expect(store.saved).toBeNull();
+    expect(sessionCookie()).toBeUndefined();
     const [open] = await sql<{ n: number }[]>('SELECT COUNT(*) AS n FROM refresh_tokens WHERE revoked_at IS NULL');
     expect(open?.n).toBe(0);
   });
@@ -66,79 +69,83 @@ describe("the dashboard's API client (real API)", () => {
     await expect(client().signIn('0123', PASSWORD)).rejects.toMatchObject({ status: 400, message: 'phone must be an Egyptian mobile number' });
   });
 
-  it('renews an expired access token once; two requests share one renewal', async () => {
+  it('renews an expired access token once from the cookie; two requests share one renewal', async () => {
+    await insertUser('admin', '01000000001');
+    const store = memoryStore();
+    const api = client(store);
+    await api.signIn('01000000001', PASSWORD);
+    const before = sessionCookie();
+    store.save(expired(store.saved!));
+    await expect(Promise.all([api.request<Me>('/me'), api.request<Me>('/me')])).resolves.toHaveLength(2);
+    expect(sessionCookie()).not.toBe(before);
+    expect(await cookieRenews(sessionCookie())).toBe(true);
+  });
+
+  it('opens a reloaded page signed in from the cookie alone, and signed out without one', async () => {
+    await insertUser('admin', '01000000001');
+    await client().signIn('01000000001', PASSWORD);
+    // A reload: nothing in the page's memory.
+    const store = memoryStore();
+    expect(await client(store).restore()).toBe(true);
+    expect(store.saved?.user.phone).toBe('01000000001');
+    await expect(client(store).request<Me>('/me')).resolves.toMatchObject({ phone: '01000000001' });
+
+    cookieJar.clear();
+    const empty = memoryStore();
+    expect(await client(empty).restore()).toBe(false);
+    expect(empty.saved).toBeNull();
+  });
+
+  it('two tabs renewing at the same moment both keep the session', async () => {
     await insertUser('admin', '01000000001');
     const first = memoryStore();
     await client(first).signIn('01000000001', PASSWORD);
-    const store = memoryStore(expired(first.saved!));
-    const api = client(store);
-    // A second renewal would replay the used refresh token, and the API would end every session.
-    await expect(Promise.all([api.request<Me>('/me'), api.request<Me>('/me')])).resolves.toHaveLength(2);
-    expect(store.saved?.refreshToken).not.toBe(first.saved!.refreshToken);
-    expect(await refreshWorks(store.saved!.refreshToken)).toBe(true);
-  });
-
-  it('keeps a session the browser refused to store when it renews the access token', async () => {
-    await insertUser('admin', '01000000001');
-    forgetSession();
-    window.localStorage.clear();
-    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('storage blocked');
-    });
-    try {
-      await dashboardApi.signIn('01000000001', PASSWORD);
-      const stale = expired(sessionStore.load()!);
-      sessionStore.save(stale);
-      await expect(dashboardApi.request<Me>('/me')).resolves.toMatchObject({ phone: '01000000001' });
-      expect(sessionStore.load()?.accessToken).toEqual(expect.any(String));
-      expect(sessionStore.load()?.accessToken).not.toBe(stale.accessToken);
-    } finally {
-      setItem.mockRestore();
-      forgetSession();
-    }
-  });
-
-  it('two tabs renew without replaying the same refresh token', async () => {
-    await insertUser('admin', '01000000001');
-    const start = memoryStore();
-    await client(start).signIn('01000000001', PASSWORD);
-    // One browser: both tabs share the stored session, and renew one at a time (navigator.locks).
-    const shared = memoryStore(expired(start.saved!));
-    let chain: Promise<unknown> = Promise.resolve();
-    const refreshLock = <T,>(fn: () => Promise<T>): Promise<T> => {
-      const run = chain.then(fn, fn);
-      chain = run.catch(() => undefined);
-      return run;
-    };
-    const tab = () => createApi({ base: API_URL, fetch: (...a) => fetch(...a), store: shared, refreshLock });
+    // One browser: both tabs share the cookie; each holds its own expired access token.
+    const tab = () => client(memoryStore(expired(first.saved!)));
     await expect(Promise.all([tab().request<Me>('/me'), tab().request<Me>('/me')])).resolves.toHaveLength(2);
-    expect(await refreshWorks(shared.saved!.refreshToken)).toBe(true);
+    await expect(tab().request<Me>('/me')).resolves.toMatchObject({ phone: '01000000001' });
   });
 
   it('does not bring a session back when its renewal answers after sign-out', async () => {
     await insertUser('admin', '01000000001');
-    const first = memoryStore();
-    await client(first).signIn('01000000001', PASSWORD);
-    const store = memoryStore(expired(first.saved!));
+    const store = memoryStore();
+    const api = client(store);
+    await api.signIn('01000000001', PASSWORD);
+    store.save(expired(store.saved!));
     // The admin signs out while the renewal is on its way.
     const signOutMidway: typeof fetch = (input, init) => {
       if (String(input).endsWith('/auth/refresh')) store.save(null);
       return fetch(input, init);
     };
-    const api = createApi({ base: API_URL, fetch: signOutMidway, store });
-    await expect(api.request('/me')).rejects.toMatchObject({ status: 401 });
+    await expect(createApi({ base: API_URL, fetch: signOutMidway, store }).request('/me')).rejects.toMatchObject({ status: 401 });
     expect(store.saved).toBeNull();
+    expect(sessionCookie()).toBeUndefined();
+    const [open] = await sql<{ n: number }[]>('SELECT COUNT(*) AS n FROM refresh_tokens WHERE revoked_at IS NULL');
+    expect(open?.n).toBe(0);
   });
 
   it('signs out when the session cannot be renewed', async () => {
     await insertUser('admin', '01000000001');
     const first = memoryStore();
     await client(first).signIn('01000000001', PASSWORD);
-    const store = memoryStore({ ...expired(first.saved!), refreshToken: 'not-a-token' });
+    cookieJar.clear();
+    const store = memoryStore(expired(first.saved!));
     const onSignedOut = vi.fn();
     await expect(client(store, onSignedOut).request('/me')).rejects.toMatchObject({ status: 401 });
     expect(store.saved).toBeNull();
     expect(onSignedOut).toHaveBeenCalled();
+  });
+
+  it('keeps the session when the server fails for a moment', async () => {
+    await insertUser('admin', '01000000001');
+    const store = memoryStore();
+    await client(store).signIn('01000000001', PASSWORD);
+    store.save(expired(store.saved!));
+    const busy: typeof fetch = (input, init) =>
+      String(input).endsWith('/auth/refresh') ? Promise.resolve(new Response('{}', { status: 503 })) : fetch(input, init);
+    await expect(createApi({ base: API_URL, fetch: busy, store }).request('/me')).rejects.toMatchObject({ status: 503 });
+    expect(store.saved).not.toBeNull();
+    expect(await cookieRenews(sessionCookie())).toBe(true);
   });
 
   it('reports a server it cannot reach as status 0', async () => {
@@ -148,14 +155,16 @@ describe("the dashboard's API client (real API)", () => {
     expect(err).toMatchObject({ status: 0 });
   });
 
-  it('signs out: forgets the session and ends it on the server', async () => {
+  it('signs out: forgets the session, drops the cookie and ends it on the server', async () => {
     await insertUser('admin', '01000000001');
     const store = memoryStore();
     const api = client(store);
-    const { refreshToken } = await api.signIn('01000000001', PASSWORD);
+    await api.signIn('01000000001', PASSWORD);
+    const cookie = sessionCookie();
     await api.signOut();
     expect(store.saved).toBeNull();
-    expect(await refreshWorks(refreshToken)).toBe(false);
+    expect(sessionCookie()).toBeUndefined();
+    expect(await cookieRenews(cookie)).toBe(false);
   });
 
   it('sends a form with a file as multipart (the image upload)', async () => {

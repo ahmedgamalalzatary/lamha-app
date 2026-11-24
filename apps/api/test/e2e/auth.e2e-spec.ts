@@ -230,11 +230,48 @@ describe('Accounts (e2e, contract §8.1)', () => {
       await http().post('/v1/auth/refresh').send({ refreshToken: other.refreshToken }).expect(201);
     });
 
+    it('lets two renewals with the same token at the same moment both through (two tabs, review F08)', async () => {
+      const auth = await signUp('01554459196', 'ahmed@gmail.com');
+      for (let round = 0; round < 5; round++) {
+        const token = round === 0 ? auth.refreshToken : (await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD })).body.refreshToken;
+        const res = await Promise.all([0, 1].map(() => http().post('/v1/auth/refresh').send({ refreshToken: token })));
+        expect(res.map((r) => r.status)).toEqual([201, 201]);
+      }
+    });
+
     it('allows no grace once the newer token was used or signed out', async () => {
       const auth = await signUp('01554459196', 'ahmed@gmail.com');
       const next = await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(201);
       await http().post('/v1/auth/logout').send({ refreshToken: next.body.refreshToken }).expect(204);
       await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(401);
+    });
+
+    it('gives the dashboard its refresh token only as an HttpOnly cookie, and renews and signs out with it (review F11)', async () => {
+      await insertUser('admin', '01000000001', PASSWORD);
+      const cookieMode = { 'X-Session': 'cookie' };
+      const login = await http().post('/v1/auth/login').set(cookieMode).send({ phone: '01000000001', password: PASSWORD }).expect(201);
+      expect(login.body.refreshToken).toBe('');
+      expect(login.body.accessToken).toBeTruthy();
+      const setCookie = String(login.headers['set-cookie']);
+      expect(setCookie).toMatch(/^tawsela_rt=[\w-]+;/);
+      expect(setCookie).toMatch(/HttpOnly/);
+      expect(setCookie).toMatch(/SameSite=Strict/);
+      expect(setCookie).toMatch(/Path=\/v1\/auth/);
+      const cookie = setCookie.split(';')[0]!;
+
+      // Renewal reads the cookie (no body) and sets the next one.
+      const next = await http().post('/v1/auth/refresh').set(cookieMode).set('Cookie', cookie).send({}).expect(201);
+      expect(next.body.refreshToken).toBe('');
+      const nextCookie = String(next.headers['set-cookie']).split(';')[0]!;
+      expect(nextCookie).not.toBe(cookie);
+      await http().get('/v1/me').set('Authorization', `Bearer ${next.body.accessToken}`).expect(200);
+      // Without the header the cookie is never read: another site cannot make the browser renew.
+      await http().post('/v1/auth/refresh').set('Cookie', nextCookie).send({}).expect(401);
+
+      // Sign-out ends the session and clears the cookie.
+      const out = await http().post('/v1/auth/logout').set(cookieMode).set('Cookie', nextCookie).send({}).expect(204);
+      expect(String(out.headers['set-cookie'])).toMatch(/^tawsela_rt=;/);
+      await http().post('/v1/auth/refresh').set(cookieMode).set('Cookie', nextCookie).send({}).expect(401);
     });
 
     it('signs out: the refresh token stops working', async () => {

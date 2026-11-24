@@ -15,7 +15,10 @@ export class ApiRequestError extends Error {
   }
 }
 
-/** Where the session is kept between visits (localStorage in the browser). */
+/**
+ * The page's copy of the session: the account and its short access token, in memory only. The
+ * refresh token is never here: the browser keeps it in an HttpOnly cookie (review F11).
+ */
 export interface TokenStore {
   load: () => AuthResponse | null;
   save: (auth: AuthResponse | null) => void;
@@ -48,7 +51,8 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
   let refreshing: Promise<boolean> | undefined;
 
   async function send(path: string, opts: RequestOptions, token: string | undefined): Promise<Response> {
-    const headers = new Headers({ accept: 'application/json' });
+    // The refresh token travels as the API's HttpOnly cookie; this header asks for that mode.
+    const headers = new Headers({ accept: 'application/json', 'x-session': 'cookie' });
     // A form (an image upload) goes as multipart; fetch sets its content type and boundary.
     const form = opts.body instanceof FormData;
     if (opts.body !== undefined && !form) headers.set('content-type', 'application/json');
@@ -57,6 +61,7 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
       return await fetch(base + path, {
         method: opts.method ?? 'GET',
         headers,
+        credentials: 'include',
         body: opts.body === undefined ? undefined : form ? (opts.body as FormData) : JSON.stringify(opts.body),
       });
     } catch (e) {
@@ -81,27 +86,21 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
   }
 
   /**
-   * Requests that fail together share one renewal. Inside the lock the store is read again: when
-   * another tab already rotated the token, its fresh one is used instead of replaying ours (a
-   * replay ends every session of the account). False only when the server refused the token.
+   * A new access token from the browser's refresh cookie (review F11). Requests that fail together
+   * share one renewal, and tabs take turns (the lock): each renews with the cookie the last one left.
+   * False only when the server refused the cookie; a server error throws and keeps the session.
    */
   function refreshOnce(): Promise<boolean> {
-    const captured = store.load();
     refreshing ??= refreshLock(async () => {
-      const cur = store.load();
-      if (!cur) return false;
-      if (captured && cur.refreshToken !== captured.refreshToken) return true;
-      const res = await send('/auth/refresh', { method: 'POST', body: { refreshToken: cur.refreshToken } }, undefined);
-      if (res.status === 401 || res.status === 403) {
-        const now = store.load();
-        return !!now && now.refreshToken !== cur.refreshToken;
-      }
+      const who = store.load()?.user.id ?? null;
+      const res = await send('/auth/refresh', { method: 'POST', body: {} }, undefined);
+      if (res.status === 401 || res.status === 403) return false;
       const next = await read<AuthResponse>(res);
-      // Signed out (or into another account) while this renewal was on its way: drop its session.
-      const now = store.load();
-      if (now?.refreshToken !== cur.refreshToken) {
-        void send('/auth/logout', { method: 'POST', body: { refreshToken: next.refreshToken } }, undefined).catch(() => undefined);
-        return !!now;
+      const now = store.load()?.user.id ?? null;
+      if (now !== who) {
+        // Signed out while this renewal was on its way: end the session it just made, and its cookie.
+        if (now === null) await send('/auth/logout', { method: 'POST', body: {} }, undefined).catch(() => undefined);
+        return now !== null;
       }
       store.save(next);
       return true;
@@ -109,6 +108,13 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
       refreshing = undefined;
     });
     return refreshing;
+  }
+
+  /** A page load: signed in again from the cookie, or signed out. True when signed in. */
+  async function restore(): Promise<boolean> {
+    const ok = await refreshOnce().catch(() => false);
+    if (!ok && store.load() === null) store.save(null);
+    return ok && store.load() !== null;
   }
 
   /**
@@ -137,20 +143,20 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
   async function signIn(phone: string, password: string): Promise<AuthResponse> {
     const auth = await read<AuthResponse>(await send('/auth/login', { method: 'POST', body: { phone, password } }, undefined));
     if (!DASHBOARD_ROLES.includes(auth.user.role)) {
-      await send('/auth/logout', { method: 'POST', body: { refreshToken: auth.refreshToken } }, undefined).catch(() => undefined);
+      await send('/auth/logout', { method: 'POST', body: {} }, undefined).catch(() => undefined);
       throw new ApiRequestError(403, 'The dashboard is for admins and stores', 'DASHBOARD_ROLE');
     }
     store.save(auth);
     return auth;
   }
 
+  /** The page forgets at once; the server ends the session and drops the cookie. */
   async function signOut(): Promise<void> {
-    const cur = store.load();
     store.save(null);
-    if (cur) await send('/auth/logout', { method: 'POST', body: { refreshToken: cur.refreshToken } }, undefined).catch(() => undefined);
+    await send('/auth/logout', { method: 'POST', body: {} }, undefined).catch(() => undefined);
   }
 
-  return { request, signIn, signOut, session: () => store.load() };
+  return { request, signIn, signOut, restore, session: () => store.load() };
 }
 
 export type Api = ReturnType<typeof createApi>;

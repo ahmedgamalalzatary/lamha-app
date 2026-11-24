@@ -45,15 +45,22 @@ export async function insertUser(role: Role, phone: string, firstName = 'أحم�
   return res.insertId;
 }
 
-/** Signs in through the real API and stores the session, as a reload of a signed-in tab would find it. */
+/**
+ * Signs in through the real API as the dashboard does: the session in the page's memory, the
+ * refresh token in the browser's cookie jar (review F11).
+ */
 export async function signInAs(phone: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const { api } = await import('@/core/api/client');
+  return api.signIn(phone, PASSWORD);
+}
+
+/** Whether this refresh cookie still renews a session on the server. */
+export async function cookieRenews(cookie: string | undefined): Promise<boolean> {
+  if (!cookie) return false;
+  const res = await fetch(`${API_URL}/auth/refresh`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ phone, password: PASSWORD }),
+    headers: { 'content-type': 'application/json', 'x-session': 'cookie', cookie: `tawsela_rt=${cookie}` },
+    body: '{}',
   });
-  if (!res.ok) throw new Error(`Sign-in failed: ${res.status}`);
-  const auth = (await res.json()) as AuthResponse;
-  window.localStorage.setItem('tawsela.dashboard.session', JSON.stringify(auth));
-  return auth;
+  return res.ok;
 }

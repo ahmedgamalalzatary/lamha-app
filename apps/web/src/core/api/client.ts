@@ -10,71 +10,56 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
 /** An uploaded image's path ("/uploads/…") as a full URL on the API's server. */
 export const mediaUrl = (path: string) => new URL(path, API_URL).href;
 
-const KEY = 'tawsela.dashboard.session';
+/**
+ * The session lives in this page's memory only: the account and its short access token. The refresh
+ * token is an HttpOnly cookie the browser keeps and page scripts cannot read (review F11), so a reload
+ * signs in again from it. Undefined until that first check answers.
+ */
+let current: AuthResponse | null | undefined;
 const listeners = new Set<() => void>();
-let cached: AuthResponse | null | undefined;
-
 const notify = () => {
   for (const l of listeners) l();
 };
 
-// Another tab signed in or out: drop the copy and let React know.
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key !== KEY && e.key !== null) return;
-    cached = undefined;
-    notify();
-  });
-}
+/** Tells this browser's other dashboard tabs about a sign-in or a sign-out. */
+const tabs = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('tawsela-session') : null;
 
-/** The session lives in localStorage, so a reload keeps the account signed in. */
 export const sessionStore: TokenStore = {
-  load: () => {
-    if (cached !== undefined) return cached;
-    if (typeof window === 'undefined') return null;
-    try {
-      cached = JSON.parse(window.localStorage.getItem(KEY) ?? 'null') as AuthResponse | null;
-    } catch {
-      cached = null;
-    }
-    return cached;
-  },
+  load: () => current ?? null,
   save: (auth) => {
-    cached = auth;
-    try {
-      if (auth) window.localStorage.setItem(KEY, JSON.stringify(auth));
-      else window.localStorage.removeItem(KEY);
-      memoryOnly = false;
-    } catch {
-      // A private window may refuse storage; the session then lasts for this page only.
-      memoryOnly = !!auth;
-    }
+    const changedAccount = (current?.user.id ?? null) !== (auth?.user.id ?? null);
+    current = auth;
     notify();
+    if (changedAccount) tabs?.postMessage(auth ? 'in' : 'out');
   },
 };
 
-/** The browser refused to store the session: the in-memory copy is the only one. */
-let memoryOnly = false;
-
-/**
- * Inside the lock the session is read from storage again, not from the copy: another tab may have
- * renewed it before this tab heard its storage event, and replaying the old token ends every session.
- * A session the browser would not store has no other copy, so it is kept.
- */
-const refreshLock = <T,>(fn: () => Promise<T>): Promise<T> => {
-  const fresh = () => {
-    if (!memoryOnly) cached = undefined;
-    return fn();
-  };
-  return typeof navigator !== 'undefined' && navigator.locks ? (navigator.locks.request('tawsela-refresh', fresh) as Promise<T>) : fresh();
-};
+/** Tabs renew one at a time (navigator.locks), each with the cookie the last one left. */
+const refreshLock = <T,>(fn: () => Promise<T>): Promise<T> =>
+  typeof navigator !== 'undefined' && navigator.locks ? (navigator.locks.request('tawsela-refresh', fn) as Promise<T>) : fn();
 
 export const api = createApi({ base: API_URL, fetch: (...a) => fetch(...a), store: sessionStore, refreshLock });
 
-/** Drops the in-memory copy, so the next read comes from storage (tests start each case fresh). */
+if (typeof window !== 'undefined') {
+  // Sessions used to be kept in localStorage, refresh token included: never leave one there.
+  try {
+    window.localStorage.removeItem('tawsela.dashboard.session');
+  } catch {
+    // Storage may be blocked; there is then nothing to remove.
+  }
+  void api.restore();
+  tabs?.addEventListener('message', (e: MessageEvent) => {
+    // Another tab signed out: so does this one. It signed in: pick the session up from the cookie.
+    if (e.data === 'out') {
+      current = null;
+      notify();
+    } else if (e.data === 'in') void api.restore();
+  });
+}
+
+/** Signed out in this page, as a fresh visit without a cookie (tests start each case from here). */
 export function forgetSession() {
-  cached = undefined;
-  memoryOnly = false;
+  current = null;
   notify();
 }
 
@@ -85,7 +70,7 @@ const subscribe = (l: () => void) => {
   };
 };
 
-/** The signed-in account, or null. Undefined until the page has read storage (and on the server). */
+/** The signed-in account, or null. Undefined until the page has checked its cookie (and on the server). */
 export function useSession(): AuthResponse | null | undefined {
-  return useSyncExternalStore(subscribe, sessionStore.load, () => undefined);
+  return useSyncExternalStore(subscribe, () => current, () => undefined);
 }

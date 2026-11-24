@@ -127,8 +127,10 @@ export class LoginDto extends PhoneDto {
 }
 
 export class RefreshDto {
-  @ApiProperty()
+  /** The phone app's token. The dashboard sends none: its token is in the tawsela_rt cookie (review F11). */
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  refreshToken: string;
+  refreshToken?: string;
 }

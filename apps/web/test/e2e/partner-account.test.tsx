@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { AuthResponse, Me } from '@tawsela/shared';
+import type { Me } from '@tawsela/shared';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Providers } from '@/app/providers';
-import { api, forgetSession } from '@/core/api/client';
+import { api, forgetSession, sessionStore } from '@/core/api/client';
 import { PartnerAccountPage } from '@/features/account/PartnerAccountPage';
-import { insertUser, PASSWORD, resetDb, signInAs } from '../utils/db';
+import { cookieJar } from '../utils/cookies';
+import { cookieRenews, insertUser, PASSWORD, resetDb, signInAs } from '../utils/db';
 import { API_URL } from '../utils/env';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }), usePathname: () => '/partner/account' }));
@@ -27,8 +28,11 @@ describe('الحساب in the partner area (contract §11.1; real API)', () => {
     );
     expect(await screen.findByText('مطعم الفيومي')).toBeInTheDocument();
     expect(screen.getByText('01000000002')).toBeInTheDocument();
+    const cookie = cookieJar.get('tawsela_rt');
     await userEvent.click(screen.getByRole('button', { name: 'تسجيل الخروج' }));
-    await vi.waitFor(() => expect(window.localStorage.getItem('tawsela.dashboard.session')).toBeNull());
+    await vi.waitFor(() => expect(api.session()).toBeNull());
+    await vi.waitFor(() => expect(cookieJar.get('tawsela_rt')).toBeUndefined());
+    expect(await cookieRenews(cookie)).toBe(false);
   });
 
   it("never shows the next partner the previous one's cached account", async () => {
@@ -45,18 +49,17 @@ describe('الحساب in the partner area (contract §11.1; real API)', () => {
     expect(screen.queryByText('مطعم الفيومي')).not.toBeInTheDocument();
   });
 
-  it('uses the token another tab already renewed, instead of replaying the old one', async () => {
-    // This tab still holds A (its access token expired); another tab renewed A into B meanwhile.
-    const a = JSON.parse(window.localStorage.getItem('tawsela.dashboard.session')!) as AuthResponse;
-    window.localStorage.setItem('tawsela.dashboard.session', JSON.stringify({ ...a, accessToken: `${a.accessToken}x` }));
-    forgetSession();
-    api.session();
-    const res = await fetch(`${API_URL}/auth/refresh`, {
+  it('renews with the cookie another tab already rotated, keeping the session', async () => {
+    // This tab's access token expired; another tab of the same browser renewed the cookie meanwhile.
+    const a = api.session()!;
+    sessionStore.save({ ...a, accessToken: `${a.accessToken}x` });
+    const other = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ refreshToken: a.refreshToken }),
+      headers: { 'content-type': 'application/json', 'x-session': 'cookie' },
+      body: '{}',
+      credentials: 'include',
     });
-    window.localStorage.setItem('tawsela.dashboard.session', JSON.stringify(await res.json()));
+    expect(other.ok).toBe(true);
     await expect(api.request<Me>('/me')).resolves.toMatchObject({ phone: '01000000002' });
   });
 });
