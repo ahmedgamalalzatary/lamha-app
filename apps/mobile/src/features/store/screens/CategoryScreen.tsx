@@ -21,9 +21,6 @@ import { ProductSheet } from '../components/ProductSheet';
 import { SectionTitle } from '../components/SectionTitle';
 import { useProductTaps } from '../hooks/useProductTaps';
 
-/** The store's search button opens this page for every product (`/store/<id>/category/all`). */
-const ALL = 'all';
-
 const matches = (q: string) => {
   const needle = q.trim().toLowerCase();
   return (p: Product) => !needle || p.name.toLowerCase().includes(needle);
@@ -32,8 +29,7 @@ const matches = (q: string) => {
 /**
  * A category page (contract §8.4 market-category-subcategory-circles-grid): back, the title, a
  * product search, the sub-category circles (الكل first) and the products as a grid. With الكل each
- * sub-category is its own section. [Open] The store's search button opens the same page with every
- * product under the store's name.
+ * sub-category is its own section.
  */
 export function CategoryScreen() {
   const t = useT();
@@ -46,16 +42,14 @@ export function CategoryScreen() {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
 
   const store = page.data;
-  const everything = params.categoryId === ALL;
   const category = store?.categories.find((c) => c.id === Number(params.categoryId));
   const children = category ? store!.categories.filter((c) => c.parentId === category.id) : [];
-  const title = everything ? (store?.name ?? '') : (category?.name ?? '');
+  const title = category?.name ?? '';
   const keep = matches(q);
 
   // What the page lists: one grid, or (الكل with sub-categories) a section per category.
   let sections: { key: number; title?: string; products: Product[] }[] = [];
-  if (store && everything) sections = [{ key: 0, products: store.categories.flatMap((c) => c.products).filter(keep) }];
-  else if (category && sub !== null) sections = [{ key: sub, products: (children.find((c) => c.id === sub)?.products ?? []).filter(keep) }];
+  if (category && sub !== null) sections = [{ key: sub, products: (children.find((c) => c.id === sub)?.products ?? []).filter(keep) }];
   else if (category) {
     const own = { key: category.id, title: children.length ? category.name : undefined, products: category.products.filter(keep) };
     sections = [own, ...children.map((c) => ({ key: c.id, title: c.name, products: c.products.filter(keep) }))];
@@ -101,7 +95,6 @@ export function CategoryScreen() {
               placeholder={t('store.search')}
               placeholderTextColor={colors.ink2}
               returnKeyType="search"
-              autoFocus={everything}
               style={styles.input}
             />
           </View>

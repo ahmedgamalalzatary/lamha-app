@@ -6,8 +6,9 @@ import { session } from '@/core/auth/session';
 import { FavoritesScreen } from '@/features/favorites/screens/FavoritesScreen';
 import { CategoryScreen } from '@/features/store/screens/CategoryScreen';
 import { StoreScreen } from '@/features/store/screens/StoreScreen';
+import { StoreSearchScreen } from '@/features/store/screens/StoreSearchScreen';
 import { insertCategory, insertIngredients, insertMenuItem, insertOptionGroup, insertStore } from '../utils/catalog';
-import { insertUser, resetDb, signInAs } from '../utils/db';
+import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { renderApp, testQueryClient } from '../utils/render';
 
 let client: QueryClient;
@@ -24,6 +25,7 @@ const ROUTES = {
   _layout: Root,
   'store/[id]/index': StoreScreen,
   'store/[id]/category/[categoryId]': CategoryScreen,
+  'store/[id]/search': StoreSearchScreen,
   favorites: FavoritesScreen,
   'customer/cart': Cart,
 };
@@ -47,6 +49,8 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     const combo = await insertMenuItem(sara, sushi, 'كومبو الفرايد(20)', 350, 0);
     await insertIngredients(combo, ['٥ اسبايسي ليمون', '٥ كراب اتشيز']);
     await insertMenuItem(sara, sushi, 'جولدن(8)', 160, 1);
+    const off = await insertMenuItem(sara, sushi, 'اوشي', 90, 2);
+    await sql('UPDATE products SET active = false WHERE id = ?', [off]);
     const toffee = await insertMenuItem(sara, sauces, 'بونبوني', 0, 0);
     await insertOptionGroup(toffee, 'الوزن', true, 1, [
       ['ربع كيلو', 58.75],
@@ -62,12 +66,16 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     expect(screen.getByRole('tab', { name: 'صوصات' })).toBeTruthy();
     expect(screen.getAllByText('قابل للتخصيص')).toHaveLength(2); // the combo and the toffee
     expect(screen.getByText('السعر حسب الاختيار')).toBeTruthy();
+    // A switched-off product is greyed with "غير متوفر": no add button, no sheet.
+    expect(screen.getByText('غير متوفر')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'اوشي' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'أضف اوشي' })).toBeNull();
     expect(within(bar()).getByText('تسوّق الآن وأضف 60.00 ج.م أو أكثر إلى طلبك!')).toBeTruthy();
 
     // ☰ lists every category with its count.
     await fireEvent.press(screen.getByRole('button', { name: 'كل الأقسام' }));
     const sauceRow = await screen.findByRole('button', { name: 'صوصات (1)' });
-    expect(screen.getByRole('button', { name: 'السوشي (2)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'السوشي (3)' })).toBeTruthy();
     await fireEvent.press(sauceRow);
     await waitFor(() => expect(screen.queryByRole('button', { name: 'صوصات (1)' })).toBeNull());
 
@@ -98,6 +106,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     expect(screen.getByRole('checkbox', { name: '٥ اسبايسي ليمون' })).not.toBeChecked();
     expect(screen.getByText('تُطلب معًا')).toBeTruthy();
     expect(within(screen.getByTestId('ordered-together')).getByText('جولدن(8)')).toBeTruthy();
+    expect(within(screen.getByTestId('ordered-together')).queryByText('اوشي')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'أضف للسلة 350.00 ج.م' }));
     await waitFor(() => expect(within(bar()).getByText('627.50 ج.م')).toBeTruthy());
 
@@ -139,6 +148,37 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     await fireEvent.press(screen.getByRole('button', { name: 'أضف طماطم فرز أول' }));
     expect(within(bar()).getByText('عرض السلة')).toBeTruthy();
     expect(within(bar()).getByText('20.00 ج.م')).toBeTruthy();
+  });
+
+  it('the search button opens "البحث": products as you type; nothing typed or nothing matching leaves it blank', async () => {
+    const maky = await insertStore('Maky');
+    const sandwiches = await insertCategory(maky, 'سندوتشات');
+    await insertMenuItem(maky, sandwiches, 'سموكي ميلت', 160, 0);
+    await insertMenuItem(maky, sandwiches, 'سموكي فرايز', 110, 1);
+    await insertMenuItem(maky, sandwiches, 'تويستر', 90, 2);
+    await renderApp(ROUTES, { initialUrl: `/store/${maky}` });
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'ابحث عن منتج' }));
+    await waitFor(() => expect(screen).toHavePathname(`/store/${maky}/search`));
+    expect(await screen.findByRole('header', { name: 'البحث' })).toBeTruthy();
+    const box = screen.getByPlaceholderText('ابحث عن كل ما تريد عند Maky');
+    expect(screen.queryByText('تويستر')).toBeNull();
+
+    await fireEvent.changeText(box, 'سموكي');
+    expect(screen.getByText('سموكي ميلت')).toBeTruthy();
+    expect(screen.queryByText('تويستر')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'أضف سموكي فرايز' }));
+    expect(within(bar()).getByText('110.00 ج.م')).toBeTruthy();
+
+    await fireEvent.changeText(box, 'zzqq');
+    expect(screen.queryByText('سموكي ميلت')).toBeNull();
+  });
+
+  it('a store with no products says so; a free delivery fee reads "مجاني"', async () => {
+    const kebab = await insertStore('كبابجي السنى', 'restaurant', { deliveryFee: 0 });
+    await renderApp(ROUTES, { initialUrl: `/store/${kebab}` });
+    expect(await screen.findByText('لا توجد منتجات حاليا')).toBeTruthy();
+    expect(screen.getByText('مجاني')).toBeTruthy();
   });
 
   it('the heart saves the store in المفضلة; the list is empty again once removed', async () => {

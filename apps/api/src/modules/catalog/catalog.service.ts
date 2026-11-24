@@ -69,7 +69,7 @@ export class CatalogService {
   }
 
   /**
-   * A store page: categories in order, each with its active products and choices. Empty categories
+   * A store page: categories in order, each with its products (switched-off ones marked) and choices. Empty categories
    * are left out; a main category stays while one of its sub-categories has products.
    */
   async store(id: number): Promise<StorePage> {
@@ -78,7 +78,8 @@ export class CatalogService {
     const [cuisineIds, categories, rows] = await Promise.all([
       this.catalog.cuisineIdsOf([id]),
       this.catalog.listCategories(id),
-      this.catalog.listProducts(id, true),
+      // Switched-off products come too: the app greys them with "غير متوفر", as Tawsilty does.
+      this.catalog.listProducts(id),
     ]);
     const products = await this.catalog.withChoices(rows);
     const all = categories.map((c) => {

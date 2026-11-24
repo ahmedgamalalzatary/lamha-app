@@ -12,6 +12,7 @@ export function me(over: Partial<Me> = {}): Me {
     gender: null,
     region: null,
     locale: 'ar',
+    avatar: null,
     inviteCode: '3JXDEB',
     ...over,
   };

@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, spacing } from '@/core/theme';
+import { FreeFee } from './FreeFee';
 
 const STAR = '#F5A623';
 
@@ -33,9 +34,13 @@ export function StoreMeta({ store, time = true }: { store: CatalogStore; time?: 
       ) : null}
       <Dot />
       <Bike size={15} color={colors.ink2} />
-      <AppText color={colors.ink2} size={fontSizes.body}>
-        {formatAmount(store.deliveryFee)}
-      </AppText>
+      {store.deliveryFee === 0 ? (
+        <FreeFee />
+      ) : (
+        <AppText color={colors.ink2} size={fontSizes.body}>
+          {formatAmount(store.deliveryFee)}
+        </AppText>
+      )}
     </View>
   );
 }

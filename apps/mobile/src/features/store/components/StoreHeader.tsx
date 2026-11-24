@@ -2,11 +2,13 @@ import { type CatalogStore, formatAmount, formatMinutes } from '@tawsela/shared'
 import { Image } from 'expo-image';
 import { Bike, Clock, Star, Store as StoreIcon } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { mediaUrl } from '@/core/api/client';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { FreeFee } from '@/features/stores/components/FreeFee';
 
 export const COVER_HEIGHT = 300;
 const STAR = '#F5A623';
@@ -51,7 +53,7 @@ export function StoreHeader({ store }: { store: CatalogStore }) {
       <View style={styles.info}>
         <Info icon={Clock} label={t('store.deliveryTime')} value={formatMinutes(store.deliveryMinutes)} color={colors.info} />
         <View style={styles.divider} />
-        <Info icon={Bike} label={t('store.deliveryFee')} value={formatAmount(store.deliveryFee)} />
+        <Info icon={Bike} label={t('store.deliveryFee')} value={store.deliveryFee === 0 ? <FreeFee size={16} /> : formatAmount(store.deliveryFee)} />
         <View style={styles.divider} />
         <Info icon={StoreIcon} label={t('store.deliveredBy')} value={t(`store.deliveredBy.${store.deliveredBy}`)} color={colors.info} />
       </View>
@@ -59,7 +61,7 @@ export function StoreHeader({ store }: { store: CatalogStore }) {
   );
 }
 
-function Info({ icon: Icon, label, value, color = colors.ink }: { icon: LucideIcon; label: string; value: string; color?: string }) {
+function Info({ icon: Icon, label, value, color = colors.ink }: { icon: LucideIcon; label: string; value: ReactNode; color?: string }) {
   return (
     <View style={styles.infoItem}>
       <View style={styles.infoLabel}>
@@ -68,9 +70,13 @@ function Info({ icon: Icon, label, value, color = colors.ink }: { icon: LucideIc
           {label}
         </AppText>
       </View>
-      <AppText weight="bold" color={color}>
-        {value}
-      </AppText>
+      {typeof value === 'string' ? (
+        <AppText weight="bold" color={color}>
+          {value}
+        </AppText>
+      ) : (
+        value
+      )}
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AUTH, type AuthResponse, maskEmail, OTP, type OtpPurpose, type OtpSent, type OtpVerified } from '@tawsela/shared';
+import { AUTH, type AuthResponse, maskEmail, type Me, OTP, type OtpPurpose, type OtpSent, type OtpVerified, type PhoneStatus } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
 import { Mailer } from '../../core/mail/mailer.js';
 import { UsersRepository } from '../users/users.repository.js';
@@ -50,6 +50,11 @@ export class AuthService {
     private readonly mailer: Mailer,
   ) {}
 
+  /** Tawsilty's phone step (contract §8.1): a live account on this phone means sign-in. */
+  async checkPhone(phone: string): Promise<PhoneStatus> {
+    return { registered: !!(await this.users.findLiveByPhone(phone)) };
+  }
+
   /** Step 1 of sign-up: the phone and email must be new; the code goes to the email. */
   async sendSignupCode(phone: string, email: string): Promise<OtpSent> {
     if (await this.users.phoneInUse(phone)) {
@@ -76,27 +81,43 @@ export class AuthService {
 
   /** Step 2: the 4 digits. A right code gives a ticket for step 3 (or the new password). */
   async verifyCode(phone: string, purpose: OtpPurpose, code: string): Promise<OtpVerified> {
-    const expired = () => new ApiException(HttpStatus.BAD_REQUEST, 'OTP_EXPIRED', 'The code has expired');
-    const locked = () => new ApiException(HttpStatus.TOO_MANY_REQUESTS, 'OTP_LOCKED', 'Too many wrong codes');
-    const row = await this.otps.latest(phone, purpose);
-    const result = row ? checkCode(row, codeHash(phone, purpose, code), new Date()) : 'expired';
-    if (result === 'expired' || !row) throw expired();
-    if (result === 'locked') throw locked();
-    // The try is taken before the answer counts, so parallel guesses share the 5 tries.
-    if (!(await this.otps.takeAttempt(row.id))) throw (await this.otps.find(row.id))?.consumedAt ? expired() : locked();
-    if (result === 'wrong') {
-      const triesLeft = Math.max(0, OTP.maxAttempts - ((await this.otps.find(row.id))?.attempts ?? OTP.maxAttempts));
-      throw new ApiException(HttpStatus.BAD_REQUEST, 'OTP_WRONG', 'Wrong code', { triesLeft });
-    }
-    if (!(await this.otps.consume(row.id))) throw expired();
+    const row = await this.useCode(phone, purpose, code);
     const payload: TicketPayload = { typ: 'ticket', purpose, phone, email: row.email };
     if (purpose === 'reset') {
       const user = await this.users.findLiveByPhone(phone);
-      if (!user) throw expired();
+      if (!user) throw this.codeExpired();
       payload.sub = user.id;
       payload.ver = user.sessionVersion;
     }
     return { ticket: await this.jwt.signAsync(payload, { expiresIn: TICKET_TTL }) };
+  }
+
+  /**
+   * The profile's "تغيير رقم الهاتف" (contract §8.14): a code for the new number, sent to the
+   * account's email (no SMS, §8.1). Customers only.
+   */
+  async sendPhoneChangeCode(userId: number, phone: string): Promise<OtpSent> {
+    const user = await this.users.findLiveById(userId);
+    if (!user?.email) throw this.sessionExpired();
+    if (await this.users.phoneInUse(phone)) {
+      throw new ApiException(HttpStatus.CONFLICT, 'PHONE_TAKEN', 'This phone already has an account');
+    }
+    await this.sendCode(phone, user.email, 'phone');
+    return { email: maskEmail(user.email), resendIn: OTP.resendSeconds };
+  }
+
+  /** The code from that email moves the account to the new number. */
+  async changePhone(userId: number, phone: string, code: string): Promise<Me> {
+    const user = await this.users.findLiveById(userId);
+    if (!user?.email) throw this.sessionExpired();
+    const row = await this.useCode(phone, 'phone', code);
+    // The code must be the one sent to this account, not to another asking for the same number.
+    if (row.email !== user.email) throw this.codeExpired();
+    if (await this.users.phoneInUse(phone)) {
+      throw new ApiException(HttpStatus.CONFLICT, 'PHONE_TAKEN', 'This phone already has an account');
+    }
+    await this.users.update(user.id, { phone });
+    return this.profiles.getMe(user.id);
   }
 
   /** Step 3: التفاصيل الشخصية. Creates the customer and signs them in. */
@@ -194,6 +215,29 @@ export class AuthService {
     });
     // Sent in the background: a mail server's failure is logged, and the user can resend.
     this.mailer.send(otpMail(email, code)).catch((err: unknown) => this.log.error(`Code email to ${email} failed: ${String(err)}`));
+  }
+
+  /**
+   * Checks a code and uses it up. Each try is counted before the answer counts, so guesses sent at
+   * the same moment still share the 5 tries.
+   */
+  private async useCode(phone: string, purpose: OtpPurpose, code: string) {
+    const locked = () => new ApiException(HttpStatus.TOO_MANY_REQUESTS, 'OTP_LOCKED', 'Too many wrong codes');
+    const row = await this.otps.latest(phone, purpose);
+    const result = row ? checkCode(row, codeHash(phone, purpose, code), new Date()) : 'expired';
+    if (result === 'expired' || !row) throw this.codeExpired();
+    if (result === 'locked') throw locked();
+    if (!(await this.otps.takeAttempt(row.id))) throw (await this.otps.find(row.id))?.consumedAt ? this.codeExpired() : locked();
+    if (result === 'wrong') {
+      const triesLeft = Math.max(0, OTP.maxAttempts - ((await this.otps.find(row.id))?.attempts ?? OTP.maxAttempts));
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'OTP_WRONG', 'Wrong code', { triesLeft });
+    }
+    if (!(await this.otps.consume(row.id))) throw this.codeExpired();
+    return row;
+  }
+
+  private codeExpired() {
+    return new ApiException(HttpStatus.BAD_REQUEST, 'OTP_EXPIRED', 'The code has expired');
   }
 
   private async readTicket(token: string, purpose: OtpPurpose): Promise<TicketPayload> {

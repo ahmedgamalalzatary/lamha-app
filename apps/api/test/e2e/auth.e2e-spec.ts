@@ -164,6 +164,17 @@ describe('Accounts (e2e, contract §8.1)', () => {
   });
 
   describe('sign-in', () => {
+    it('tells the phone step whether the phone has an account, as Tawsilty does', async () => {
+      await insertUser('partner', '01000000002', PASSWORD);
+      const deleted = await insertUser('customer', '01000000005', PASSWORD, 'd@x.com');
+      await sql('UPDATE users SET deleted_at = NOW() WHERE id = ?', [deleted]);
+      const ask = (phone: string) => http().post('/v1/auth/phone').send({ phone }).expect(201);
+      expect((await ask('+20 100 000 0002')).body).toEqual({ registered: true });
+      expect((await ask('01099999999')).body).toEqual({ registered: false });
+      expect((await ask('01000000005')).body).toEqual({ registered: false });
+      await http().post('/v1/auth/phone').send({ phone: '123' }).expect(400);
+    });
+
     it('signs every role in with phone + password', async () => {
       for (const [role, phone] of [['customer', '01000000001'], ['partner', '01000000002'], ['driver', '01000000003'], ['admin', '01000000004']] as const) {
         await insertUser(role, phone, PASSWORD, role === 'customer' ? `${phone}@x.com` : null);

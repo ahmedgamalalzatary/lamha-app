@@ -1,13 +1,23 @@
+import { Image } from 'expo-image';
 import { UserRound } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
+import { mediaUrl } from '@/core/api/client';
 import { colors } from '@/core/theme';
 
-/** Tawsilty's default avatar: a light-blue circle with a white figure and a soft orange ring. */
-export function Avatar({ size = 84 }: { size?: number }) {
+/**
+ * Tawsilty's avatar: the account's photo, or by default a light-blue circle with a white figure;
+ * a soft orange ring around it.
+ */
+export function Avatar({ size = 84, photo = null }: { size?: number; photo?: string | null }) {
+  const uri = mediaUrl(photo);
   return (
     <View style={[styles.ring, { width: size + 8, height: size + 8, borderRadius: (size + 8) / 2 }]}>
       <View style={[styles.circle, { width: size, height: size, borderRadius: size / 2 }]}>
-        <UserRound size={size * 0.78} color="#FFFFFF" fill="#FFFFFF" strokeWidth={1} style={{ marginTop: size * 0.22 }} />
+        {uri ? (
+          <Image source={{ uri }} contentFit="cover" style={StyleSheet.absoluteFill} transition={150} />
+        ) : (
+          <UserRound size={size * 0.78} color="#FFFFFF" fill="#FFFFFF" strokeWidth={1} style={{ marginTop: size * 0.22 }} />
+        )}
       </View>
     </View>
   );

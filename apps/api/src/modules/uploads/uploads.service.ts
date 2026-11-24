@@ -7,13 +7,14 @@ import sharp from 'sharp';
 import { ApiException } from '../../common/api-exception.js';
 
 /**
- * Catalog images (store logos and covers, categories, products, cuisines, home tiles) on the
- * server's disk, served under /uploads/catalog/ (by the API in development, by nginx in production).
+ * Catalog images (store logos and covers, categories, products, cuisines, home tiles) and profile
+ * photos on the server's disk, served under /uploads/catalog/ and /uploads/avatars/ (by the API in
+ * development, by nginx in production).
  */
 @Injectable()
 export class UploadsService {
   /** Turned upright, made at most 1600 px on the longest side and stored as JPEG (the camera's metadata is dropped). */
-  async saveImage(buffer: Buffer): Promise<UploadedImage> {
+  async saveImage(buffer: Buffer, folder: 'catalog' | 'avatars' = 'catalog'): Promise<UploadedImage> {
     const jpeg = await sharp(buffer)
       .rotate()
       .resize(CATALOG.imagePx, CATALOG.imagePx, { fit: 'inside', withoutEnlargement: true })
@@ -23,10 +24,10 @@ export class UploadsService {
       .catch(() => {
         throw new ApiException(HttpStatus.BAD_REQUEST, 'IMAGE_INVALID', 'That file is not an image we can read');
       });
-    const dir = path.resolve(UPLOADS_DIR, 'catalog');
+    const dir = path.resolve(UPLOADS_DIR, folder);
     await mkdir(dir, { recursive: true });
     const name = `${randomUUID()}.jpg`;
     await writeFile(path.join(dir, name), jpeg);
-    return { url: `/uploads/catalog/${name}` };
+    return { url: `/uploads/${folder}/${name}` };
   }
 }

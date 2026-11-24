@@ -18,12 +18,27 @@ export interface ProductActions {
   countOf: (productId: number) => number;
 }
 
-/** A product's picture, or a soft placeholder when it has none. */
+/**
+ * A product's picture, or a soft placeholder when it has none. A switched-off product is grey with a
+ * white "غير متوفر" pill on it, as in Tawsilty.
+ */
 export function ProductPicture({ product, size }: { product: Product; size?: number }) {
+  const t = useT();
   const uri = mediaUrl(product.image);
   return (
     <View style={[styles.picture, size ? { width: size, height: size } : styles.square]}>
-      {uri ? <Image source={{ uri }} contentFit="cover" style={StyleSheet.absoluteFill} transition={150} /> : <UtensilsCrossed size={28} color={colors.line} />}
+      {uri ? (
+        <Image source={{ uri }} contentFit="cover" style={[StyleSheet.absoluteFill, !product.active && styles.grey]} transition={150} />
+      ) : (
+        <UtensilsCrossed size={28} color={colors.line} />
+      )}
+      {product.active ? null : (
+        <View style={styles.offPill}>
+          <AppText weight="semibold" size={fontSizes.body}>
+            {t('store.unavailable')}
+          </AppText>
+        </View>
+      )}
     </View>
   );
 }
@@ -41,7 +56,15 @@ export function ProductRow({ product, actions }: { product: Product; actions: Pr
   const t = useT();
   return (
     <View>
-      <PressableScale accessibilityRole="button" accessibilityLabel={product.name} onPress={() => actions.open(product)} scaleTo={0.99} style={styles.row}>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={product.name}
+        disabled={!product.active}
+        accessibilityState={{ disabled: !product.active }}
+        onPress={() => actions.open(product)}
+        scaleTo={0.99}
+        style={styles.row}
+      >
         <View style={styles.rowText}>
           <AppText weight="semibold" size={fontSizes.listTitle}>
             {product.name}
@@ -62,9 +85,11 @@ export function ProductRow({ product, actions }: { product: Product; actions: Pr
           ) : null}
         </View>
       </PressableScale>
-      <View pointerEvents="box-none" style={styles.rowPictureBox}>
-        <AddButton product={product} count={actions.countOf(product.id)} onPress={() => actions.add(product)} />
-      </View>
+      {product.active ? (
+        <View pointerEvents="box-none" style={styles.rowPictureBox}>
+          <AddButton product={product} count={actions.countOf(product.id)} onPress={() => actions.add(product)} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -73,24 +98,34 @@ export function ProductRow({ product, actions }: { product: Product; actions: Pr
 export function ProductCard({ product, actions, width }: { product: Product; actions: ProductActions; width?: number }) {
   return (
     <View style={width ? { width } : styles.cell}>
-      <PressableScale accessibilityRole="button" accessibilityLabel={product.name} onPress={() => actions.open(product)} scaleTo={0.98} style={styles.card}>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={product.name}
+        disabled={!product.active}
+        accessibilityState={{ disabled: !product.active }}
+        onPress={() => actions.open(product)}
+        scaleTo={0.98}
+        style={styles.card}
+      >
         <ProductPicture product={product} />
         <AppText weight="medium" size={fontSizes.body} numberOfLines={2}>
           {product.name}
         </AppText>
         <ProductPrice product={product} />
       </PressableScale>
-      <View pointerEvents="box-none" style={styles.cardPictureBox}>
-        <AddButton product={product} count={actions.countOf(product.id)} onPress={() => actions.add(product)} />
-      </View>
+      {product.active ? (
+        <View pointerEvents="box-none" style={styles.cardPictureBox}>
+          <AddButton product={product} count={actions.countOf(product.id)} onPress={() => actions.add(product)} />
+        </View>
+      ) : null}
     </View>
   );
 }
 
-/** Products three to a row. */
-export function ProductGrid({ products, actions }: { products: Product[]; actions: ProductActions }) {
+/** Products three to a row (two on the store's "البحث" page). */
+export function ProductGrid({ products, actions, columns = 3 }: { products: Product[]; actions: ProductActions; columns?: number }) {
   const rows: Product[][] = [];
-  for (let i = 0; i < products.length; i += 3) rows.push(products.slice(i, i + 3));
+  for (let i = 0; i < products.length; i += columns) rows.push(products.slice(i, i + columns));
   return (
     <View style={styles.grid}>
       {rows.map((row) => (
@@ -98,7 +133,7 @@ export function ProductGrid({ products, actions }: { products: Product[]; action
           {row.map((p) => (
             <ProductCard key={p.id} product={p} actions={actions} />
           ))}
-          {Array.from({ length: 3 - row.length }, (_, i) => (
+          {Array.from({ length: columns - row.length }, (_, i) => (
             <View key={`gap${i}`} style={styles.cell} />
           ))}
         </View>
@@ -118,6 +153,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   square: { width: '100%', aspectRatio: 1 },
+  grey: { filter: [{ grayscale: 1 }] },
+  offPill: {
+    backgroundColor: colors.bg,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
   row: {
     flexDirection: 'row',
     gap: spacing.md,

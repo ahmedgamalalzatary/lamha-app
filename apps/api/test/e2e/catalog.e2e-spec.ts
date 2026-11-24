@@ -98,21 +98,26 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
     await get('/v1/catalog/search?q=%20').expect(400);
   });
 
-  it("opens a store page with its categories in order and only the products customers may see", async () => {
+  it('opens a store page with its categories in order; switched-off products come marked, as Tawsilty greys them ("غير متوفر")', async () => {
     const store = await insertStore();
     const meals = await insertCategory(store, 'وجبات', 1);
     const sandwiches = await insertCategory(store, 'سندوتشات', 0);
+    const breakfast = await insertCategory(store, 'فطار', 3);
     await insertCategory(store, 'فاضي', 2);
     await insertProduct(store, sandwiches, 'شاورما فراخ', 85);
     await insertProduct(store, meals, 'وجبة عربي', 175);
-    await insertProduct(store, meals, 'مخفي', 10, false);
+    await insertProduct(store, meals, 'غير متوفر', 10, false);
+    await insertProduct(store, breakfast, 'فطار فلاحي', 110, false);
 
     const res = await get(`/v1/catalog/stores/${store}`).expect(200);
-    expect(res.body.categories.map((c: { name: string; products: { name: string }[] }) => [c.name, c.products.map((p) => p.name)])).toEqual([
-      ['سندوتشات', ['شاورما فراخ']],
-      ['وجبات', ['وجبة عربي']],
+    type Row = { name: string; products: { name: string; active: boolean }[] };
+    expect(res.body.categories.map((c: Row) => [c.name, c.products.map((p) => [p.name, p.active])])).toEqual([
+      ['سندوتشات', [['شاورما فراخ', true]]],
+      ['وجبات', [['وجبة عربي', true], ['غير متوفر', false]]],
+      // A category with only switched-off products still shows them.
+      ['فطار', [['فطار فلاحي', false]]],
     ]);
-    expect(res.body.categories[1].productCount).toBe(1);
+    expect(res.body.categories[1].productCount).toBe(2);
   });
 
   it('does not open a hidden store', async () => {

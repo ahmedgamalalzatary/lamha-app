@@ -14,8 +14,10 @@ interface Props {
    * Tawsilty has two dialogs (contract §6.3):
    * - danger (cart "حذف المنتج"): rounded card, red pill action, orange "إلغاء";
    * - primary (address "حذف العنوان"): square card, orange rounded action, red "إلغاء".
+   * - outline (account "تسجيل الخروج"): centred question over a line, an orange pill and a
+   *   red-outlined "إلغاء" pill of the same width.
    */
-  tone?: 'danger' | 'primary';
+  tone?: 'danger' | 'primary' | 'outline';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -27,6 +29,32 @@ const TONE = {
 
 export function ConfirmDialog({ visible, title, message, confirmLabel, tone = 'danger', onConfirm, onCancel }: Props) {
   const t = useT();
+  if (tone === 'outline') {
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+        <View style={styles.backdrop}>
+          <View style={[styles.card, styles.outlineCard]} accessibilityViewIsModal>
+            <AppText size={fontSizes.sectionTitle} style={styles.centred}>
+              {title}
+            </AppText>
+            <View style={styles.line} />
+            <View style={styles.pills}>
+              <PressableScale accessibilityRole="button" accessibilityLabel={confirmLabel} onPress={onConfirm} style={[styles.pill, styles.pillOn]}>
+                <AppText size={17} color={colors.bg}>
+                  {confirmLabel}
+                </AppText>
+              </PressableScale>
+              <PressableScale accessibilityRole="button" accessibilityLabel={t('common.cancel')} onPress={onCancel} style={[styles.pill, styles.pillOff]}>
+                <AppText size={17} color={colors.danger}>
+                  {t('common.cancel')}
+                </AppText>
+              </PressableScale>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
   const look = TONE[tone];
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -66,4 +94,11 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row-reverse', justifyContent: 'flex-end', alignItems: 'center', gap: spacing.lg, marginTop: spacing.md },
   cancel: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   confirm: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl },
+  outlineCard: { borderRadius: 24, gap: spacing.lg },
+  centred: { textAlign: 'center' },
+  line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+  pills: { flexDirection: 'row', gap: spacing.lg },
+  pill: { flex: 1, minHeight: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  pillOn: { backgroundColor: colors.primary },
+  pillOff: { borderWidth: 1.5, borderColor: colors.danger },
 });

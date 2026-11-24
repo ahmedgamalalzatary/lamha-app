@@ -20,6 +20,7 @@ export function toMe(row: UserRow): Me {
     gender: row.gender,
     region: row.region,
     locale: row.locale,
+    avatar: row.avatar,
     inviteCode: row.inviteCode,
   };
 }
@@ -37,12 +38,18 @@ export class UsersService {
     return toMe(row);
   }
 
-  /** The profile screen (contract §8.14): email, gender and language. Name, phone and region stay locked. */
+  /** The profile screen (contract §8.14): email, gender and language. Name and region stay locked; the phone changes with a code. */
   async updateMe(id: number, body: UpdateMeDto): Promise<Me> {
     if (body.email && (await this.users.emailInUse(body.email, id))) {
       throw new ApiException(HttpStatus.CONFLICT, 'EMAIL_TAKEN', 'This email already has an account');
     }
     await this.users.update(id, body);
+    return this.getMe(id);
+  }
+
+  /** The profile photo ("اختر صورة"): the path of the saved image. */
+  async setAvatar(id: number, avatar: string): Promise<Me> {
+    await this.users.update(id, { avatar });
     return this.getMe(id);
   }
 
@@ -63,6 +70,7 @@ export class UsersService {
       lastName: '',
       passwordHash: '',
       gender: null,
+      avatar: null,
       inviteCode: null,
       deletedAt: new Date(),
     });

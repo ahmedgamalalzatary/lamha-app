@@ -1,6 +1,6 @@
 import { type Gender, isValidEmail, normalizeEmail } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { ChevronRight, Lock, type LucideIcon, Mail, MapPin, Phone, User, Users } from 'lucide-react-native';
+import { Camera, ChevronRight, Lock, type LucideIcon, Mail, MapPin, Phone, User, Users } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,10 +13,12 @@ import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT } from '@/core/i18n';
 import { colors, fonts, radius, spacing } from '@/core/theme';
 import { meApi } from '../api/me';
+import { PhoneChangeSheet } from '../components/PhoneChangeSheet';
+import { PhotoSheet } from '../components/PhotoSheet';
 
 /**
- * "الملف الشخصي" (customer/account/profile-edit.png): full name and region locked, the phone shown,
- * email and gender editable. The phone's "تغيير" and the avatar's camera arrive later [Open].
+ * "الملف الشخصي" (customer/account/profile-edit.png): full name and region locked, email and gender
+ * editable; the phone's "تغيير" opens its sheet and the avatar's camera the "اختر صورة" sheet.
  */
 export function ProfileScreen() {
   const t = useT();
@@ -24,6 +26,7 @@ export function ProfileScreen() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [gender, setGender] = useState<Gender | null>(user?.gender ?? null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<'phone' | 'photo' | null>(null);
 
   const save = useSubmit(async (body: { email?: string; gender?: Gender }) => {
     session.setUser(await meApi.update(body));
@@ -55,7 +58,12 @@ export function ProfileScreen() {
       </View>
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">
         <View style={styles.avatar}>
-          <Avatar size={140} />
+          <View>
+            <Avatar size={140} photo={user.avatar} />
+            <Pressable accessibilityRole="button" accessibilityLabel={t('profile.changePhoto')} hitSlop={8} onPress={() => setSheet('photo')} style={styles.camera}>
+              <Camera size={22} color={colors.bg} />
+            </Pressable>
+          </View>
         </View>
         <View style={styles.card}>
           <Section icon={User} label={t('profile.fullName')}>
@@ -65,7 +73,14 @@ export function ProfileScreen() {
           </Section>
           <Section icon={Phone} label={t('auth.phone')}>
             <Box>
-              <AppText size={16}>{user.phone}</AppText>
+              <View style={styles.phoneRow}>
+                <AppText size={16}>{user.phone}</AppText>
+                <Pressable accessibilityRole="button" hitSlop={6} onPress={() => setSheet('phone')} style={styles.change}>
+                  <AppText weight="bold" color={colors.primary}>
+                    {t('profile.change')}
+                  </AppText>
+                </Pressable>
+              </View>
             </Box>
           </Section>
           <Section icon={Mail} label={t('auth.email')}>
@@ -121,6 +136,8 @@ export function ProfileScreen() {
       <View style={styles.footer}>
         <Button label={t('common.save')} disabled={!Object.keys(changes).length} loading={save.busy} onPress={submit} />
       </View>
+      <PhoneChangeSheet visible={sheet === 'phone'} onClose={() => setSheet(null)} />
+      <PhotoSheet visible={sheet === 'photo'} onClose={() => setSheet(null)} />
     </SafeAreaView>
   );
 }
@@ -156,6 +173,21 @@ const styles = StyleSheet.create({
   body: { flex: 1, backgroundColor: '#F6F7F9' },
   bodyContent: { paddingBottom: spacing.xl },
   avatar: { alignItems: 'center', paddingVertical: spacing.xl },
+  camera: {
+    position: 'absolute',
+    bottom: 4,
+    end: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: colors.bg,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  change: { backgroundColor: colors.primary50, borderRadius: radius.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
   card: {
     marginHorizontal: spacing.md,
     backgroundColor: colors.bg,

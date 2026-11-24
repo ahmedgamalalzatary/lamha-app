@@ -30,14 +30,16 @@ export const mediaUrl = (path: string | null): string | null => (path ? new URL(
 
 async function send(path: string, options: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  // A photo goes as a form; fetch sets its multipart type and boundary itself.
+  const form = options.body instanceof FormData;
+  if (options.body !== undefined && !form) headers['Content-Type'] = 'application/json';
   const token = options.auth === false ? null : session.accessToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   try {
     return await fetch(`${baseUrl()}${path}`, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : form ? (options.body as FormData) : JSON.stringify(options.body),
     });
   } catch (e) {
     throw new ApiRequestError(0, e instanceof Error ? e.message : 'Network request failed');

@@ -1,10 +1,11 @@
-import type { AuthResponse, OtpPurpose, OtpSent, OtpVerified, Role } from '@tawsela/shared';
+import type { AuthResponse, OtpPurpose, OtpSent, OtpVerified, PhoneStatus, Role } from '@tawsela/shared';
 import type { Href } from 'expo-router';
 import { api } from '@/core/api/client';
 
 const post = <T>(path: string, body: unknown) => api<T>(path, { method: 'POST', body, auth: false });
 
 export const authApi = {
+  checkPhone: (phone: string) => post<PhoneStatus>('/auth/phone', { phone }),
   sendSignupCode: (phone: string, email: string) => post<OtpSent>('/auth/signup/code', { phone, email }),
   sendResetCode: (phone: string) => post<OtpSent>('/auth/password/code', { phone }),
   verifyCode: (phone: string, purpose: OtpPurpose, code: string) =>

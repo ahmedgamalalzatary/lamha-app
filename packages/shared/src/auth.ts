@@ -21,8 +21,11 @@ export function maskEmail(email: string): string {
 export const GENDERS = ['male', 'female'] as const;
 export type Gender = (typeof GENDERS)[number];
 
-/** Why a code is asked for: a new customer account, or a forgotten password. */
-export type OtpPurpose = 'signup' | 'reset';
+/**
+ * Why a code is asked for: a new customer account, a forgotten password, or a customer moving the
+ * account to a new number ('phone'; the code still goes to the account email).
+ */
+export type OtpPurpose = 'signup' | 'reset' | 'phone';
 
 /** The signed-in account, as /me returns it. */
 export interface Me {
@@ -35,6 +38,8 @@ export interface Me {
   gender: Gender | null;
   region: string | null;
   locale: Locale;
+  /** The profile photo's path under /uploads, or null for the initials. */
+  avatar: string | null;
   /** Customers only: the code friends type when they sign up. */
   inviteCode: string | null;
 }
@@ -45,6 +50,11 @@ export interface AuthResponse {
   refreshToken: string;
   /** Seconds until the access token expires. */
   expiresIn: number;
+}
+
+/** The phone step's answer: a registered phone goes on to the password, a new one to sign-up. */
+export interface PhoneStatus {
+  registered: boolean;
 }
 
 /** A code was emailed. */

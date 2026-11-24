@@ -9,6 +9,7 @@ import type { Env } from '../../core/config/env.js';
 import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { PhoneChangeController } from './phone-change.controller.js';
 import { AccessTokenGuard } from './guards/access-token.guard.js';
 import { OtpRepository } from './otp.repository.js';
 
@@ -27,7 +28,7 @@ import { OtpRepository } from './otp.repository.js';
         process.env.NODE_ENV === 'test' && !ctx.switchToHttp().getRequest<{ headers: Record<string, unknown> }>().headers['x-test-rate-limit'],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, PhoneChangeController],
   providers: [
     AuthService,
     OtpRepository,

@@ -57,7 +57,8 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
   const [quantity, setQuantity] = useState(1);
   const complete = choicesComplete(product, chosen);
   const total = unitPrice(product, chosen) * quantity;
-  const together = orderedTogether(menu, product.id);
+  // "غير متوفر" items are never offered with this one.
+  const together = orderedTogether(menu.filter((p) => p.active || p.id === product.id), product.id);
   const image = mediaUrl(product.image);
   const addLabel = complete ? `${t('product.add')} ${formatMoney(total)}` : t('product.add');
 

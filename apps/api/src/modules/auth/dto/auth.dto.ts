@@ -44,6 +44,15 @@ export class VerifyCodeDto extends PhoneDto {
   code: string;
 }
 
+/** POST /v1/me/phone: the new number and the code emailed for it. */
+export class ChangePhoneDto extends PhoneDto {
+  @ApiProperty({ example: '1234' })
+  @IsString()
+  @Length(OTP.length, OTP.length)
+  @Matches(/^\d+$/)
+  code: string;
+}
+
 class PasswordDto {
   @ApiProperty({ minLength: AUTH.passwordMinLength })
   @IsString()

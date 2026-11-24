@@ -1,4 +1,5 @@
-import { ActivityIndicator, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import type { LucideIcon } from 'lucide-react-native';
+import { ActivityIndicator, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { colors, radius } from '@/core/theme';
 import { AppText } from './AppText';
 import { PressableScale } from './PressableScale';
@@ -12,13 +13,15 @@ export interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** An icon after the label ("إعادة المحاولة" with its ↻). */
+  icon?: LucideIcon;
 }
 
 const BG: Record<Variant, string> = { primary: colors.primary, soft: colors.primary50, danger: colors.danger };
 const FG: Record<Variant, string> = { primary: colors.bg, soft: colors.primary, danger: colors.bg };
 
 /** Tawsilty's primary button (contract §6.3): full width, rounded, orange; faded while disabled. */
-export function Button({ label, onPress, variant = 'primary', loading, disabled, style }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', loading, disabled, style, icon: Icon }: ButtonProps) {
   const off = !!(disabled || loading);
   return (
     <PressableScale
@@ -32,9 +35,12 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       {loading ? (
         <ActivityIndicator color={FG[variant]} />
       ) : (
-        <AppText weight="semibold" color={FG[variant]} style={styles.label}>
-          {label}
-        </AppText>
+        <View style={styles.row}>
+          <AppText weight="semibold" color={FG[variant]} style={styles.label}>
+            {label}
+          </AppText>
+          {Icon ? <Icon size={22} color={FG[variant]} /> : null}
+        </View>
       )}
     </PressableScale>
   );
@@ -43,4 +49,5 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
 const styles = StyleSheet.create({
   base: { minHeight: 50, paddingHorizontal: 20, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   label: { textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });

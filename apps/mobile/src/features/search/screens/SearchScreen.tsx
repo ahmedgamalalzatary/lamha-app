@@ -1,7 +1,7 @@
-import { formatMoney, type Product, SEARCH_SCOPES, type SearchResult, type SearchScope, verticalLabel } from '@tawsela/shared';
+import { formatMoney, type Product, SEARCH_SCOPES, type SearchResult, type SearchScope } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { type Href, router } from 'expo-router';
-import { ArrowRight, ArrowUpLeft, ChevronLeft, Search, SearchX, Store, UtensilsCrossed, X } from 'lucide-react-native';
+import { ArrowRight, ArrowUpLeft, ChevronLeft, Search, ShoppingBasket, Store, UtensilsCrossed, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -70,14 +70,14 @@ function Suggestions({ text, scope, onSearch, onFill }: { text: string; scope: S
         <View key={`${s.name}-${s.vertical}`} style={styles.line}>
           <PressableScale accessibilityRole="button" accessibilityLabel={s.name} onPress={() => onSearch(s.name)} style={styles.suggestion}>
             <View style={styles.lineIcon}>
-              {s.vertical === 'restaurant' ? <UtensilsCrossed size={20} color={colors.ink2} /> : <Store size={20} color={colors.ink2} />}
+              {s.vertical === 'restaurant' ? <UtensilsCrossed size={20} color={colors.ink2} /> : <ShoppingBasket size={20} color={colors.ink2} />}
             </View>
             <View style={styles.flex}>
               <AppText weight="bold" size={fontSizes.listTitle} numberOfLines={1}>
                 {s.name}
               </AppText>
               <AppText color={colors.ink2} size={fontSizes.body}>
-                {t('search.in', { place: verticalLabel(s.vertical) })}
+                {t(s.vertical === 'restaurant' ? 'search.inRestaurants' : 'search.inStores')}
               </AppText>
             </View>
           </PressableScale>
@@ -148,7 +148,7 @@ function Results({ q, scope }: { q: string; scope: SearchScope }) {
         <Button label={t('common.retry')} variant="soft" onPress={() => void results.refetch()} />
       </View>
     );
-  if (!results.data.length) return <EmptyState icon={SearchX} title={t('search.none')} message={t('search.noneText')} />;
+  if (!results.data.length) return <EmptyState icon={Search} title={t('search.none')} message={t('search.noneText')} />;
   return (
     <FlatList
       data={results.data}

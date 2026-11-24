@@ -20,10 +20,11 @@ describe('OtpInput', () => {
 });
 
 describe('OfflineScreen', () => {
-  it('says the server cannot be reached and retries', async () => {
+  it("shows Tawsilty's no-connection screen and retries", async () => {
     const onRetry = jest.fn(async () => undefined);
     await render(<OfflineScreen onRetry={onRetry} />);
-    expect(screen.getByText('تعذر الاتصال بالخادم')).toBeTruthy();
+    expect(screen.getByText('لا يوجد اتصال بالإنترنت')).toBeTruthy();
+    expect(screen.getByText('تحقق من اتصالك وحاول مجدداً')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'إعادة المحاولة' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });

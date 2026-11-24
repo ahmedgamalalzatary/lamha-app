@@ -1,7 +1,8 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { createTestApp } from '../utils/app.js';
+import sharp from 'sharp';
+import { createTestApp, lastCodeTo, mailbox } from '../utils/app.js';
 import { insertUser, resetDb } from '../utils/db.js';
 
 const PASSWORD = 'secret123';
@@ -20,6 +21,7 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
   });
   beforeEach(async () => {
     await resetDb();
+    mailbox.length = 0;
   });
   afterAll(async () => {
     await app.close();
@@ -70,5 +72,40 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     await insertUser(role, '01011111111', PASSWORD);
     const { accessToken } = await signIn('01011111111');
     await http().delete('/v1/me').set('Authorization', `Bearer ${accessToken}`).send({ password: PASSWORD }).expect(403);
+  });
+
+  it('changes the phone ("تغيير" sheet): the code for the new number goes to the account email, never by SMS', async () => {
+    await insertUser('customer', '01554459196', PASSWORD, 'ahmed@gmail.com');
+    await insertUser('customer', '01000000009', PASSWORD, 'taken@gmail.com');
+    const { accessToken } = await signIn('01554459196');
+    const auth = { Authorization: `Bearer ${accessToken}` };
+
+    const taken = await http().post('/v1/me/phone/code').set(auth).send({ phone: '01000000009' }).expect(409);
+    expect(taken.body.code).toBe('PHONE_TAKEN');
+    const sent = await http().post('/v1/me/phone/code').set(auth).send({ phone: '+20 155 000 0001' }).expect(201);
+    expect(sent.body).toEqual({ email: 'a***d@gmail.com', resendIn: 59 });
+    const code = lastCodeTo('ahmed@gmail.com');
+
+    const wrong = await http().post('/v1/me/phone').set(auth).send({ phone: '01550000001', code: code === '1111' ? '2222' : '1111' }).expect(400);
+    expect(wrong.body.code).toBe('OTP_WRONG');
+    const res = await http().post('/v1/me/phone').set(auth).send({ phone: '01550000001', code }).expect(201);
+    expect(res.body.phone).toBe('01550000001');
+    // The new number signs in; the code was used up.
+    await signIn('01550000001');
+    await http().post('/v1/me/phone').set(auth).send({ phone: '01550000001', code }).expect(400);
+  });
+
+  it('sets the avatar from a photo ("اختر صورة")', async () => {
+    await insertUser('customer', '01554459196', PASSWORD, 'ahmed@gmail.com');
+    const { accessToken } = await signIn('01554459196');
+    const png = await sharp({ create: { width: 900, height: 900, channels: 3, background: '#F68B1D' } }).png().toBuffer();
+    const res = await http()
+      .post('/v1/me/avatar')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .attach('image', png, { filename: 'me.png', contentType: 'image/png' })
+      .expect(201);
+    expect(res.body.avatar).toMatch(/^\/uploads\/avatars\/[\w-]+\.jpg$/);
+    const me = await http().get('/v1/me').set('Authorization', `Bearer ${accessToken}`).expect(200);
+    expect(me.body.avatar).toBe(res.body.avatar);
   });
 });

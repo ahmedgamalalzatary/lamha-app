@@ -155,7 +155,7 @@ export interface Product {
   /** "كيلو", "شريط 20 قرص"… */
   unit: string | null;
   image: string | null;
-  /** Off means "منتجات غير فعالة" (§11): customers do not see it. */
+  /** Off means "منتجات غير فعالة" (§11): the store page shows it greyed with "غير متوفر", and it cannot be ordered. */
   active: boolean;
   sortOrder: number;
   /** The product sheet's choices (§8.5), in order. */

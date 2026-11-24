@@ -9,9 +9,9 @@ describe('gate (one app, the account picks the screens: contract §2)', () => {
     expect(gate('offline', null, 'customer')).toBe('wait');
   });
 
-  it('sends a signed-out visitor to sign-in, and lets them use the sign-in screens', () => {
-    expect(gate('signedOut', null, 'customer')).toBe('/sign-in');
-    expect(gate('signedOut', null, 'account')).toBe('/sign-in');
+  it('sends a signed-out visitor to the welcome screen, and lets them use the sign-in screens', () => {
+    expect(gate('signedOut', null, 'customer')).toBe('/welcome');
+    expect(gate('signedOut', null, 'account')).toBe('/welcome');
     expect(gate('signedOut', null, 'auth')).toBeNull();
   });
 

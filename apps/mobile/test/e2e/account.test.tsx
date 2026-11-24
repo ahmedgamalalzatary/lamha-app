@@ -6,7 +6,7 @@ import { ToastHost, toast } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
 import { AccountScreen } from '@/features/account/screens/AccountScreen';
 import { ProfileScreen } from '@/features/account/screens/ProfileScreen';
-import { insertUser, PASSWORD, refreshWorks, resetDb, signInAs, sql } from '../utils/db';
+import { emailedCode, insertUser, PASSWORD, refreshWorks, resetDb, signInAs, sql } from '../utils/db';
 
 function Root() {
   return (
@@ -22,7 +22,7 @@ const ROUTES = {
   'customer/account': AccountScreen,
   'driver/account': AccountScreen,
   profile: ProfileScreen,
-  'sign-in': () => <Text>شاشة الدخول</Text>,
+  welcome: () => <Text>شاشة الدخول</Text>,
 };
 
 const press = (name: string) => fireEvent.press(screen.getByRole('button', { name }));
@@ -48,6 +48,8 @@ describe('حسابي (contract §8.14; real API)', () => {
 
     expect(screen.getByText('احمد الزعتري')).toBeTruthy();
     await press('تسجيل الخروج');
+    expect(await screen.findByText('هل أنت متأكد من تسجيل الخروج')).toBeTruthy();
+    await press('تأكيد');
 
     expect(await screen.findByText('شاشة الدخول')).toBeTruthy();
     expect(useSession.getState().status).toBe('signedOut');
@@ -103,5 +105,27 @@ describe('الملف الشخصي (real API)', () => {
     expect(useSession.getState().user).toMatchObject({ email: 'new@gmail.com', gender: 'male' });
     const [row] = await sql<{ email: string; gender: string }[]>('SELECT email, gender FROM users WHERE phone = ?', ['01554459196']);
     expect(row).toEqual({ email: 'new@gmail.com', gender: 'male' });
+  });
+
+  it('"تغيير" moves the account to a new phone with a code sent to the email; the camera offers the two photo choices', async () => {
+    await signedInCustomer();
+    await renderApp(ROUTES, { initialUrl: '/profile' });
+
+    await press('تغيير');
+    expect(await screen.findByText('تغيير رقم الهاتف')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('أدخل رقم الهاتف الجديد'), '01550000001');
+    await press('تأكيد رقم الهاتف');
+    expect(await screen.findByText('a***d@gmail.com')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('رمز التحقق'), await emailedCode('01550000001', 'phone'));
+    await press('تأكيد');
+
+    expect(await screen.findByText('01550000001')).toBeTruthy();
+    expect(useSession.getState().user?.phone).toBe('01550000001');
+    await expect(signInAs('01550000001')).resolves.toBeTruthy();
+
+    await press('تغيير الصورة');
+    expect(await screen.findByText('اختر صورة')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'التقاط صورة' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'من المعرض' })).toBeTruthy();
   });
 });

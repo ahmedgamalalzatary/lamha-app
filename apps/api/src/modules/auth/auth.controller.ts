@@ -1,12 +1,13 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
-import type { AuthResponse, OtpSent, OtpVerified } from '@tawsela/shared';
+import type { AuthResponse, OtpSent, OtpVerified, PhoneStatus } from '@tawsela/shared';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { AuthService } from './auth.service.js';
 import {
   LoginDto,
   PasswordCodeDto,
+  PhoneDto,
   RefreshDto,
   ResetPasswordDto,
   SignupCodeDto,
@@ -24,6 +25,12 @@ import {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  /** Tawsilty's phone step: whether the phone has an account (limited like sign-in). */
+  @Post('phone')
+  checkPhone(@Body() body: PhoneDto): Promise<PhoneStatus> {
+    return this.auth.checkPhone(body.phone);
+  }
 
   @Post('signup/code')
   sendSignupCode(@Body() body: SignupCodeDto): Promise<OtpSent> {

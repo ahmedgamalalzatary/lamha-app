@@ -291,7 +291,7 @@ Dark mode: Tawsilty has none; Tawsela has none.
 - **Badges on store rows**: lime pill "خصم 30 ج.م على منتجات" (product discount), green outline "توصيل مجاني للطلبات من 300 ج.م" (free delivery over an amount), cream pill with a purple "قسيمة" tag "خصم 6 ج.م على 150 ج.م" (voucher), struck-through fee + green "مجاني" (free delivery).
 - **Product cards**: lime "وفر 60.0 ج.م" (save) tag on the image, red price with the old price struck through, "+" to add (or "‹" when the item has options), "السعر حسب الاختيار" when the price depends on a choice, "قابل للتخصيص" under customizable items.
 - **Loading**: grey skeleton blocks in the shape of the content.
-- **Confirm dialog**: white card, bold title, message, an action button and a "إلغاء" text button. Two looks: the cart's "حذف المنتج" is a rounded card with a red pill "حذف" and an orange "إلغاء"; the address's "حذف العنوان" is a square card with an orange rounded "تأكيد" and a red "إلغاء".
+- **Confirm dialog**: white card, bold title, message, an action button and a "إلغاء" text button. Three looks: the cart's "حذف المنتج" is a rounded card with a red pill "حذف" and an orange "إلغاء"; the address's "حذف العنوان" is a square card with an orange rounded "تأكيد" and a red "إلغاء". A third look, sign-out's "هل أنت متأكد من تسجيل الخروج": a centred question over a line, an orange "تأكيد" pill and a red-outlined "إلغاء" pill of the same width.
 - **Store "closed"** state: greyscale cover and a dark "مغلق" pill.
 - **Footer credit** on the account screen: "تمت البرمجة بواسطة شركة ZTechX". Tawsela replaces it with its own (see §15.1 #8).
 
@@ -320,14 +320,18 @@ Dark mode: Tawsilty has none; Tawsela has none.
 
 Built in Phase 1:
 
-- [Derived, 2026-11-23] **The app opens on sign-in.** Nothing is shown before signing in; after it, the account's role picks the tab bar. Tawsilty's first screen was not captured; its OTP and details screens open from a pushed stack and its home already shows the signed-in user's address.
-- [Open] The **sign-in** (phone + password, "نسيت كلمة المرور؟", "ليس لديك حساب؟ إنشاء حساب"), **sign-up step 1** (phone + email), **forgot password** and **new password** screens are not captured from Tawsilty. They are drawn in the pattern of its "رمز التحقق" and "التفاصيل الشخصية" screens until a capture replaces them.
+- [Tawsilty, captured 2026-11-24, `customer/auth/`] **One entry by phone, for every role.** Signed out, the app opens on the **welcome** screen: pictures on soft cards behind a white card with "توصيلة", "يمكننا توصيل كلّ ما تتمناه" and "المتابعة باستخدام رقم الهاتف". Then the **phone step**: "رقم الهاتف", "لن نستخدم رقم هاتفك إلا إذا احتجنا إلى التواصل معك بخصوص طلبيتك.", the number with a ✕ and the 🇪🇬 +2 box, "متابعة". The API says whether the phone has an account (`POST /v1/auth/phone`, limited like sign-in; as in Tawsilty, this tells anyone whether a number is registered).
+  - A phone with an account goes to **"أهلاً بعودتك"**: a lock icon, "أدخل كلمة المرور لإتمام تسجيل الدخول", the phone locked with 11/11, the password ("ادخل كلمة المرور", eye), "هل نسيت كلمة المرور؟" and "سجل الدخول".
+  - **Forgot password**: "إسترجاع بيانات الدخول" with the phone filled in, "إرسال", "تذكرت كلمة المرور؟ تسجيل الدخول"; then the code boxes; then **"كلمة مرور الحساب"** ("أدخل كلمة مرور خاصة بك للدخول بها لاحقاً"): the password, the "8 خانات على الأقل" box, **"تأكيد كلمة المرور"** (must match: "كلمتا المرور غير متطابقتين") and "حفظ".
+  - Where Tawsilty texts the code, Tawsela emails it (no SMS, [Owner] above): the forgot-password line says the code goes to the email.
+- [Open] A **new phone** goes on to sign-up. Tawsilty texts its code at this point (not captured: the test phone already has an account); Tawsela needs the email first, so a screen in the phone step's look asks for it ("البريد الإلكتروني", "سنرسل رمز التحقق إلى بريدك الإلكتروني", the phone locked), then the code and "التفاصيل الشخصية" as before.
+- The pictures on the welcome screen are the home tiles' images [Open]: Tawsilty's are fixed food photos.
 - The OTP screen says "أرسلنا رمز التحقق إلى <email>" with "تغيير"; the details screen shows the phone and the email locked.
 - Errors come from the API as codes (PHONE_TAKEN, OTP_WRONG with the tries left, BAD_CREDENTIALS, STAFF_RESET_BY_ADMIN…) and the app shows them in Arabic or English as Tawsilty's red toast.
 - A partner or driver who asks for a password reset is told to ask the admin. Deleting an account (customers only) needs the password; the phone can sign up again afterwards.
 - The links to terms and privacy arrive with the app-content pages (§8.14).
 - Sessions: every account has a session version. A password reset, a disable, a deletion or a copied refresh token moves it on, and every token issued under the old version stops working at once (access tokens too). A reset ticket is bound to its account and works once. Each try at a code is counted before the code is checked, so guesses sent at the same moment still get only 5 tries. Arabic-keyboard digits (٠-٩) are read as 0-9 in the code boxes and phone fields.
-- [Open] If the server cannot be reached at launch but a session is stored, the app shows "تعذر الاتصال بالخادم" with "إعادة المحاولة" instead of sending the account to sign-in. Tawsilty's no-connection screen is not captured; this is the app's error line and retry pattern.
+- [Tawsilty, `customer/app/no-connection-retry.png`] If the server cannot be reached at launch but a session is stored, the app shows the no-connection screen instead of sending the account to sign-in: the crossed Wi-Fi in a soft orange circle, "لا يوجد اتصال بالإنترنت", "تحقق من اتصالك وحاول مجدداً" and an orange "إعادة المحاولة" with ↻.
 
 ### 8.2 Home
 
@@ -388,10 +392,12 @@ Built in Phase 6: the list, opened from a home tile, with the tile's label as it
 Built in Phase 7: the store page at `/store/<id>` with both layouts, the category page at `/store/<id>/category/<id>`, the ☰ sheet, the product sheet (§8.5), the bottom bar and the heart (§8.14 المفضلة). Sub-categories are one level deep and set by the admin (`store_categories.parent_id`).
 
 - [Open] The cart lives in the app's memory, one list per store, until the cart screen and the server cart arrive (Phase 9). Tapping a product's count badge adds one more.
-- [Open] The search button opens the category page with every product of the store under the store's name; Tawsilty's store search is not captured.
+- [Tawsilty, `customer/store/store-search-*`] The search button opens **"البحث"** (`/store/<id>/search`): the title in orange, a white box "ابحث عن كل ما تريد عند <store>", and the matching products two to a row as you type. Nothing typed or nothing matching leaves the page blank. [Open] The bottom bar shows there once something is in the cart.
+- [Tawsilty, `store-unavailable-products-grey.png`] A switched-off product (منتجات غير فعالة, §11) still shows on the store page, its picture grey with a white "غير متوفر" pill; it has no add button, does not open, and is never offered in "تُطلب معًا". Search leaves it out.
+- [Tawsilty, `store-no-products-free-delivery.png`] A store with nothing on its menu shows a white card with a box icon and "لا توجد منتجات حاليا". A delivery fee of 0 shows a green "مجاني"; the struck-through usual fee beside it comes with the free-delivery offers (Phase 19).
 - [Open] A store with no minimum order shows no bottom bar until something is in the cart.
-- [Open] "التوصيل بواسطة" reads "توصيلة" for the platform and "المتجر" when the store delivers.
-- [Open] The heart turns red and filled once the store is a favourite.
+- [Tawsilty] "التوصيل بواسطة" names the platform ("توصيلتي" there, "توصيلة" here) or "المتجر" when the store delivers.
+- [Tawsilty] The heart turns red and filled once the store is a favourite.
 - The voucher, free-delivery and discount cards, the قسائمي sheet, the market's "العروض" rail and its themed rails arrive with the offers and banners (Phase 19).
 - [Open] A closed store's cover is darkened, not turned grey (as in the store lists).
 
@@ -405,7 +411,7 @@ Full-width image, ✕ close, name, optional description, quantity stepper (− 1
 
 Built in Phase 7: the admin sets each product's option groups (title, required, how many to pick, rows with a price change) and base ingredients in منتجات الموردين; saving replaces the old ones. The rules are in shared `product.ts`.
 
-- [Open] Tawsilty only shows required "اختر 1" groups. Tawsela also allows optional groups and "اختر حتى N" (ticks instead of radios).
+- [Open] Tawsilty only shows required "اختر 1" groups. Tawsela also allows optional groups and "اختر حتى N" (ticks instead of radios). The 2026-11-24 captures still show no optional group: one pizza store sells its extras as a category of their own ("اضافات البيتزا"), which a store can also do here.
 - [Open] "السعر حسب الاختيار" shows when the product's own price is 0 and a required group sets it.
 - [Open] "تُطلب معًا" shows the next 10 products of the store's menu after this one, wrapping round to the start. Tawsilty does not say how it picks them.
 - [Open] The admin's product form for choices is not captured; its fields follow what the sheet shows.
@@ -476,8 +482,8 @@ Tabs الكل · مطاعم · متاجر أخرى. Empty "ابحث عن الأ�
 
 Built in Phase 6, from the home search box. A store matches by its name or by one of its products. The ↖ arrow puts the name in the box, and the row searches for it.
 
-- [Open] Searching with no match shows "لا توجد نتائج — جرّب اسم أكلة أو متجر آخر". Tawsilty's capture only shows typing with no suggestions.
-- [Open] A suggestion from a store that is not a restaurant reads "في <type>" ("في ماركت", "في صيدليات"). Tawsilty's capture only shows "في المطاعم".
+- [Tawsilty, `customer/search/search-no-results-no-stores.png`] Searching with no match shows the empty state "لا توجد متاجر متاحة" with "لم نجد متاجر قريبة منك حالياً" and "جرّب تغيير الموقع أو البحث مرة أخرى".
+- [Tawsilty, `search-suggestions-in-stores-basket.png`] A suggestion from a restaurant reads "في المطاعم" with the cutlery icon; from any other store type "في المتاجر" with a basket.
 - Product prices use two decimals ("110.00 ج.م", §7), where Tawsilty's search shows "110.0".
 - A product opens its store until the product sheet arrives (Phase 7). The voucher on results arrives in Phase 19.
 
@@ -489,14 +495,16 @@ Built in Phase 6, from the home search box. A store matches by its name or by on
 - **الدعم والمساعدة**: تقديم مقترح · تقديم شكوى (menu: طلب سابق → pick from طلباتي / عامة → form) · التواصل معنا (sheet with phone numbers).
 - **الحساب**: إعدادات حسابي · إعدادات الإشعارات · الخدمات المفضلة · عناويني.
 - **التطبيق**: عن التطبيق · مشاركة التطبيق · شروط الاستخدام · سياسة الخصوصية · حذف الحساب (red).
-- "تسجيل الخروج" (red soft button).
+- "تسجيل الخروج" (red soft button). [Tawsilty, `logout-confirm-dialog.png`] It asks first: "هل أنت متأكد من تسجيل الخروج" over a line, an orange "تأكيد" pill and a red-outlined "إلغاء" pill.
 - [Client] Language switch visible on this screen (§7).
 - [Client] "اعملي حساب العميل زي ابلكيشن توصيلتي بظبط": the account screen matches Tawsilty exactly.
 
 Sub-screens [Tawsilty]:
-- **الملف الشخصي**: avatar with camera, full name (locked), phone with "تغيير", email, gender ذكر/أنثى, region (locked). Phase 1 builds the email and gender edits; the phone's "تغيير" (needs a new code) and the avatar photo are [Open].
+- **الملف الشخصي**: avatar with camera, full name (locked), phone with "تغيير", email, gender ذكر/أنثى, region (locked). Phase 1 builds the email and gender edits.
+  - [Tawsilty, `profile-change-phone-sheet.png`] "تغيير" opens the sheet "تغيير رقم الهاتف" with "أدخل رقم الهاتف الجديد" and "تأكيد رقم الهاتف". Tawsilty texts the new number; Tawsela emails the code to the account (no SMS), so the line reads "سيتم إرسال رمز تحقق إلى بريدك الإلكتروني". The code step is not captured [Open]: the sheet then shows "أرسلنا رمز التحقق إلى <masked email>" and the 4 boxes. API: `POST /v1/me/phone/code`, `POST /v1/me/phone` (customers; a number in use is `PHONE_TAKEN`).
+  - [Tawsilty, `profile-avatar-choose-photo-sheet.png`] The camera on the avatar opens "اختر صورة" with "التقاط صورة" and "من المعرض" (square crop). The photo shows on the profile and on حسابي. API: `POST /v1/me/avatar` (JPEG, PNG or WebP; stored as JPEG under /uploads/avatars).
 - **إعدادات الإشعارات**: "تفعيل الإشعار" and "ايقاف رسائل SMS من التطبيق" toggles with explanations. Tawsela keeps only "تفعيل الإشعار" because it sends no SMS.
-- **المفضلة**: favourite stores; empty "لا توجد خدمات مفضلة". Built in Phase 7 (`/v1/me/favorites`, the الخدمات المفضلة row): store rows, the newest first [Open]; a store the admin hides drops out until it is shown again.
+- **المفضلة**: favourite stores; empty "لا توجد خدمات مفضلة". Built in Phase 7 (`/v1/me/favorites`, the الخدمات المفضلة row): store rows, the newest first [Tawsilty, `favorites-two-stores-newest-first.png`; the heart removes a store at once, with no confirm]; a store the admin hides drops out until it is shown again.
 - **الإشعارات**: list; empty "لا توجد إشعارات".
 - **عن توصيلتي**: logo, description, "تواصل معنا عبر واتساب", social links (Facebook, Twitter, Instagram, YouTube).
 - **تقديم اقتراح / تقديم شكوى**: illustration, one text field, "ارسال".
@@ -608,7 +616,7 @@ The full list of dashboard modules, with sources and phases, is in §1.1.
   Saving shows the partner's password once, then opens the store. The edit page adds the store's partner accounts (add, reset, disable).
 - **Store hours** [Open]: one daily range in Cairo time (a closing time earlier than the opening time runs past midnight; the same time means all day) plus a "مغلق الآن" switch. Tawsilty's hours screen is not captured; per-day hours replace this if it shows them.
 - **A store can have more than one partner account** [Derived from §11.2]: making a store makes the first; the store page and the admin's mobile app add more ("and for a partner the store it belongs to").
-- **منتجات الموردين:** pick a store; its categories in menu order (add, rename, image for the market grid, move up/down, delete only when empty) and its products (photo, name, category, price, unit, description, the متاح switch). **منتجات غير فعالة:** every store's switched-off products with "تفعيل".
+- **منتجات الموردين:** pick a store; its categories in menu order (add, rename, image for the market grid, move up/down, delete only when empty) and its products (photo, name, category, price, unit, description, the متاح switch). **منتجات غير فعالة:** every store's switched-off products with "تفعيل". Customers still see a switched-off product, greyed with "غير متوفر", and cannot order it (§8.4).
 - **أنواع الأكل** and **مربعات الرئيسية** (A12) [Open: names and layout ours]: under المنتجات والكتالوج, after Tawsilty's two pages. Ordered lists with image, edit, delete. A home tile has a row (fixed or sideways), an optional badge and opens one vertical or one pinned store.
 - [Open] Tawsilty's stores and products admin pages are not captured: they use its orders-table look (orange header row, actions in العمليات) and the address-delete confirm look.
 - **Images** are uploaded once from the form (JPEG, PNG, WebP or HEIC, up to 8 MB), stored as JPEG at most 1600 px.
@@ -739,3 +747,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-24 | Phase 6 done (§8.3, §8.13): store lists with the cuisine circles, chips, sort and rating sheets, closed look and empty state; search with tabs, suggestions and results. Stand-ins marked [Open]: توصيل سريع as 30 minutes or less, the darkened closed picture, the no-results screen, "في <type>" suggestions. Offer chips and badges wait for Phase 19. |
 | 2026-11-24 | Phase 7 done (§8.4, §8.5, §8.14, §12): the store page in both layouts, category pages with sub-categories, the product sheet with option groups, removable ingredients and "تُطلب معًا", the bottom bar, favourites; the admin sets choices and sub-categories. Stand-ins marked [Open]: the in-memory cart until Phase 9, the store search as a category page, optional and multi-choice groups, "تُطلب معًا" as the next items of the menu. Store offer cards and rails wait for Phase 19. |
 | 2026-11-24 | CodeRabbit review of Phases 0–7 (§8.1, §11, §12): sessions end through a per-account session version (reset, disable, deletion, copied token), reset tickets work once and only for their account, code tries are counted before the check, the last enabled admin cannot be disabled (`LAST_ADMIN`), Arabic-keyboard digits in the code boxes. Both apps drop answers that arrive after sign-out and start an empty data cache for each account. The app shows a retry when the server cannot be reached at launch [Open]. Dashboard dialogs keep keyboard focus inside. |
+| 2026-11-24 | Third phone capture (signed out, offline, store details): screens built from it. §8.1: the welcome screen and one phone step for every role (`POST /v1/auth/phone`), "أهلاً بعودتك", "إسترجاع بيانات الدخول" and "كلمة مرور الحساب" with the confirm field; the new-phone email step stays [Open] (no SMS: codes go by email). The no-connection screen. §8.4: the store's "البحث" page, switched-off products greyed with "غير متوفر" (no longer hidden, §11), "لا توجد منتجات حاليا", "مجاني" for a 0 fee, the heart and "التوصيل بواسطة" confirmed. §8.13: the no-results screen and "في المتاجر". §8.14: the phone change by an emailed code and the avatar photo (`/v1/me/phone`, `/v1/me/avatar`, migration 0004), the sign-out confirm (§6.3 third dialog look), favourites newest first confirmed. |

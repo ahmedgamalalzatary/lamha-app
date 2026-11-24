@@ -11,7 +11,7 @@ export const otpCodes = mysqlTable(
     id: int('id', { unsigned: true }).autoincrement().primaryKey(),
     phone: varchar('phone', { length: 11 }).notNull(),
     email: varchar('email', { length: 255 }).notNull(),
-    purpose: mysqlEnum('purpose', ['signup', 'reset']).notNull(),
+    purpose: mysqlEnum('purpose', ['signup', 'reset', 'phone']).notNull(),
     codeHash: char('code_hash', { length: 64 }).notNull(),
     attempts: tinyint('attempts', { unsigned: true }).notNull().default(0),
     expiresAt: datetime('expires_at').notNull(),

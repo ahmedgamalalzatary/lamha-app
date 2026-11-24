@@ -42,6 +42,8 @@ describe('search (contract §8.13; real API)', () => {
     expect(await screen.findByRole('button', { name: 'ابحث عن «بيتزا»' })).toBeTruthy();
     const suggestion = await screen.findByRole('button', { name: 'مايو بيتزا فرايز' });
     expect(within(suggestion).getByText('في المطاعم')).toBeTruthy();
+    // Every other store type reads "في المتاجر", as in Tawsilty.
+    expect(within(await screen.findByRole('button', { name: 'صوص بيتزا' })).getByText('في المتاجر')).toBeTruthy();
 
     // ↖ fills the box with the suggestion; the row itself searches for it.
     await fireEvent.press(screen.getAllByRole('button', { name: 'املأ البحث' })[0]!);
@@ -66,6 +68,7 @@ describe('search (contract §8.13; real API)', () => {
     await renderApp(ROUTES, { initialUrl: '/search' });
     await fireEvent.changeText(screen.getByLabelText('بحث'), 'fish');
     await fireEvent(screen.getByLabelText('بحث'), 'submitEditing');
-    expect(await screen.findByText('لا توجد نتائج')).toBeTruthy();
+    expect(await screen.findByText('لا توجد متاجر متاحة')).toBeTruthy();
+    expect(screen.getByText('لم نجد متاجر قريبة منك حالياً\nجرّب تغيير الموقع أو البحث مرة أخرى')).toBeTruthy();
   });
 });

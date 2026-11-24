@@ -1,29 +1,35 @@
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 import { ToastHost, toast } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
 import { ForgotPasswordScreen } from '@/features/auth/screens/ForgotPasswordScreen';
+import { PhoneScreen } from '@/features/auth/screens/PhoneScreen';
+import { WelcomeScreen } from '@/features/auth/screens/WelcomeScreen';
 import { ResetPasswordScreen } from '@/features/auth/screens/ResetPasswordScreen';
 import { SignInScreen } from '@/features/auth/screens/SignInScreen';
 import { SignUpDetailsScreen } from '@/features/auth/screens/SignUpDetailsScreen';
 import { SignUpScreen } from '@/features/auth/screens/SignUpScreen';
 import { VerifyCodeScreen } from '@/features/auth/screens/VerifyCodeScreen';
 import { emailedCode, insertUser, PASSWORD, resetDb, signInAs, sql } from '../utils/db';
-import { renderApp } from '../utils/render';
+import { renderApp, testQueryClient } from '../utils/render';
 
+let client: QueryClient;
 function Root() {
   return (
-    <>
+    <QueryClientProvider client={client}>
       <Stack screenOptions={{ headerShown: false }} />
       <ToastHost />
-    </>
+    </QueryClientProvider>
   );
 }
 
 const ROUTES = {
   _layout: Root,
-  'sign-in': SignInScreen,
+  welcome: WelcomeScreen,
+  'sign-in/index': PhoneScreen,
+  'sign-in/password': SignInScreen,
   'sign-up/index': SignUpScreen,
   'sign-up/details': SignUpDetailsScreen,
   verify: VerifyCodeScreen,
@@ -38,51 +44,60 @@ const press = (name: string) => fireEvent.press(screen.getByRole('button', { nam
 const otpRows = async () => (await sql<{ n: number }[]>('SELECT COUNT(*) AS n FROM otp_codes'))[0]!.n;
 
 beforeEach(async () => {
+  client = testQueryClient();
   await session.signOutLocally();
   toast.clear();
   await resetDb();
 });
 
-describe('sign-in (every role, contract §2; real API)', () => {
+describe('sign-in: welcome → phone → password (every role, contract §2, §8.1; real API)', () => {
   it('signs a partner in and opens the partner tabs', async () => {
     await insertUser('partner', '01000000002');
-    await renderApp(ROUTES, { initialUrl: '/sign-in' });
+    await renderApp(ROUTES, { initialUrl: '/welcome' });
 
-    expect(screen.getByRole('button', { name: 'تسجيل الدخول' })).toBeDisabled();
+    expect(screen.getByText('يمكننا توصيل كلّ ما تتمناه')).toBeTruthy();
+    await press('المتابعة باستخدام رقم الهاتف');
+    expect(await screen.findByText('لن نستخدم رقم هاتفك إلا إذا احتجنا إلى التواصل معك بخصوص طلبيتك.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'متابعة' })).toBeDisabled();
     await type('رقم الهاتف', '01000000002');
+    await press('متابعة');
+
+    expect(await screen.findByText('أهلاً بعودتك')).toBeTruthy();
+    expect(screen.getByText('01000000002')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'سجل الدخول' })).toBeDisabled();
     await type('كلمة المرور', PASSWORD);
-    await press('تسجيل الدخول');
+    await press('سجل الدخول');
 
     expect(await screen.findByText('واجهة المورد')).toBeTruthy();
     expect(screen).toHavePathname('/partner');
     expect(useSession.getState().user).toMatchObject({ role: 'partner', phone: '01000000002' });
   });
 
-  it('says so when the phone or password is wrong', async () => {
+  it('says so when the password is wrong', async () => {
     await insertUser('partner', '01000000002');
-    await renderApp(ROUTES, { initialUrl: '/sign-in' });
-    await type('رقم الهاتف', '01000000002');
+    await renderApp(ROUTES, { initialUrl: '/sign-in/password?phone=01000000002' });
     await type('كلمة المرور', 'wrongpass');
-    await press('تسجيل الدخول');
+    await press('سجل الدخول');
     expect(await screen.findByText('رقم الهاتف أو كلمة المرور غير صحيحة')).toBeTruthy();
   });
 
   it('checks the phone before calling the API', async () => {
     await renderApp(ROUTES, { initialUrl: '/sign-in' });
     await type('رقم الهاتف', '0123');
-    await type('كلمة المرور', PASSWORD);
-    await press('تسجيل الدخول');
+    await press('متابعة');
     expect(screen.getByText('أدخل رقم موبايل مصري صحيح')).toBeTruthy();
   });
 });
 
 describe('sign-up (contract §8.1; real API)', () => {
-  it('phone and email → emailed code → personal details → signed in as a customer', async () => {
+  it('new phone → email → emailed code → personal details → signed in as a customer', async () => {
     const friend = await insertUser('customer', '01000000007', { email: 'friend@gmail.com', inviteCode: '3JXDEB' });
     await renderApp(ROUTES, { initialUrl: '/sign-in' });
 
-    await press('إنشاء حساب');
     await type('رقم الهاتف', '01554459196');
+    await press('متابعة');
+    // No SMS: the code goes to the email, so a new phone is asked for one (§8.1).
+    expect(await screen.findByText('01554459196')).toBeTruthy();
     await type('البريد الإلكتروني', 'Ahmed@Gmail.com');
     await press('متابعة');
 
@@ -118,8 +133,7 @@ describe('sign-up (contract §8.1; real API)', () => {
 
   it('tells a known phone to sign in instead', async () => {
     await insertUser('customer', '01554459196', { email: 'ahmed@gmail.com' });
-    await renderApp(ROUTES, { initialUrl: '/sign-up' });
-    await type('رقم الهاتف', '01554459196');
+    await renderApp(ROUTES, { initialUrl: '/sign-up?phone=01554459196' });
     await type('البريد الإلكتروني', 'new@gmail.com');
     await press('متابعة');
     expect(await screen.findByText('رقم الهاتف مسجل بالفعل، سجّل الدخول')).toBeTruthy();
@@ -162,15 +176,20 @@ describe('sign-up (contract §8.1; real API)', () => {
 describe('forgot password (real API)', () => {
   it('sends the code to the masked email and sets the new password', async () => {
     await insertUser('customer', '01554459196', { email: 'ahmed@gmail.com' });
-    await renderApp(ROUTES, { initialUrl: '/sign-in' });
-    await press('نسيت كلمة المرور؟');
-    await type('رقم الهاتف', '01554459196');
-    await press('إرسال الرمز');
+    await renderApp(ROUTES, { initialUrl: '/sign-in/password?phone=01554459196' });
+    await press('هل نسيت كلمة المرور؟');
+    expect(await screen.findByText('إسترجاع بيانات الدخول')).toBeTruthy();
+    // The phone typed on the phone step is already there.
+    await press('إرسال');
     expect(await screen.findByText('a***d@gmail.com')).toBeTruthy();
     await type('رمز التحقق', await emailedCode('01554459196', 'reset'));
     await press('تأكيد');
-    expect(await screen.findByText('كلمة مرور جديدة')).toBeTruthy();
+    expect(await screen.findByText('كلمة مرور الحساب')).toBeTruthy();
     await type('كلمة المرور', 'newpass99');
+    await type('تأكيد كلمة المرور', 'newpass98');
+    await press('حفظ');
+    expect(screen.getByText('كلمتا المرور غير متطابقتين')).toBeTruthy();
+    await type('تأكيد كلمة المرور', 'newpass99');
     await press('حفظ');
     expect(await screen.findByText('واجهة العميل')).toBeTruthy();
     await expect(signInAs('01554459196', 'newpass99')).resolves.toBeTruthy();
@@ -180,7 +199,7 @@ describe('forgot password (real API)', () => {
     await insertUser('partner', '01000000002');
     await renderApp(ROUTES, { initialUrl: '/forgot-password' });
     await type('رقم الهاتف', '01000000002');
-    await press('إرسال الرمز');
+    await press('إرسال');
     await waitFor(() => expect(screen.getByText('تواصل مع الإدارة لإعادة تعيين كلمة المرور')).toBeTruthy());
   });
 });

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { BottomSheet } from '@/components/BottomSheet';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/Button';
 import { PressableScale } from '@/components/PressableScale';
 import { TextField } from '@/components/TextField';
@@ -26,17 +27,18 @@ export function AccountScreen() {
   const user = useSession((s) => s.user);
   const [deleting, setDeleting] = useState(false);
   const [password, setPassword] = useState('');
+  const [confirmOut, setConfirmOut] = useState(false);
 
   const signOut = useSubmit(async () => {
     await session.signOut();
-    router.replace('/sign-in');
+    router.replace('/welcome');
   });
 
   const remove = useSubmit(async () => {
     await meApi.remove(password);
     setDeleting(false);
     await session.signOutLocally();
-    router.replace('/sign-in');
+    router.replace('/welcome');
   });
 
   if (!user) return null;
@@ -55,7 +57,7 @@ export function AccountScreen() {
         </View>
 
         <PressableScale accessibilityRole="button" onPress={() => router.push('/profile')} scaleTo={0.98} style={styles.profile}>
-          <Avatar />
+          <Avatar photo={user.avatar} />
           <View style={styles.profileText}>
             <AppText weight="bold" size={20}>
               {name}
@@ -84,7 +86,7 @@ export function AccountScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('account.signOut')}
           disabled={signOut.busy}
-          onPress={() => signOut.run()}
+          onPress={() => setConfirmOut(true)}
           style={styles.signOut}
         >
           <LogOut size={20} color={colors.danger} />
@@ -93,6 +95,18 @@ export function AccountScreen() {
           </AppText>
         </PressableScale>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={confirmOut}
+        tone="outline"
+        title={t('account.signOutConfirm')}
+        confirmLabel={t('common.confirm')}
+        onConfirm={() => {
+          setConfirmOut(false);
+          void signOut.run();
+        }}
+        onCancel={() => setConfirmOut(false)}
+      />
 
       <BottomSheet visible={deleting} title={t('account.delete')} onClose={() => setDeleting(false)}>
         <View style={styles.sheet}>

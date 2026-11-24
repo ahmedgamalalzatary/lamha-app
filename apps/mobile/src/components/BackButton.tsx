@@ -7,9 +7,10 @@ import { PressableScale } from './PressableScale';
 
 /**
  * Tawsilty's back buttons: a grey circle with an arrow ("رمز التحقق") or a white outlined square
- * with a chevron ("التفاصيل الشخصية"). The arrow points right: back, in Arabic.
+ * with a chevron ("التفاصيل الشخصية"), or a grey square with a chevron (the phone step). The arrow
+ * points right: back, in Arabic.
  */
-export function BackButton({ variant = 'circle', onPress }: { variant?: 'circle' | 'square'; onPress?: () => void }) {
+export function BackButton({ variant = 'circle', onPress }: { variant?: 'circle' | 'square' | 'grey'; onPress?: () => void }) {
   const t = useT();
   const back = onPress ?? (() => router.back());
   return (
@@ -18,7 +19,7 @@ export function BackButton({ variant = 'circle', onPress }: { variant?: 'circle'
       accessibilityLabel={t('common.back')}
       onPress={back}
       scaleTo={0.9}
-      style={variant === 'circle' ? styles.circle : styles.square}
+      style={styles[variant]}
     >
       {variant === 'circle' ? <ArrowRight size={24} color={colors.ink} /> : <ChevronRight size={24} color={colors.ink} />}
     </PressableScale>
@@ -34,6 +35,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E3E4E8',
     backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** The phone step and "أهلاً بعودتك": a grey filled square with the chevron. */
+  grey: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md + 2,
+    backgroundColor: '#F2F2F4',
     alignItems: 'center',
     justifyContent: 'center',
   },

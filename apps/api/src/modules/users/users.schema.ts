@@ -19,6 +19,8 @@ export const users = mysqlTable('users', {
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   gender: mysqlEnum('gender', GENDERS),
   region: varchar('region', { length: 100 }),
+  /** The profile photo ("اختر صورة"), a path under /uploads/avatars. */
+  avatar: varchar('avatar', { length: 255 }),
   locale: mysqlEnum('locale', ['ar', 'en']).notNull().default('ar'),
   inviteCode: varchar('invite_code', { length: 12 }).unique(),
   invitedById: int('invited_by_id', { unsigned: true }),

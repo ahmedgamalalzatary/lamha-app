@@ -1,13 +1,12 @@
 import type { Category, StorePage } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { type Href, router, useLocalSearchParams } from 'expo-router';
-import { LayoutGrid, PackageOpen } from 'lucide-react-native';
+import { LayoutGrid } from 'lucide-react-native';
 import { type ComponentRef, type ReactNode, useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { EmptyState } from '@/components/EmptyState';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
@@ -18,6 +17,7 @@ import { useFavorites, useStorePage, useToggleFavorite } from '../api/store';
 import { CartBar } from '../components/CartBar';
 import { CategoriesSheet } from '../components/CategoriesSheet';
 import { CategoryTabs, TABS_HEIGHT } from '../components/CategoryTabs';
+import { NoProducts } from '../components/NoProducts';
 import { type ProductActions, ProductRow } from '../components/ProductItems';
 import { ProductSheet } from '../components/ProductSheet';
 import { SectionTitle } from '../components/SectionTitle';
@@ -94,7 +94,7 @@ export function StoreScreen() {
           solid={solid}
           onScrollY={trackCover}
           renderTopBar={(tabs) => (
-            <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/category/all` as Href)}>
+            <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/search` as Href)}>
               {tabs}
             </StoreTopBar>
           )}
@@ -105,7 +105,7 @@ export function StoreScreen() {
             <StoreHeader store={store} />
             <CategoryGrid store={store} />
           </ScrollView>
-          <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/category/all` as Href)} />
+          <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/search` as Href)} />
         </>
       )}
       <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
@@ -169,7 +169,7 @@ function MenuList({
         {sections.length ? (
           <View onLayout={(e) => (tabsY.current = e.nativeEvent.layout.y)}>{tabs}</View>
         ) : (
-          <EmptyState icon={PackageOpen} title={t('store.empty')} message={t('store.emptyText')} />
+          <NoProducts />
         )}
         {sections.map((c) => (
           <View key={c.id} onLayout={(e) => sectionY.current.set(c.id, e.nativeEvent.layout.y)}>
@@ -200,7 +200,7 @@ function MenuList({
 function CategoryGrid({ store }: { store: StorePage }) {
   const t = useT();
   const mains = store.categories.filter((c) => c.parentId === null);
-  if (!mains.length) return <EmptyState icon={PackageOpen} title={t('store.empty')} message={t('store.emptyText')} />;
+  if (!mains.length) return <NoProducts />;
   const rows: Category[][] = [];
   for (let i = 0; i < mains.length; i += 3) rows.push(mains.slice(i, i + 3));
   return (
