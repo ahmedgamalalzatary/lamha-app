@@ -123,6 +123,13 @@ describe('cart on the store page (contract §8.4 bottom bar)', () => {
     expect(lines.map((l) => l.quantity)).toEqual([3, 1]);
   });
 
+  it('gives a growing line the price the product has now', () => {
+    let lines = addToCart([], { product: plain, optionIds: [], removedIngredientIds: [], quantity: 1 });
+    const repriced = { ...plain, price: plain.price + 10 };
+    lines = addToCart(lines, { product: repriced, optionIds: [], removedIngredientIds: [], quantity: 1 });
+    expect(lines).toMatchObject([{ quantity: 2, unitPrice: plain.price + 10, product: { price: plain.price + 10 } }]);
+  });
+
   it('keeps a line without an ingredient apart from the full one', () => {
     let lines = addToCart([], { product: combo, optionIds: [], removedIngredientIds: [], quantity: 1 });
     lines = addToCart(lines, { product: combo, optionIds: [], removedIngredientIds: [30], quantity: 1 });

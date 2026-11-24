@@ -1,5 +1,6 @@
 import type { AuthResponse, Me } from '@tawsela/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { api as dashboardApi, forgetSession, sessionStore } from '@/core/api/client';
 import { ApiRequestError, createApi, type TokenStore } from '@/core/api/create-api';
 import { insertUser, PASSWORD, resetDb, sql } from '../utils/db';
 import { API_URL } from '../utils/env';
@@ -75,6 +76,26 @@ describe("the dashboard's API client (real API)", () => {
     await expect(Promise.all([api.request<Me>('/me'), api.request<Me>('/me')])).resolves.toHaveLength(2);
     expect(store.saved?.refreshToken).not.toBe(first.saved!.refreshToken);
     expect(await refreshWorks(store.saved!.refreshToken)).toBe(true);
+  });
+
+  it('keeps a session the browser refused to store when it renews the access token', async () => {
+    await insertUser('admin', '01000000001');
+    forgetSession();
+    window.localStorage.clear();
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage blocked');
+    });
+    try {
+      await dashboardApi.signIn('01000000001', PASSWORD);
+      const stale = expired(sessionStore.load()!);
+      sessionStore.save(stale);
+      await expect(dashboardApi.request<Me>('/me')).resolves.toMatchObject({ phone: '01000000001' });
+      expect(sessionStore.load()?.accessToken).toEqual(expect.any(String));
+      expect(sessionStore.load()?.accessToken).not.toBe(stale.accessToken);
+    } finally {
+      setItem.mockRestore();
+      forgetSession();
+    }
   });
 
   it('two tabs renew without replaying the same refresh token', async () => {

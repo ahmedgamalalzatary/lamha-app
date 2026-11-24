@@ -1,6 +1,8 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
+import { unlink } from 'node:fs/promises';
+import path from 'node:path';
 import sharp from 'sharp';
 import { createTestApp, lastCodeTo, mailbox } from '../utils/app.js';
 import { insertUser, resetDb } from '../utils/db.js';
@@ -107,5 +109,7 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     expect(res.body.avatar).toMatch(/^\/uploads\/avatars\/[\w-]+\.jpg$/);
     const me = await http().get('/v1/me').set('Authorization', `Bearer ${accessToken}`).expect(200);
     expect(me.body.avatar).toBe(res.body.avatar);
+    // The test API saves into the dev uploads folder: leave nothing behind.
+    await unlink(path.resolve(res.body.avatar.slice(1)));
   });
 });

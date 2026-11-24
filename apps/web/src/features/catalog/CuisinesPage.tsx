@@ -4,7 +4,7 @@ import { CATALOG, type Cuisine } from '@tawsela/shared';
 import { Plus, UtensilsCrossed } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
-import { ImageField } from '@/components/ImageField';
+import { ImageField, useUploading } from '@/components/ImageField';
 import { Button, ConfirmDialog, Dialog, DialogActions, EmptyState, ErrorLine, LoadState, TextField } from '@/components/ui';
 import { useCuisines, useDeleteCuisine, useOrderCuisines, useSaveCuisine } from './api';
 import { SortableList } from './SortableList';
@@ -73,13 +73,14 @@ function CuisineDialog({ cuisine, onClose }: { cuisine?: Cuisine; onClose: () =>
   const save = useSaveCuisine();
   const [name, setName] = useState(cuisine?.name ?? '');
   const [image, setImage] = useState<string | null>(cuisine?.image ?? null);
+  const upload = useUploading();
   return (
     <Dialog title={cuisine ? 'تعديل نوع' : 'إضافة نوع'} onClose={onClose}>
       <TextField label="الاسم" value={name} onChange={(e) => setName(e.target.value)} maxLength={CATALOG.nameMaxLength} autoFocus />
-      <ImageField label="الصورة" value={image} onChange={setImage} />
+      <ImageField label="الصورة" value={image} onChange={setImage} onBusyChange={upload.onBusyChange} />
       {save.isError ? <ErrorLine>{errorMessage(save.error)}</ErrorLine> : null}
       <DialogActions
-        ready={name.trim() !== ''}
+        ready={name.trim() !== '' && !upload.uploading}
         busy={save.isPending}
         onSave={() => save.mutate({ id: cuisine?.id, name: name.trim(), image }, { onSuccess: onClose })}
         onClose={onClose}

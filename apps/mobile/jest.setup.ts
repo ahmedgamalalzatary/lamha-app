@@ -12,6 +12,8 @@ beforeEach(() => {
   jest.useRealTimers();
   // The store-page cart lives in memory, and a reset database gives the next test the same store ids.
   require('@/features/cart/cart-store').cartStore.clear();
+  // Screens rendered without a test client share the app's own: no data carries into the next test.
+  require('@/core/query').queryClient.clear();
 });
 
 // React Query hands its updates on with setTimeout. renderRouter renders under fake timers and the

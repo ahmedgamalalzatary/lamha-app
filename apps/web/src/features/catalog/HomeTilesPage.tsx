@@ -4,7 +4,7 @@ import { CATALOG, HOME_TILE_ROWS, type HomeTile, type TileRow, VERTICALS, type V
 import { LayoutGrid, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
-import { ImageField } from '@/components/ImageField';
+import { ImageField, useUploading } from '@/components/ImageField';
 import { Button, ConfirmDialog, Dialog, DialogActions, EmptyState, ErrorLine, LoadState, Pill, SelectField, TextField } from '@/components/ui';
 import { useDeleteHomeTile, useHomeTiles, useOrderHomeTiles, useSaveHomeTile, useStores } from './api';
 import { SortableList } from './SortableList';
@@ -104,6 +104,7 @@ function TileDialog({ tile, onClose }: { tile?: HomeTile; onClose: () => void })
   const [label, setLabel] = useState(tile?.label ?? '');
   const [badge, setBadge] = useState(tile?.badge ?? '');
   const [image, setImage] = useState<string | null>(tile?.image ?? null);
+  const upload = useUploading();
   const [row, setRow] = useState<TileRow>(tile?.row ?? 'fixed');
   const [target, setTarget] = useState<Target>(tile?.targetVertical ?? (tile ? 'store' : 'restaurant'));
   const [storeId, setStoreId] = useState(String(tile?.targetStoreId ?? ''));
@@ -146,9 +147,9 @@ function TileDialog({ tile, onClose }: { tile?: HomeTile; onClose: () => void })
       ) : (
         <SelectField label="المتجر" value={pickedStore} options={(stores.data ?? []).map((s) => ({ value: String(s.id), label: s.name }))} onChange={setStoreId} />
       )}
-      <ImageField label="الصورة" value={image} onChange={setImage} />
+      <ImageField label="الصورة" value={image} onChange={setImage} onBusyChange={upload.onBusyChange} />
       {save.isError ? <ErrorLine>{errorMessage(save.error)}</ErrorLine> : null}
-      <DialogActions ready={ready} busy={save.isPending} onSave={submit} onClose={onClose} />
+      <DialogActions ready={ready && !upload.uploading} busy={save.isPending} onSave={submit} onClose={onClose} />
     </Dialog>
   );
 }

@@ -22,7 +22,8 @@ import {
 import { toProduct } from './store-view.js';
 
 type Sortable = typeof storeCategories | typeof cuisines | typeof homeTiles;
-type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+/** A transaction's handle; repository methods that take one run inside it. */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /** Most products one search returns. */
 const SEARCH_LIMIT = 200;
@@ -121,38 +122,53 @@ export class CatalogRepository {
       .orderBy(asc(storeCategories.sortOrder), asc(storeCategories.id));
   }
 
-  async findCategory(id: number) {
-    const [row] = await this.db.select().from(storeCategories).where(eq(storeCategories.id, id));
+  /**
+   * Runs one change to a store's categories while holding its store row: the checks inside (one
+   * level deep, empty before delete) then see no other change of that store half done.
+   */
+  async withStoreLocked<T>(storeId: number, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    return this.db.transaction(async (tx) => {
+      await tx.select({ id: stores.id }).from(stores).where(eq(stores.id, storeId)).for('update');
+      return fn(tx);
+    });
+  }
+
+  async findCategory(id: number, db: Db | Tx = this.db) {
+    const [row] = await db.select().from(storeCategories).where(eq(storeCategories.id, id));
     return row;
   }
 
   /** Products per category of a store; `activeOnly` counts what customers see. */
-  async categoryCounts(storeId: number, activeOnly = false): Promise<Map<number, number>> {
+  async categoryCounts(storeId: number, activeOnly = false, db: Db | Tx = this.db): Promise<Map<number, number>> {
     const where = activeOnly ? and(eq(products.storeId, storeId), eq(products.active, true)) : eq(products.storeId, storeId);
-    const rows = await this.db.select({ categoryId: products.categoryId, n: count() }).from(products).where(where).groupBy(products.categoryId);
+    const rows = await db.select({ categoryId: products.categoryId, n: count() }).from(products).where(where).groupBy(products.categoryId);
     return new Map(rows.map((r) => [r.categoryId, r.n]));
   }
 
-  async createCategory(storeId: number, values: { name: string; image?: string | null; parentId?: number | null }): Promise<number> {
-    const sortOrder = await this.nextSortOrder(storeCategories, eq(storeCategories.storeId, storeId));
-    const [row] = await this.db
+  async createCategory(
+    storeId: number,
+    values: { name: string; image?: string | null; parentId?: number | null },
+    db: Db | Tx = this.db,
+  ): Promise<number> {
+    const sortOrder = await this.nextSortOrder(storeCategories, eq(storeCategories.storeId, storeId), db);
+    const [row] = await db
       .insert(storeCategories)
       .values({ storeId, name: values.name, image: values.image ?? null, parentId: values.parentId ?? null, sortOrder })
       .$returningId();
     return row!.id;
   }
 
-  async updateCategory(id: number, values: { name?: string; image?: string | null; parentId?: number | null }): Promise<void> {
-    if (Object.keys(values).length) await this.db.update(storeCategories).set(values).where(eq(storeCategories.id, id));
+  async updateCategory(id: number, values: { name?: string; image?: string | null; parentId?: number | null }, db: Db | Tx = this.db): Promise<void> {
+    if (Object.keys(values).length) await db.update(storeCategories).set(values).where(eq(storeCategories.id, id));
   }
 
-  async countSubcategories(id: number): Promise<number> {
-    const [row] = await this.db.select({ n: count() }).from(storeCategories).where(eq(storeCategories.parentId, id));
+  async countSubcategories(id: number, db: Db | Tx = this.db): Promise<number> {
+    const [row] = await db.select({ n: count() }).from(storeCategories).where(eq(storeCategories.parentId, id));
     return row?.n ?? 0;
   }
 
-  async deleteCategory(id: number): Promise<void> {
-    await this.db.delete(storeCategories).where(eq(storeCategories.id, id));
+  async deleteCategory(id: number, db: Db | Tx = this.db): Promise<void> {
+    await db.delete(storeCategories).where(eq(storeCategories.id, id));
   }
 
   // Products
@@ -180,6 +196,16 @@ export class CatalogRepository {
       .orderBy(asc(products.storeId), asc(storeCategories.sortOrder), asc(products.sortOrder), asc(products.id))
       .limit(SEARCH_LIMIT);
     return rows.map((r) => r.product);
+  }
+
+  /** Every store with a product customers may see that matches: not cut by the product list's limit. */
+  async storeIdsWithProduct(q: string, scope: SearchScope): Promise<number[]> {
+    const rows = await this.db
+      .selectDistinct({ storeId: products.storeId })
+      .from(products)
+      .innerJoin(stores, eq(stores.id, products.storeId))
+      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope)));
+    return rows.map((r) => r.storeId);
   }
 
   /** Suggestions while typing (§8.13): distinct product names with their store's type. */
@@ -386,8 +412,8 @@ export class CatalogRepository {
   }
 
   /** One past the highest sort_order in the scope, so a new row goes at the end. */
-  private async nextSortOrder(table: Sortable | typeof products, where?: SQL): Promise<number> {
-    const [row] = await this.db
+  private async nextSortOrder(table: Sortable | typeof products, where?: SQL, db: Db | Tx = this.db): Promise<number> {
+    const [row] = await db
       .select({ top: max(table.sortOrder) })
       .from(table as MySqlTable)
       .where(where);

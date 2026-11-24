@@ -68,6 +68,15 @@ describe('store page, product choices and favourites (e2e, contract §8.4, §8.5
     await http().patch(`/v1/admin/products/${combo.id}`).set(as(admin)).send({ ingredients: ['٥ جولدن'] }).expect(200);
     const renamed = await http().patch(`/v1/admin/products/${combo.id}`).set(as(admin)).send({ name: 'كومبو' }).expect(200);
     expect(renamed.body.ingredients.map((i: { name: string }) => i.name)).toEqual(['٥ جولدن']);
+    // The dashboard sends the choices on every save: unchanged ones keep their ids (carts point at them).
+    const ids = (p: { optionGroups: { id: number; options: { id: number }[] }[] }) => p.optionGroups.flatMap((g) => [g.id, ...g.options.map((o) => o.id)]);
+    const resaved = await http()
+      .patch(`/v1/admin/products/${toffee.body.id}`)
+      .set(as(admin))
+      .send({ name: 'بونبوني', optionGroups: [WEIGHT], ingredients: [] })
+      .expect(200);
+    expect(resaved.body.name).toBe('بونبوني');
+    expect(ids(resaved.body)).toEqual(ids(toffee.body));
     await http().delete(`/v1/admin/products/${toffee.body.id}`).set(as(admin)).expect(204);
     expect(await sql<unknown[]>('SELECT * FROM product_options')).toHaveLength(0);
 
@@ -107,6 +116,37 @@ describe('store page, product choices and favourites (e2e, contract §8.4, §8.5
       ['فاكهه وخضروات', null],
       ['الخضار', fruitVeg.id],
     ]);
+  });
+
+  it('category changes at the same moment never make a loop or silently delete a new sub-category', async () => {
+    const store = await insertStore({ name: 'ماركت', vertical: 'market', layout: 'grid' });
+    const add = async (name: string, parentId?: number) =>
+      (await http().post(`/v1/admin/stores/${store}/categories`).set(as(admin)).send({ name, parentId }).expect(201)).body.id as number;
+    for (let round = 0; round < 5; round++) {
+      const a = await add(`a${round}`);
+      const b = await add(`b${round}`);
+      // Each moved under the other at once: one of them must be refused.
+      await Promise.all([
+        http().patch(`/v1/admin/categories/${a}`).set(as(admin)).send({ parentId: b }),
+        http().patch(`/v1/admin/categories/${b}`).set(as(admin)).send({ parentId: a }),
+      ]);
+      const rows = await sql<{ id: number; parent_id: number | null }[]>('SELECT id, parent_id FROM store_categories WHERE id IN (?, ?)', [a, b]);
+      expect(rows.filter((r) => r.parent_id !== null).length).toBeLessThanOrEqual(1);
+
+      // Deleted while a sub-category is added under it: the sub-category is never lost.
+      const c = await add(`c${round}`);
+      const [, created] = await Promise.all([
+        http().delete(`/v1/admin/categories/${c}`).set(as(admin)),
+        http().post(`/v1/admin/stores/${store}/categories`).set(as(admin)).send({ name: `sub${round}`, parentId: c }),
+      ]);
+      if (created.status === 201) {
+        expect(await sql('SELECT id FROM store_categories WHERE id = ?', [created.body.id])).toHaveLength(1);
+      }
+    }
+    // The database itself refuses to drop a main category that still has sub-categories.
+    const main = await add('رئيسي');
+    await add('فرعي', main);
+    await expect(sql('DELETE FROM store_categories WHERE id = ?', [main])).rejects.toThrow();
   });
 
   it('favourites (المفضلة): customers add and remove stores; hidden stores drop out of the list', async () => {

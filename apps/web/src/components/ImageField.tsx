@@ -2,16 +2,34 @@
 
 import type { UploadedImage } from '@tawsela/shared';
 import { ImageUp, Trash2 } from 'lucide-react';
-import { useId, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { api, mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { ErrorLine } from './ui';
+
+/** For a form with image fields: whether a picture is still uploading, so its Save can wait. */
+export function useUploading() {
+  const [count, setCount] = useState(0);
+  const onBusyChange = useCallback((busy: boolean) => setCount((n) => n + (busy ? 1 : -1)), []);
+  return { uploading: count > 0, onBusyChange };
+}
 
 /**
  * An image for a catalog form: the preview, "رفع صورة" (uploaded to /v1/admin/uploads at once) and
  * "حذف الصورة". The form keeps the returned path ("/uploads/…").
  */
-export function ImageField({ label, value, onChange }: { label: string; value: string | null; onChange: (path: string | null) => void }) {
+export function ImageField({
+  label,
+  value,
+  onChange,
+  onBusyChange,
+}: {
+  label: string;
+  value: string | null;
+  onChange: (path: string | null) => void;
+  /** Told when an upload starts and ends: the form's Save waits for it. */
+  onBusyChange?: (busy: boolean) => void;
+}) {
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -19,6 +37,7 @@ export function ImageField({ label, value, onChange }: { label: string; value: s
 
   const upload = async (file: File) => {
     setBusy(true);
+    onBusyChange?.(true);
     setError(undefined);
     try {
       const form = new FormData();
@@ -28,6 +47,7 @@ export function ImageField({ label, value, onChange }: { label: string; value: s
       setError(errorMessage(e));
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
       if (input.current) input.current.value = '';
     }
   };
@@ -55,7 +75,7 @@ export function ImageField({ label, value, onChange }: { label: string; value: s
           ref={input}
           id={inputId}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
+          accept="image/jpeg,image/png,image/webp"
           aria-label={`رفع صورة: ${label}`}
           // One upload at a time, and no delete while one is on its way (its answer would undo it).
           disabled={busy}

@@ -51,6 +51,10 @@ describe('partner accounts and the store guard (e2e, contract §2, §11.1, §11.
       expect(byPhone.body.map((p: { id: number }) => p.id)).toEqual([partner]);
       const byStoreId = await http().get(`/v1/admin/partners?storeId=${other}`).set(auth()).expect(200);
       expect(byStoreId.body.map((p: { id: number }) => p.id)).toEqual([p2]);
+      // The full name as the card shows it, first and family name together.
+      await sql("UPDATE users SET first_name = 'Ahmed', last_name = 'Ali' WHERE id = ?", [p2]);
+      const byFullName = await http().get(`/v1/admin/partners?q=${encodeURIComponent('Ahmed Ali')}`).set(auth()).expect(200);
+      expect(byFullName.body.map((p: { id: number }) => p.id)).toEqual([p2]);
     });
 
     it('adds another account to a store; its generated password signs in', async () => {

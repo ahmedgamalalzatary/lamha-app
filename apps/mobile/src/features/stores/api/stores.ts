@@ -41,5 +41,6 @@ export const useSuggestions = (q: string, scope: SearchScope) =>
     queryKey: ['suggestions', q, scope],
     queryFn: () => api<SearchSuggestion[]>(`/catalog/search/suggestions?${qs({ q, scope })}`),
     enabled: q.trim().length > 0,
-    placeholderData: keepPreviousData,
+    // The last answer stays while typing, but never across tabs: they list different stores.
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === scope ? previous : undefined),
   });

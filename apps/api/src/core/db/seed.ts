@@ -117,93 +117,96 @@ if (anyStore) {
   await mkdir(SEED_IMAGES, { recursive: true });
   const data = JSON.parse(readFileSync('src/core/db/seed-catalog.json', 'utf8')) as SeedCatalog;
 
-  const cuisineIds = new Map<string, number>();
-  for (const [i, c] of data.cuisines.entries()) {
-    const [row] = await db
-      .insert(cuisines)
-      .values({ name: c.name, image: await image(c.image), sortOrder: i })
-      .$returningId();
-    cuisineIds.set(c.key, row!.id);
-  }
+  // One transaction: a run that fails half way leaves nothing behind, so it can simply run again.
+  await db.transaction(async (tx) => {
+    const cuisineIds = new Map<string, number>();
+    for (const [i, c] of data.cuisines.entries()) {
+      const [row] = await tx
+        .insert(cuisines)
+        .values({ name: c.name, image: await image(c.image), sortOrder: i })
+        .$returningId();
+      cuisineIds.set(c.key, row!.id);
+    }
 
-  const storeIds = new Map<string, number>();
-  for (const s of data.stores) {
-    // Open stores are open all day so the apps can be tried at any hour; a closed one shows "مغلق".
-    const [row] = await db
-      .insert(stores)
-      .values({
-        vertical: s.vertical,
-        name: s.name,
-        cover: await image(s.cover),
-        deliveryMinutes: s.deliveryMinutes,
-        deliveryFee: s.deliveryFee,
-        minimumOrder: s.minimumOrder,
-        deliveredBy: s.deliveredBy,
-        layout: defaultLayout(s.vertical),
-        opensAt: s.open ? '00:00' : '12:00',
-        closesAt: s.open ? '00:00' : '23:00',
-        closedNow: !s.open,
-      })
-      .$returningId();
-    const storeId = row!.id;
-    storeIds.set(s.key, storeId);
-    for (const key of s.cuisines) await db.insert(storeCuisines).values({ storeId, cuisineId: cuisineIds.get(key)! });
-    for (const [ci, c] of s.categories.entries()) {
-      const [cat] = await db.insert(storeCategories).values({ storeId, name: c.name, sortOrder: ci }).$returningId();
-      for (const [pi, p] of c.products.entries()) {
-        await db.insert(products).values({ storeId, categoryId: cat!.id, ...p, image: await image(p.image), sortOrder: pi });
+    const storeIds = new Map<string, number>();
+    for (const s of data.stores) {
+      // Open stores are open all day so the apps can be tried at any hour; a closed one shows "مغلق".
+      const [row] = await tx
+        .insert(stores)
+        .values({
+          vertical: s.vertical,
+          name: s.name,
+          cover: await image(s.cover),
+          deliveryMinutes: s.deliveryMinutes,
+          deliveryFee: s.deliveryFee,
+          minimumOrder: s.minimumOrder,
+          deliveredBy: s.deliveredBy,
+          layout: defaultLayout(s.vertical),
+          opensAt: s.open ? '00:00' : '12:00',
+          closesAt: s.open ? '00:00' : '23:00',
+          closedNow: !s.open,
+        })
+        .$returningId();
+      const storeId = row!.id;
+      storeIds.set(s.key, storeId);
+      for (const key of s.cuisines) await tx.insert(storeCuisines).values({ storeId, cuisineId: cuisineIds.get(key)! });
+      for (const [ci, c] of s.categories.entries()) {
+        const [cat] = await tx.insert(storeCategories).values({ storeId, name: c.name, sortOrder: ci }).$returningId();
+        for (const [pi, p] of c.products.entries()) {
+          await tx.insert(products).values({ storeId, categoryId: cat!.id, ...p, image: await image(p.image), sortOrder: pi });
+        }
       }
     }
-  }
 
-  // Send anything (contract §8.12): an ordinary store with one 1 ج.م product. [Open] The terms text
-  // after its first line is not captured; the admin writes it.
-  const [courier] = await db
-    .insert(stores)
-    .values({
-      vertical: 'courier',
+    // Send anything (contract §8.12): an ordinary store with one 1 ج.م product. [Open] The terms text
+    // after its first line is not captured; the admin writes it.
+    const [courier] = await tx
+      .insert(stores)
+      .values({
+        vertical: 'courier',
+        name: 'اطلب دليفري',
+        deliveryMinutes: 30,
+        deliveryFee: 25,
+        minimumOrder: 0,
+        layout: 'list',
+        opensAt: '00:00',
+        closesAt: '00:00',
+      })
+      .$returningId();
+    const [moto] = await tx.insert(storeCategories).values({ storeId: courier!.id, name: 'موتوسيكل' }).$returningId();
+    await tx.insert(products).values({
+      storeId: courier!.id,
+      categoryId: moto!.id,
       name: 'اطلب دليفري',
-      deliveryMinutes: 30,
-      deliveryFee: 25,
-      minimumOrder: 0,
-      layout: 'list',
-      opensAt: '00:00',
-      closesAt: '00:00',
-    })
-    .$returningId();
-  const [moto] = await db.insert(storeCategories).values({ storeId: courier!.id, name: 'موتوسيكل' }).$returningId();
-  await db.insert(products).values({
-    storeId: courier!.id,
-    categoryId: moto!.id,
-    name: 'اطلب دليفري',
-    description: 'الشروط والأحكام الخاصة بخدمة التوصيل (Delivery) داخل تطبيق "توصيلة":',
-    price: 1,
-  });
-
-  // Home tiles in Tawsilty's pattern (§8.2): a fixed first row, a sideways second row mixing verticals and pinned stores.
-  const tiles: { label: string; row: TileRow; image: string; badge?: string; targetVertical?: Vertical; store?: string }[] = [
-    { label: 'المطاعم', row: 'fixed', image: 'burger1.jpg', targetVertical: 'restaurant' },
-    { label: 'ماركت', row: 'fixed', image: 'market1.jpg', targetVertical: 'market' },
-    { label: 'خضار وفاكهة', row: 'fixed', image: 'vegetables1.jpg', store: 'lamha-mart' },
-    { label: 'توصيلة ماركت', row: 'fixed', image: 'milk1.jpg', store: 'lamha-mart' },
-    { label: 'حلويات', row: 'scroll', image: 'kunafa1.jpg', store: 'qarun-sweets' },
-    { label: 'صيدليات', row: 'scroll', image: 'pharmacy1.jpg', targetVertical: 'pharmacy' },
-    { label: 'اطلب دليفري', row: 'scroll', image: 'shrimp1.jpg', badge: 'سريع', targetVertical: 'courier' },
-    { label: 'شاورما الساقية', row: 'scroll', image: 'shawarma1.jpg', store: 'sakia-shawarma' },
-    { label: 'سماش لاب', row: 'scroll', image: 'burger3.jpg', store: 'smash-lab' },
-  ];
-  for (const [i, t] of tiles.entries()) {
-    await db.insert(homeTiles).values({
-      label: t.label,
-      row: t.row,
-      image: await image(t.image),
-      badge: t.badge ?? null,
-      sortOrder: i,
-      targetVertical: t.targetVertical ?? null,
-      targetStoreId: t.store ? storeIds.get(t.store)! : null,
+      description: 'الشروط والأحكام الخاصة بخدمة التوصيل (Delivery) داخل تطبيق "توصيلة":',
+      price: 1,
     });
-  }
-  console.log(`catalog: ${data.stores.length + 1} stores, ${data.cuisines.length} cuisines, ${tiles.length} home tiles`);
+
+    // Home tiles in Tawsilty's pattern (§8.2): a fixed first row, a sideways second row mixing verticals and pinned stores.
+    const tiles: { label: string; row: TileRow; image: string; badge?: string; targetVertical?: Vertical; store?: string }[] = [
+      { label: 'المطاعم', row: 'fixed', image: 'burger1.jpg', targetVertical: 'restaurant' },
+      { label: 'ماركت', row: 'fixed', image: 'market1.jpg', targetVertical: 'market' },
+      { label: 'خضار وفاكهة', row: 'fixed', image: 'vegetables1.jpg', store: 'lamha-mart' },
+      { label: 'توصيلة ماركت', row: 'fixed', image: 'milk1.jpg', store: 'lamha-mart' },
+      { label: 'حلويات', row: 'scroll', image: 'kunafa1.jpg', store: 'qarun-sweets' },
+      { label: 'صيدليات', row: 'scroll', image: 'pharmacy1.jpg', targetVertical: 'pharmacy' },
+      { label: 'اطلب دليفري', row: 'scroll', image: 'shrimp1.jpg', badge: 'سريع', targetVertical: 'courier' },
+      { label: 'شاورما الساقية', row: 'scroll', image: 'shawarma1.jpg', store: 'sakia-shawarma' },
+      { label: 'سماش لاب', row: 'scroll', image: 'burger3.jpg', store: 'smash-lab' },
+    ];
+    for (const [i, t] of tiles.entries()) {
+      await tx.insert(homeTiles).values({
+        label: t.label,
+        row: t.row,
+        image: await image(t.image),
+        badge: t.badge ?? null,
+        sortOrder: i,
+        targetVertical: t.targetVertical ?? null,
+        targetStoreId: t.store ? storeIds.get(t.store)! : null,
+      });
+    }
+    console.log(`catalog: ${data.stores.length + 1} stores, ${data.cuisines.length} cuisines, ${tiles.length} home tiles`);
+  });
 }
 
 // Phase 7: product choices and sub-categories on a few demo items, so the product sheet and the

@@ -12,6 +12,23 @@ export function InactiveProductsPage() {
   const products = useInactiveProducts();
   const update = useUpdateProduct();
   const [error, setError] = useState<string>();
+  /** Rows being switched on. Each click has its own answer: a quick second click never hides the first one's error. */
+  const [busy, setBusy] = useState<ReadonlySet<number>>(new Set());
+  const switchOn = async (id: number) => {
+    setError(undefined);
+    setBusy((s) => new Set(s).add(id));
+    try {
+      await update.mutateAsync({ id, active: true });
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,11 +50,8 @@ export function InactiveProductsPage() {
                 <Button
                   tone="soft"
                   className="h-9 px-4"
-                  loading={update.isPending && update.variables?.id === p.id}
-                  onClick={() => {
-                    setError(undefined);
-                    update.mutate({ id: p.id, active: true }, { onError: (e) => setError(errorMessage(e)) });
-                  }}
+                  loading={busy.has(p.id)}
+                  onClick={() => void switchOn(p.id)}
                 >
                   تفعيل
                 </Button>

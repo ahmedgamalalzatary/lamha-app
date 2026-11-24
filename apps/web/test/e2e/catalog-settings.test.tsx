@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import { CuisinesPage } from '@/features/catalog/CuisinesPage';
 import { HomeTilesPage } from '@/features/catalog/HomeTilesPage';
 import { insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
+import { pngFile, removeUpload } from '../utils/image';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => '/catalog/cuisines' }));
 
@@ -34,6 +35,11 @@ describe('أنواع الأكل: cuisine circles (contract §8.3, §1.1 A12; rea
     await user.click(await screen.findByRole('button', { name: 'إضافة' }));
     let dialog = await screen.findByRole('dialog', { name: 'إضافة نوع' });
     await user.type(within(dialog).getByLabelText('الاسم'), 'باستا');
+    // Save waits for the picture on its way, or the cuisine would be saved without it.
+    // A plain change event: the check below runs before the upload can answer.
+    fireEvent.change(within(dialog).getByLabelText('رفع صورة: الصورة'), { target: { files: [pngFile()] } });
+    expect(within(dialog).getByRole('button', { name: 'حفظ' })).toBeDisabled();
+    expect(await within(dialog).findByRole('img', { name: 'الصورة' })).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'حفظ' }));
 
     await user.click(within(await itemOf('أنواع الأكل', 'باستا')).getByRole('button', { name: 'تحريك لأعلى' }));
@@ -52,6 +58,9 @@ describe('أنواع الأكل: cuisine circles (contract §8.3, §1.1 A12; rea
     await user.click(within(await itemOf('أنواع الأكل', 'اكل صحى')).getByRole('button', { name: 'حذف' }));
     await user.click(within(await screen.findByRole('dialog', { name: 'حذف النوع' })).getByRole('button', { name: 'تأكيد' }));
     await vi.waitFor(async () => expect(await sql<unknown[]>('SELECT id FROM cuisines')).toHaveLength(1));
+    const [pasta] = await sql<{ image: string | null }[]>("SELECT image FROM cuisines WHERE name = 'باستا'");
+    expect(pasta?.image).toMatch(/^\/uploads\/catalog\//);
+    await removeUpload(pasta!.image!);
   });
 });
 

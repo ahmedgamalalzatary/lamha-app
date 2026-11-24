@@ -98,6 +98,17 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
     await get('/v1/catalog/search?q=%20').expect(400);
   });
 
+  it('finds every store with a matching product, even past the first 200 matching products', async () => {
+    const big = await insertStore({ name: 'هايبر' });
+    const bigCat = await insertCategory(big);
+    const values = Array.from({ length: 205 }, (_, i) => `(${big}, ${bigCat}, 'شاي ${i}', 10)`).join(', ');
+    await sql(`INSERT INTO products (store_id, category_id, name, price) VALUES ${values}`);
+    const small = await insertStore({ name: 'كافيه' });
+    await insertProduct(small, await insertCategory(small), 'شاي بلبن', 15);
+    const res = await get(`/v1/catalog/search?q=${encodeURIComponent('شاي')}`).expect(200);
+    expect(res.body.map((r: { store: { id: number } }) => r.store.id)).toEqual([big, small]);
+  });
+
   it('opens a store page with its categories in order; switched-off products come marked, as Tawsilty greys them ("غير متوفر")', async () => {
     const store = await insertStore();
     const meals = await insertCategory(store, 'وجبات', 1);

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, asc, eq, isNull, like, or, type SQL } from 'drizzle-orm';
+import { and, asc, eq, isNull, like, or, type SQL, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { stores } from '../catalog/catalog.schema.js';
 import { type UserRow, users } from '../users/users.schema.js';
@@ -21,7 +21,9 @@ export class PartnersRepository {
     const q = filter.q?.trim();
     if (q) {
       const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-      where.push(or(like(users.firstName, pattern), like(users.lastName, pattern), like(users.phone, pattern), like(stores.name, pattern)));
+      // The full name too, as the card shows it ("Ahmed Ali").
+      const fullName = sql`concat(${users.firstName}, ' ', ${users.lastName})`;
+      where.push(or(like(fullName, pattern), like(users.phone, pattern), like(stores.name, pattern)));
     }
     const rows = await this.db
       .select({ user: users, storeId: stores.id, storeName: stores.name })

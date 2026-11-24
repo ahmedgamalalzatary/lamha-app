@@ -39,13 +39,16 @@ export default async function setup() {
   if (busy) throw new Error(`Something already answers on ${API_URL}: stop the API left from an earlier test run`);
 
   const server = await createConnection({ uri: url.replace(/\/[^/?]+(\?|$)/, '/$1') });
-  await server.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-  await server.query(`USE \`${DB_NAME}\``);
-  const [rows] = await server.query('SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()');
-  await server.query('SET FOREIGN_KEY_CHECKS = 0');
-  for (const { t } of rows as { t: string }[]) await server.query(`DROP TABLE \`${t}\``);
-  await server.query('SET FOREIGN_KEY_CHECKS = 1');
-  await server.end();
+  try {
+    await server.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await server.query(`USE \`${DB_NAME}\``);
+    const [rows] = await server.query('SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()');
+    await server.query('SET FOREIGN_KEY_CHECKS = 0');
+    for (const { t } of rows as { t: string }[]) await server.query(`DROP TABLE \`${t}\``);
+    await server.query('SET FOREIGN_KEY_CHECKS = 1');
+  } finally {
+    await server.end();
+  }
 
   const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: 'test', DATABASE_URL: url, PORT: new URL(API_URL).port };
   const migrate = node('dist/core/db/run-migrations.js', env);

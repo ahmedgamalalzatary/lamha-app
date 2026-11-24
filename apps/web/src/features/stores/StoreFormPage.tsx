@@ -17,7 +17,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useRef, useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
-import { ImageField } from '@/components/ImageField';
+import { ImageField, useUploading } from '@/components/ImageField';
 import { PasswordShown } from '@/components/PasswordShown';
 import { Button, ErrorLine, LoadState, SelectField, Switch, TextField } from '@/components/ui';
 import { useCreateStore, useCuisines, useStore, useUpdateStore } from '../catalog/api';
@@ -91,6 +91,7 @@ function StoreForm({ store }: { store?: AdminStore }) {
   const [partner, setPartner] = useState({ firstName: '', lastName: '', phone: '' });
   const [created, setCreated] = useState<{ id: number; password: string } | null>(null);
   const [saved, setSaved] = useState(false);
+  const upload = useUploading();
   // Counts edits, so a save confirms only if nothing was typed while it was on its way.
   const edits = useRef(0);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
@@ -158,6 +159,7 @@ function StoreForm({ store }: { store?: AdminStore }) {
         {draft.vertical === 'restaurant' ? (
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">أنواع الأكل</span>
+            {cuisines.isError ? <LoadState error={errorMessage(cuisines.error)} onRetry={() => void cuisines.refetch()} /> : null}
             <div className="flex flex-wrap gap-2">
               {cuisines.data?.map((c) => {
                 const on = draft.cuisineIds.includes(c.id);
@@ -177,8 +179,8 @@ function StoreForm({ store }: { store?: AdminStore }) {
           </div>
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
-          <ImageField label="الشعار" value={draft.logo} onChange={(v) => set('logo', v)} />
-          <ImageField label="صورة الغلاف" value={draft.cover} onChange={(v) => set('cover', v)} />
+          <ImageField label="الشعار" value={draft.logo} onChange={(v) => set('logo', v)} onBusyChange={upload.onBusyChange} />
+          <ImageField label="صورة الغلاف" value={draft.cover} onChange={(v) => set('cover', v)} onBusyChange={upload.onBusyChange} />
         </div>
       </Section>
 
@@ -225,7 +227,7 @@ function StoreForm({ store }: { store?: AdminStore }) {
 
       {failed ? <ErrorLine>{errorMessage(failed)}</ErrorLine> : null}
       <div className="flex items-center gap-4">
-        <Button disabled={!ready} loading={create.isPending || update.isPending} onClick={save} className="min-w-40">
+        <Button disabled={!ready || upload.uploading} loading={create.isPending || update.isPending} onClick={save} className="min-w-40">
           حفظ
         </Button>
         {saved ? (

@@ -221,6 +221,12 @@ function NewAccountSheet({ visible, onClose, onCreated }: { visible: boolean; on
         <AppText weight="semibold">{t('accounts.store')}</AppText>
         <TextField value={storeQuery} onChangeText={setStoreQuery} accessibilityLabel={t('accounts.storeSearch')} placeholder={t('accounts.storeSearch')} />
         <View accessibilityRole="radiogroup" style={styles.stores}>
+          {stores.isError ? (
+            <View style={styles.storesError}>
+              <AppText color={colors.danger}>{errorMessage(stores.error)}</AppText>
+              <Button label={t('common.retry')} variant="soft" onPress={() => void stores.refetch()} />
+            </View>
+          ) : null}
           {stores.data && matching.length === 0 ? <AppText color={colors.ink2}>{t('accounts.noStores')}</AppText> : null}
           {matching.slice(0, 8).map((s) => {
             const on = s.id === storeId;
@@ -328,6 +334,7 @@ const styles = StyleSheet.create({
   footer: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   sheetBody: { gap: spacing.md, paddingVertical: spacing.md },
   stores: { gap: spacing.xs },
+  storesError: { gap: spacing.sm, alignItems: 'flex-start' },
   storeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.sm },
   storeRowOn: { backgroundColor: colors.primary50 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.line },

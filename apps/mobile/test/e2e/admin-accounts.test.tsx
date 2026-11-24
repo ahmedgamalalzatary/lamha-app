@@ -88,6 +88,21 @@ describe('الحسابات: partner accounts in the admin app (contract §11.2; 
     expect(await cardOf('منى')).toBeTruthy();
   });
 
+  it('says so when the stores cannot load, and retries', async () => {
+    await renderApp(ROUTES, { initialUrl: '/admin' });
+    await cardOf('حسن');
+    const url = process.env.EXPO_PUBLIC_API_URL;
+    process.env.EXPO_PUBLIC_API_URL = 'http://localhost:9/v1';
+    try {
+      await press('إضافة حساب');
+      expect(await screen.findByText('تعذر الاتصال بالخادم')).toBeTruthy();
+    } finally {
+      process.env.EXPO_PUBLIC_API_URL = url;
+    }
+    await pressWhenShown('إعادة المحاولة');
+    expect(await screen.findByRole('radio', { name: 'شاورما الساقية' })).toBeTruthy();
+  });
+
   it('shares the phone and the password', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction', activityType: undefined });
     await renderApp(ROUTES, { initialUrl: '/admin' });

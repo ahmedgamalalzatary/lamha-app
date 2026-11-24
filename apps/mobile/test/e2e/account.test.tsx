@@ -62,12 +62,13 @@ describe('حسابي (contract §8.14; real API)', () => {
 
     await press('حذف الحساب');
     await fireEvent.changeText(screen.getByLabelText('كلمة المرور'), PASSWORD);
+    const id = useSession.getState().user!.id;
     await press('تأكيد الحذف');
 
     expect(await screen.findByText('شاشة الدخول')).toBeTruthy();
     expect(useSession.getState().status).toBe('signedOut');
-    const [row] = await sql<{ deleted_at: Date | null }[]>('SELECT deleted_at FROM users WHERE phone = ?', ['deleted-1']);
-    expect(row?.deleted_at).not.toBeNull();
+    const [row] = await sql<{ phone: string; deleted_at: Date | null }[]>('SELECT phone, deleted_at FROM users WHERE id = ?', [id]);
+    expect(row).toEqual({ phone: `deleted-${id}`, deleted_at: expect.any(Date) });
   });
 
   it('keeps the account when the password is wrong', async () => {

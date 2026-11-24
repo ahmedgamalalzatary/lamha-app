@@ -91,6 +91,20 @@ describe('إضافة متجر: a store and its partner account (contract §2, §
     expect(router.push).toHaveBeenCalledWith(`/stores/${store!.id}`);
   });
 
+  it('says so when the cuisines cannot load, and retries', async () => {
+    await sql("INSERT INTO cuisines (name, sort_order) VALUES ('بروست', 0)");
+    // The API answers 500 while the table is away.
+    await sql('RENAME TABLE cuisines TO cuisines_away');
+    try {
+      renderWith(<StoreFormPage />);
+      expect(await screen.findByRole('button', { name: 'إعادة المحاولة' })).toBeInTheDocument();
+    } finally {
+      await sql('RENAME TABLE cuisines_away TO cuisines');
+    }
+    await userEvent.setup().click(screen.getByRole('button', { name: 'إعادة المحاولة' }));
+    expect(await screen.findByRole('button', { name: 'بروست' })).toBeInTheDocument();
+  });
+
   it('suggests the grid layout for a market', async () => {
     renderWith(<StoreFormPage />);
     const user = userEvent.setup();

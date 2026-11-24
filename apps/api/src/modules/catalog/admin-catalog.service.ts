@@ -1,12 +1,12 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
-import type { AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, Product, Vertical } from '@tawsela/shared';
+import type { AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, OptionGroup, Product, ProductOptionsInput, Vertical } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
 import { hashPassword } from '../auth/password.js';
 import { generatePassword } from '../users/generated-password.js';
 import { toStaffAccount } from '../users/staff-account.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { cuisines as cuisinesTable, type HomeTileRow, homeTiles as homeTilesTable, storeCategories as storeCategoriesTable, type StoreRow } from './catalog.schema.js';
-import { CatalogRepository } from './catalog.repository.js';
+import { CatalogRepository, type Tx } from './catalog.repository.js';
 import type {
   CategoryDto,
   CreateProductDto,
@@ -107,33 +107,47 @@ export class AdminCatalogService {
     return rows.map((r) => toCategory(r, counts.get(r.id) ?? 0));
   }
 
+  // Changes to one store's categories run one at a time (its store row is locked), so two of them at
+  // the same moment cannot pass each other's checks: no loops, no sub-category of a deleted category.
+
   async createCategory(storeId: number, body: CategoryDto): Promise<Category> {
     await this.storeOrThrow(storeId);
-    if (body.parentId != null) await this.assertParent(storeId, body.parentId);
-    return this.category(await this.catalog.createCategory(storeId, body));
+    const id = await this.catalog.withStoreLocked(storeId, async (tx) => {
+      if (body.parentId != null) await this.assertParent(storeId, body.parentId, tx);
+      return this.catalog.createCategory(storeId, body, tx);
+    });
+    return this.category(id);
   }
 
   async updateCategory(id: number, body: UpdateCategoryDto): Promise<Category> {
-    const row = await this.categoryOrThrow(id);
-    if (body.parentId != null) {
-      if (body.parentId === id || (await this.catalog.countSubcategories(id))) throw depthError();
-      await this.assertParent(row.storeId, body.parentId);
-    }
-    await this.catalog.updateCategory(id, body);
+    const { storeId } = await this.categoryOrThrow(id);
+    await this.catalog.withStoreLocked(storeId, async (tx) => {
+      if (body.parentId != null) {
+        if (body.parentId === id || (await this.catalog.countSubcategories(id, tx))) throw depthError();
+        await this.assertParent(storeId, body.parentId, tx);
+      }
+      await this.catalog.updateCategory(id, body, tx);
+    });
     return this.category(id);
   }
 
   async deleteCategory(id: number): Promise<void> {
-    const row = await this.categoryOrThrow(id);
-    if ((await this.catalog.categoryCounts(row.storeId)).get(id) || (await this.catalog.countSubcategories(id))) {
-      throw new ApiException(HttpStatus.CONFLICT, 'CATEGORY_NOT_EMPTY', 'Move or delete its products and sub-categories first');
-    }
-    await this.catalog.deleteCategory(id);
+    const { storeId } = await this.categoryOrThrow(id);
+    const notEmpty = () => new ApiException(HttpStatus.CONFLICT, 'CATEGORY_NOT_EMPTY', 'Move or delete its products and sub-categories first');
+    await this.catalog
+      .withStoreLocked(storeId, async (tx) => {
+        if ((await this.catalog.categoryCounts(storeId, false, tx)).get(id) || (await this.catalog.countSubcategories(id, tx))) throw notEmpty();
+        await this.catalog.deleteCategory(id, tx);
+      })
+      .catch((err: unknown) => {
+        // A product added at that moment still holds the category (its key refuses the delete).
+        throw isForeignKeyRefusal(err) ? notEmpty() : err;
+      });
   }
 
   /** A main category of the same store: sub-categories are one level deep (§8.4). */
-  private async assertParent(storeId: number, parentId: number): Promise<void> {
-    const parent = await this.catalog.findCategory(parentId);
+  private async assertParent(storeId: number, parentId: number, tx?: Tx): Promise<void> {
+    const parent = await this.catalog.findCategory(parentId, tx);
     if (!parent) throw notFound('category');
     if (parent.storeId !== storeId) {
       throw new ApiException(HttpStatus.BAD_REQUEST, 'CATEGORY_OTHER_STORE', 'That category belongs to another store');
@@ -190,7 +204,15 @@ export class AdminCatalogService {
     if (body.categoryId !== undefined) await this.assertCategoryOf(row.storeId, body.categoryId);
     const { optionGroups, ingredients, ...fields } = body;
     assertGroups(optionGroups);
-    await this.catalog.updateProduct(id, fields, { optionGroups, ingredients });
+    // The dashboard sends the choices on every save; rewriting unchanged ones would give them new
+    // ids, and carts point at those ids.
+    const [current] = await this.catalog.withChoices([row]);
+    const keepGroups = optionGroups && sameGroups(current!.optionGroups, optionGroups);
+    const keepIngredients = ingredients && sameList(current!.ingredients.map((i) => i.name), ingredients);
+    await this.catalog.updateProduct(id, fields, {
+      optionGroups: keepGroups ? undefined : optionGroups,
+      ingredients: keepIngredients ? undefined : ingredients,
+    });
     return this.product(id);
   }
 
@@ -304,7 +326,22 @@ export class AdminCatalogService {
 
 const depthError = () => new ApiException(HttpStatus.BAD_REQUEST, 'CATEGORY_DEPTH', 'Sub-categories are one level deep');
 
+/** MySQL's 1451: a row another row still points at (drizzle keeps the driver's error as the cause). */
+function isForeignKeyRefusal(err: unknown): boolean {
+  const errno = (e: unknown) => (e as { errno?: number } | undefined)?.errno;
+  return errno(err) === 1451 || errno((err as { cause?: unknown } | undefined)?.cause) === 1451;
+}
+
 /** A group can never ask for more choices than it has rows. */
+const sameList = (a: unknown[], b: unknown[]) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Whether the sent option groups are the stored ones, in the same order. */
+function sameGroups(stored: OptionGroup[], sent: ProductOptionsInput['optionGroups']): boolean {
+  const shape = (groups: ProductOptionsInput['optionGroups']) =>
+    groups.map((g) => ({ t: g.title, r: g.required, m: g.maxChoices, o: g.options.map((o) => [o.name, Number(o.priceDelta)]) }));
+  return sameList(shape(stored), shape(sent));
+}
+
 function assertGroups(groups: { maxChoices: number; options: unknown[] }[] | undefined): void {
   if (groups?.some((g) => g.maxChoices > g.options.length)) {
     throw new ApiException(HttpStatus.BAD_REQUEST, 'OPTION_GROUP', 'maxChoices is more than the group has options');

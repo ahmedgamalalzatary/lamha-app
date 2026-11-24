@@ -35,8 +35,30 @@ describe('session (real API)', () => {
     await session.restore();
     expect(useSession.getState()).toMatchObject({ status: 'signedIn', user: { role: 'partner' } });
     const stored = await SecureStore.getItemAsync('tawsela.refreshToken');
+    expect(stored).toEqual(expect.stringMatching(/.+/));
     expect(stored).not.toBe(auth.refreshToken);
     expect(await refreshWorks(auth.refreshToken)).toBe(false);
+  });
+
+  it('a launch-time restore that ends after a sign-in leaves the new account signed in', async () => {
+    await insertUser('driver', '01000000003');
+    const auth = await signInAs('01000000003');
+    await SecureStore.setItemAsync('tawsela.refreshToken', 'refused-token');
+    const restoring = session.restore(); // still reading storage
+    await session.signIn(auth);
+    await restoring;
+    expect(useSession.getState()).toMatchObject({ status: 'signedIn', user: { role: 'driver' } });
+  });
+
+  it('a sign-in that ends after sign-out does not sign the old account back in', async () => {
+    await insertUser('customer', '01554459196');
+    const auth = await signInAs('01554459196');
+    const late = session.signIn(auth); // still writing the token to storage
+    await session.signOutLocally();
+    await late;
+    expect(useSession.getState()).toMatchObject({ status: 'signedOut', user: null });
+    expect(session.accessToken()).toBeNull();
+    expect(await SecureStore.getItemAsync('tawsela.refreshToken')).toBeNull();
   });
 
   it('opens signed-out when there is no stored session', async () => {

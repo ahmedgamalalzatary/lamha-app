@@ -36,6 +36,13 @@
       "when": 1795527459317,
       "tag": "0004_profile_phone_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1795529774249,
+      "tag": "0005_category_parent_restrict",
+      "breakpoints": true
     }
   ]
 }

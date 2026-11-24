@@ -30,10 +30,22 @@ const refused = (e: unknown) => e instanceof ApiRequestError && (e.status === 40
 /** A stored refresh token, or null; storage that cannot be read counts as none. */
 const storedToken = () => SecureStore.getItemAsync(REFRESH_KEY).catch(() => null);
 
-/** The tokens of the current session, kept without starting a new generation. */
-async function keep(res: AuthResponse): Promise<void> {
+/** The refresh token of the current generation (null when signed out), to undo a late storage write. */
+let currentRefresh: string | null = null;
+
+/**
+ * The tokens of the session that generation `gen` started. If a sign-in or sign-out moved the
+ * generation on meanwhile, nothing is kept, and a storage write that landed late is put back.
+ */
+async function keep(res: AuthResponse, gen: number): Promise<void> {
+  if (gen !== generation) return;
   accessToken = res.accessToken;
+  currentRefresh = res.refreshToken;
   await SecureStore.setItemAsync(REFRESH_KEY, res.refreshToken);
+  if (gen !== generation) {
+    await (currentRefresh ? SecureStore.setItemAsync(REFRESH_KEY, currentRefresh) : SecureStore.deleteItemAsync(REFRESH_KEY)).catch(() => undefined);
+    return;
+  }
   useSession.setState({ status: 'signedIn', user: res.user });
 }
 
@@ -43,9 +55,10 @@ export const session = {
 
   /** A new session: the previous account's cached data goes with it. */
   async signIn(res: AuthResponse): Promise<void> {
-    generation++;
+    const gen = ++generation;
+    currentRefresh = null;
     queryClient.clear();
-    await keep(res);
+    await keep(res, gen);
   },
 
   /** A fresh copy of the signed-in account; ignored once that account is no longer signed in. */
@@ -70,8 +83,8 @@ export const session = {
       try {
         const res = await api<AuthResponse>('/auth/refresh', { method: 'POST', body: { refreshToken }, auth: false });
         if (gen !== generation) return false;
-        await keep(res);
-        return true;
+        await keep(res, gen);
+        return gen === generation;
       } catch (e) {
         if (gen !== generation) return false;
         lastRefusal = refused(e) ? 'refused' : 'unreachable';
@@ -86,7 +99,10 @@ export const session = {
 
   /** At launch (and on retry): signed in again with the stored token, offline, or signed out. */
   async restore(): Promise<void> {
+    const gen = generation;
     if (await session.refresh()) return;
+    // A sign-in or sign-out meanwhile has already decided the state.
+    if (gen !== generation) return;
     useSession.setState({ status: lastRefusal === 'unreachable' ? 'offline' : 'signedOut', user: null });
   },
 
@@ -102,6 +118,7 @@ export const session = {
   async signOutLocally(): Promise<void> {
     generation++;
     accessToken = null;
+    currentRefresh = null;
     queryClient.clear();
     useSession.setState({ status: 'signedOut', user: null });
     await SecureStore.deleteItemAsync(REFRESH_KEY).catch(() => undefined);

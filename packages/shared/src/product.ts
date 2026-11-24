@@ -120,7 +120,10 @@ export const lineKey = (productId: number, optionIds: number[], removedIngredien
 export function addToCart<P extends SheetProduct>(lines: CartLine<P>[], item: CartItem<P>): CartLine<P>[] {
   const key = lineKey(item.product.id, item.optionIds, item.removedIngredientIds);
   if (lines.some((l) => l.key === key)) {
-    return lines.map((l) => (l.key === key ? { ...l, quantity: l.quantity + item.quantity } : l));
+    // The product as it is now: a price changed since the line was added applies to the whole line.
+    return lines.map((l) =>
+      l.key === key ? { ...l, product: item.product, quantity: l.quantity + item.quantity, unitPrice: unitPrice(item.product, item.optionIds) } : l,
+    );
   }
   return [
     ...lines,

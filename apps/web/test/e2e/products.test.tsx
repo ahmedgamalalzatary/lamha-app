@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -206,5 +206,23 @@ describe('منتجات غير فعالة (contract §11, §1.1 A11; real API)', 
     const user = userEvent.setup();
     await user.click(within(row).getByRole('button', { name: 'تفعيل' }));
     expect(await screen.findByText('لا توجد منتجات غير فعالة')).toBeInTheDocument();
+  });
+
+  it('reports a failed switch-on even when another row was clicked right after it', async () => {
+    const cat = await insertCategory(store, 'سندوتشات');
+    const gone = await insertProduct(store, cat, 'كفتة', 70, false);
+    await insertProduct(store, cat, 'شاورما لحمة', 110, false);
+    renderWith(<InactiveProductsPage />);
+    const first = await rowOf('كفتة');
+    const second = await rowOf('شاورما لحمة');
+    await sql('DELETE FROM products WHERE id = ?', [gone]);
+
+    fireEvent.click(within(first).getByRole('button', { name: 'تفعيل' }));
+    fireEvent.click(within(second).getByRole('button', { name: 'تفعيل' }));
+    expect(await screen.findByText('العنصر غير موجود، ربما حُذف')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      const [row] = await sql<{ active: number }[]>("SELECT active FROM products WHERE name = 'شاورما لحمة'");
+      expect(row!.active).toBe(1);
+    });
   });
 });

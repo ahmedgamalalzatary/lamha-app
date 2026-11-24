@@ -37,9 +37,13 @@ export class CatalogService {
 
   /** Search (§8.13): stores whose name matches, and stores with matching products, each with those products. */
   async search(q: string, scope: SearchScope): Promise<SearchResult[]> {
-    const [byName, rows] = await Promise.all([this.catalog.listStores({ q, activeOnly: true }), this.catalog.searchProducts(q, scope)]);
+    const [byName, byProduct, rows] = await Promise.all([
+      this.catalog.listStores({ q, activeOnly: true }),
+      this.catalog.storeIdsWithProduct(q, scope),
+      this.catalog.searchProducts(q, scope),
+    ]);
     const products = await this.catalog.withChoices(rows);
-    const ids = new Set([...byName.map((s) => s.id), ...products.map((p) => p.storeId)]);
+    const ids = new Set([...byName.map((s) => s.id), ...byProduct]);
     const stores = (await this.toStores(await this.catalog.listStores({ ids: [...ids], activeOnly: true }))).filter((s) =>
       inSearchScope(s.vertical, scope),
     );

@@ -73,7 +73,8 @@ export const storeCategories = mysqlTable(
     storeId: int('store_id', { unsigned: true })
       .notNull()
       .references(() => stores.id, { onDelete: 'cascade' }),
-    parentId: int('parent_id', { unsigned: true }).references((): AnyMySqlColumn => storeCategories.id, { onDelete: 'cascade' }),
+    // No cascade: a main category with sub-categories cannot be deleted, even by a racing request.
+    parentId: int('parent_id', { unsigned: true }).references((): AnyMySqlColumn => storeCategories.id),
     name: varchar('name', { length: 120 }).notNull(),
     image: varchar('image', { length: 255 }),
     sortOrder: int('sort_order').notNull().default(0),

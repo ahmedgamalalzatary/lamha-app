@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react';
 import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
-import { ImageField } from '@/components/ImageField';
+import { ImageField, useUploading } from '@/components/ImageField';
 import { Button, ConfirmDialog, Dialog, DialogActions, EmptyState, ErrorLine, IconButton, LoadState, SelectField, Switch, Table, TextField } from '@/components/ui';
 import {
   useCategories,
@@ -140,6 +140,7 @@ function CategoryDialog({ storeId, categories, category, onClose }: { storeId: n
   const update = useUpdateCategory();
   const [name, setName] = useState(category?.name ?? '');
   const [image, setImage] = useState<string | null>(category?.image ?? null);
+  const upload = useUploading();
   const [parent, setParent] = useState(category?.parentId ? String(category.parentId) : MAIN);
   // Sub-categories are one level deep: only main categories can hold them, and one that holds some stays main.
   const mains = categories.filter((c) => c.parentId === null && c.id !== category?.id);
@@ -162,9 +163,9 @@ function CategoryDialog({ storeId, categories, category, onClose }: { storeId: n
           onChange={setParent}
         />
       )}
-      <ImageField label="صورة القسم (للماركت)" value={image} onChange={setImage} />
+      <ImageField label="صورة القسم (للماركت)" value={image} onChange={setImage} onBusyChange={upload.onBusyChange} />
       {failed ? <ErrorLine>{errorMessage(failed)}</ErrorLine> : null}
-      <DialogActions ready={name.trim() !== ''} busy={create.isPending || update.isPending} onSave={save} onClose={onClose} />
+      <DialogActions ready={name.trim() !== '' && !upload.uploading} busy={create.isPending || update.isPending} onSave={save} onClose={onClose} />
     </Dialog>
   );
 }
@@ -272,6 +273,7 @@ function ProductDialog({ storeId, categories, product, onClose }: { storeId: num
   const [unit, setUnit] = useState(product?.unit ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
   const [image, setImage] = useState<string | null>(product?.image ?? null);
+  const upload = useUploading();
   const [active, setActive] = useState(product?.active ?? true);
   const [choices, setChoices] = useState(() => draftOf(product));
   const ready = name.trim() !== '' && PRICE.test(price.trim()) && draftReady(choices);
@@ -301,11 +303,11 @@ function ProductDialog({ storeId, categories, product, onClose }: { storeId: num
         <TextField label="الوحدة (اختياري)" value={unit} onChange={(e) => setUnit(e.target.value)} maxLength={CATALOG.unitMaxLength} placeholder="كيلو" />
       </div>
       <TextField label="الوصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={CATALOG.descriptionMaxLength} />
-      <ImageField label="صورة المنتج" value={image} onChange={setImage} />
+      <ImageField label="صورة المنتج" value={image} onChange={setImage} onBusyChange={upload.onBusyChange} />
       <Switch label="متاح للعملاء" checked={active} onChange={setActive} />
       <ProductChoicesFields draft={choices} onChange={setChoices} />
       {failed ? <ErrorLine>{errorMessage(failed)}</ErrorLine> : null}
-      <DialogActions ready={ready} busy={create.isPending || update.isPending} onSave={save} onClose={onClose} />
+      <DialogActions ready={ready && !upload.uploading} busy={create.isPending || update.isPending} onSave={save} onClose={onClose} />
     </Dialog>
   );
 }

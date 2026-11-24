@@ -44,6 +44,11 @@ describe('search (contract §8.13; real API)', () => {
     expect(within(suggestion).getByText('في المطاعم')).toBeTruthy();
     // Every other store type reads "في المتاجر", as in Tawsilty.
     expect(within(await screen.findByRole('button', { name: 'صوص بيتزا' })).getByText('في المتاجر')).toBeTruthy();
+    // Another tab never shows the last tab's suggestions while its own load.
+    await fireEvent.press(screen.getByRole('tab', { name: 'مطاعم' }));
+    expect(screen.queryByRole('button', { name: 'صوص بيتزا' })).toBeNull();
+    expect(await screen.findByRole('button', { name: 'مايو بيتزا فرايز' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('tab', { name: 'الكل' }));
 
     // ↖ fills the box with the suggestion; the row itself searches for it.
     await fireEvent.press(screen.getAllByRole('button', { name: 'املأ البحث' })[0]!);

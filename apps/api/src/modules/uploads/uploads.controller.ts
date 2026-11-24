@@ -14,7 +14,7 @@ import { UploadsService } from './uploads.service.js';
 export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
 
-  /** One image in the `image` field (JPEG, PNG, WebP or HEIC). Returns its path, for the form's image field. */
+  /** One image in the `image` field (JPEG, PNG or WebP). Returns its path, for the form's image field. */
   @Post()
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { image: { type: 'string', format: 'binary' } } } })
@@ -22,11 +22,11 @@ export class UploadsController {
   @UseInterceptors(
     FileInterceptor('image', {
       limits: { fileSize: CATALOG.uploadMaxBytes, files: 1 },
-      fileFilter: (_req, file, done) => done(null, /^image\/(jpeg|png|webp|heic|heif)$/.test(file.mimetype)),
+      fileFilter: (_req, file, done) => done(null, /^image\/(jpeg|png|webp)$/.test(file.mimetype)),
     }),
   )
   upload(@UploadedFile() file?: { buffer: Buffer }): Promise<UploadedImage> {
-    if (!file) throw new ApiException(HttpStatus.BAD_REQUEST, 'IMAGE_INVALID', 'Add an image (JPEG, PNG, WebP or HEIC) in the image field');
+    if (!file) throw new ApiException(HttpStatus.BAD_REQUEST, 'IMAGE_INVALID', 'Add an image (JPEG, PNG or WebP) in the image field');
     return this.uploads.saveImage(file.buffer);
   }
 }
