@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { type Address, type LatLng, type Zone, type ZoneCheck, zoneAt } from '@tawsela/shared';
+import { type Address, type LatLng, type Zone, type ZoneCheck, zoneAt, zoneShapeError } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
 import { AddressesRepository } from './addresses.repository.js';
 import type { AddressRow, ZoneRow } from './addresses.schema.js';
@@ -8,6 +8,12 @@ import type { AddressDto, UpdateZoneDto, ZoneDto } from './dto/addresses.dto.js'
 const notFound = (what: string) => new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', `No ${what} has this id`);
 const corners = (polygon: LatLng[]) => polygon.map(({ lat, lng }) => ({ lat, lng }));
 const toZone = (row: ZoneRow): Zone => ({ id: row.id, name: row.name, polygon: row.polygon, active: row.active });
+
+/** Refuses an outline with repeated corners, no area or crossing edges (review F20). */
+function assertShape(polygon: LatLng[]): void {
+  const problem = zoneShapeError(polygon);
+  if (problem) throw new ApiException(HttpStatus.BAD_REQUEST, 'ZONE_SHAPE', `The outline cannot be used: ${problem}`);
+}
 
 function toAddress(row: AddressRow, zoneName: string): Address {
   const { id, type, building, apartment, floor, street, landmark, phone, lat, lng, isDefault, zoneId } = row;
@@ -26,11 +32,13 @@ export class AddressesService {
   }
 
   async createZone(body: ZoneDto): Promise<Zone> {
+    assertShape(body.polygon);
     const id = await this.repo.createZone({ ...body, polygon: corners(body.polygon) });
     return toZone((await this.repo.findZone(id))!);
   }
 
   async updateZone(id: number, body: UpdateZoneDto): Promise<Zone> {
+    if (body.polygon) assertShape(body.polygon);
     if (!(await this.repo.findZone(id))) throw notFound('zone');
     await this.repo.updateZone(id, { ...body, polygon: body.polygon && corners(body.polygon) });
     return toZone((await this.repo.findZone(id))!);

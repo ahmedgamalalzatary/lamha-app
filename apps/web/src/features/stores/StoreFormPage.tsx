@@ -118,6 +118,8 @@ function StoreForm({ store }: { store?: AdminStore }) {
     money(draft.minimumOrder) &&
     isTimeOfDay(draft.opensAt) &&
     isTimeOfDay(draft.closesAt) &&
+    // Every store delivers in a zone (review F21, owner).
+    draft.zoneId !== null &&
     (store !== undefined || (partner.firstName.trim() !== '' && isEgyptianMobile(normalizePhone(partner.phone))));
 
   const input = (): StoreInput => ({
@@ -208,13 +210,13 @@ function StoreForm({ store }: { store?: AdminStore }) {
         <Switch label="الاستلام من المحل" checked={draft.pickupAllowed} onChange={(v) => set('pickupAllowed', v)} />
       </Section>
 
-      <Section title="المنطقة والموقع" note="يظهر المتجر للعملاء الذين عنوانهم داخل منطقته فقط. الموقع يرتّب «الأقرب إليك».">
+      <Section title="المنطقة والموقع" note="كل متجر له منطقة توصيل، ويظهر للعملاء الذين عنوانهم داخلها فقط. الموقع يرتّب «الأقرب إليك».">
         {zones.isError ? <LoadState error={errorMessage(zones.error)} onRetry={() => void zones.refetch()} /> : null}
         <SelectField
           label="منطقة التوصيل"
           value={draft.zoneId === null ? '' : String(draft.zoneId)}
           options={[
-            { value: '', label: 'بدون منطقة' },
+            ...(draft.zoneId === null ? [{ value: '', label: 'اختر منطقة' }] : []),
             ...(zones.data ?? []).map((z) => ({ value: String(z.id), label: z.active ? z.name : `${z.name} (موقوفة)` })),
           ]}
           onChange={(v) => set('zoneId', v === '' ? null : Number(v))}

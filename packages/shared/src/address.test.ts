@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addressErrors, addressLine, distanceKm, inZone, plusCode, shortPlusCode, zoneAt, type AddressInput } from './address.js';
+import { addressErrors, addressLine, distanceKm, inZone, plusCode, shortPlusCode, zoneAt, zoneShapeError, type AddressInput, type LatLng } from './address.js';
 import { applyStoreFilter } from './store-list.js';
 
 // A square around Fayoum city and one around Giza.
@@ -15,6 +15,19 @@ describe('delivery zones (contract §8.9 "التوصيل متاح لهذا ال�
     expect(zoneAt({ lat: 31.2, lng: 29.9 }, [giza, fayoum])).toBeUndefined();
     // An outline with fewer than three points holds nothing.
     expect(inZone(fayoumUniversity, fayoum.polygon.slice(0, 2))).toBe(false);
+  });
+
+  it('names what is wrong with an outline the admin drew (review F20)', () => {
+    const [a, b, c, d] = fayoum.polygon as [LatLng, LatLng, LatLng, LatLng];
+    expect(zoneShapeError(fayoum.polygon)).toBeNull();
+    expect(zoneShapeError([a, b])).toBe('TOO_FEW');
+    // The same corner twice, next to each other or not.
+    expect(zoneShapeError([a, a, b, c])).toBe('REPEATED');
+    expect(zoneShapeError([a, b, a, c])).toBe('REPEATED');
+    // Three corners on one line hold no area.
+    expect(zoneShapeError([a, { lat: 29.3, lng: 30.78 }, b])).toBe('NO_AREA');
+    // A bow tie: two edges cross.
+    expect(zoneShapeError([a, c, b, d])).toBe('CROSSING');
   });
 
   it('measures the distance between two spots in km', () => {

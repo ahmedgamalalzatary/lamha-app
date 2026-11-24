@@ -260,6 +260,7 @@ export const ar = {
   'map.noMap': 'الخريطة غير متاحة بعد، سيُستخدم موقعك الحالي',
   'errors.OUT_OF_ZONE': 'التوصيل غير متاح لهذا الموقع',
   'errors.CONFLICT': 'حدث تغيير في نفس اللحظة، حاول مرة أخرى',
+  'errors.ZONE_SHAPE': 'حدود المنطقة غير صالحة',
 } as const;
 
 export type TranslationKey = keyof typeof ar;

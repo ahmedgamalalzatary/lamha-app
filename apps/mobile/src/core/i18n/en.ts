@@ -262,4 +262,5 @@ export const en: Record<TranslationKey, string> = {
   'map.noMap': 'The map is not available yet; your current location will be used',
   'errors.OUT_OF_ZONE': 'Delivery is not available here',
   'errors.CONFLICT': 'This changed at the same moment, please try again',
+  'errors.ZONE_SHAPE': 'The zone outline cannot be used',
 };

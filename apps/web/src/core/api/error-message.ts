@@ -18,6 +18,9 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   NO_STORE: 'هذا الحساب غير مربوط بمتجر، تواصل مع الإدارة',
   IMAGE_INVALID: 'تعذر قراءة الصورة، اختر صورة JPEG أو PNG',
   TILE_TARGET: 'اختر قسماً أو متجراً واحداً يفتحه المربع',
+  ZONE_SHAPE: 'حدود المنطقة غير صالحة: لا تكرر نقطة ولا تجعل الخطوط تتقاطع',
+  CONFLICT: 'حدث تغيير في نفس اللحظة، حاول مرة أخرى',
+  EMAIL_TAKEN: 'البريد الإلكتروني مستخدم في حساب آخر',
 };
 
 export const GENERIC_ERROR = 'حدث خطأ، حاول مرة أخرى';

@@ -77,6 +77,44 @@ export function inZone(p: LatLng, polygon: readonly LatLng[]): boolean {
   return inside;
 }
 
+/** What is wrong with a drawn outline (review F20), so the admin can redraw it. */
+export type ZoneShapeError = 'TOO_FEW' | 'REPEATED' | 'NO_AREA' | 'CROSSING';
+
+/** Twice the outline's signed area, in degrees²: 0 when every corner is on one line. */
+const doubleArea = (ps: readonly LatLng[]) =>
+  ps.reduce((sum, p, i) => {
+    const q = ps[(i + 1) % ps.length]!;
+    return sum + p.lng * q.lat - q.lng * p.lat;
+  }, 0);
+
+/** Which side of the line a→b the spot c is on (0 on the line). */
+const side = (a: LatLng, b: LatLng, c: LatLng) => Math.sign((b.lng - a.lng) * (c.lat - a.lat) - (b.lat - a.lat) * (c.lng - a.lng));
+
+/** Whether segments ab and cd cross (sharing an end does not count). */
+const crosses = (a: LatLng, b: LatLng, c: LatLng, d: LatLng) =>
+  side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+
+/**
+ * A usable outline has three or more different corners, some area, and no two edges that cross.
+ * Null when it is fine.
+ */
+export function zoneShapeError(polygon: readonly LatLng[]): ZoneShapeError | null {
+  if (polygon.length < 3) return 'TOO_FEW';
+  const seen = new Set(polygon.map((p) => `${p.lat},${p.lng}`));
+  if (seen.size !== polygon.length) return 'REPEATED';
+  // Crossing first: a symmetric bow tie's two halves cancel out to no area.
+  const n = polygon.length;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 2; j < n; j++) {
+      // The first and the last edges meet at the first corner.
+      if (i === 0 && j === n - 1) continue;
+      if (crosses(polygon[i]!, polygon[(i + 1) % n]!, polygon[j]!, polygon[(j + 1) % n]!)) return 'CROSSING';
+    }
+  }
+  if (Math.abs(doubleArea(polygon)) < 1e-12) return 'NO_AREA';
+  return null;
+}
+
 /** The first zone holding the spot. */
 export const zoneAt = <Z extends Pick<Zone, 'polygon'>>(p: LatLng, zones: readonly Z[]): Z | undefined => zones.find((z) => inZone(p, z.polygon));
 

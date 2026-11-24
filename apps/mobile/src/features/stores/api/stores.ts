@@ -44,12 +44,15 @@ export function useSearch(q: string, scope: SearchScope) {
   });
 }
 
-/** Product names while typing. */
-export const useSuggestions = (q: string, scope: SearchScope) =>
-  useQuery({
-    queryKey: ['suggestions', q, scope],
-    queryFn: () => api<SearchSuggestion[]>(`/catalog/search/suggestions?${qs({ q, scope })}`),
-    enabled: q.trim().length > 0,
-    // The last answer stays while typing, but never across tabs: they list different stores.
-    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === scope ? previous : undefined),
+/** Product names while typing, from the stores of the chosen address's zone (review F32). */
+export function useSuggestions(q: string, scope: SearchScope) {
+  const { ready, addressId } = useDeliveryScope();
+  return useQuery({
+    queryKey: ['suggestions', q, scope, addressId],
+    queryFn: () => api<SearchSuggestion[]>(`/catalog/search/suggestions?${qs({ q, scope, addressId })}`),
+    enabled: ready && q.trim().length > 0,
+    // The last answer stays while typing, but never across tabs or addresses: they list different stores.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[2] === scope && previousQuery.queryKey[3] === addressId ? previous : undefined,
   });
+}

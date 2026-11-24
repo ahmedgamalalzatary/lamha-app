@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
 import { StoreFormPage } from '@/features/stores/StoreFormPage';
 import { StoresPage } from '@/features/stores/StoresPage';
-import { insertStore, linkPartner } from '../utils/catalog';
+import { anyZone, insertStore, linkPartner } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { API_URL } from '../utils/env';
 
@@ -60,6 +60,7 @@ describe('الموردين: the stores table (contract §11; real API)', () => {
 
 describe('إضافة متجر: a store and its partner account (contract §2, §11; real API)', () => {
   it('creates the store, shows the partner password once (it signs in) and opens the store', async () => {
+    const zone = await anyZone();
     renderWith(<StoreFormPage />);
     const user = userEvent.setup();
     const save = await screen.findByRole('button', { name: 'حفظ' });
@@ -76,16 +77,21 @@ describe('إضافة متجر: a store and its partner account (contract §2, §
     await user.click(screen.getByRole('switch', { name: 'الاستلام من المحل' }));
     await user.type(screen.getByLabelText('الاسم الأول'), 'صابر');
     await user.type(screen.getByLabelText('رقم الهاتف'), '01554459196');
+    // Every store delivers in a zone (review F21): no zone, no save.
+    expect(save).toBeDisabled();
+    expect(screen.queryByRole('option', { name: 'بدون منطقة' })).toBeNull();
+    await screen.findByRole('option', { name: 'الفيوم' });
+    await user.selectOptions(screen.getByLabelText('منطقة التوصيل'), String(zone));
     expect(save).toBeEnabled();
     await user.click(save);
 
     const shown = await screen.findByRole('dialog', { name: 'كلمة المرور الجديدة' });
     const password = within(shown).getByTestId('generated-password').textContent!;
     expect(await signsIn('01554459196', password)).toBe(true);
-    const [store] = await sql<{ id: number; name: string; delivery_fee: string; pickup_allowed: number; layout: string }[]>(
-      'SELECT id, name, delivery_fee, pickup_allowed, layout FROM stores',
+    const [store] = await sql<{ id: number; name: string; delivery_fee: string; pickup_allowed: number; layout: string; zone_id: number }[]>(
+      'SELECT id, name, delivery_fee, pickup_allowed, layout, zone_id FROM stores',
     );
-    expect(store).toMatchObject({ name: 'كشري الحادقة', delivery_fee: '10.00', pickup_allowed: 1, layout: 'list' });
+    expect(store).toMatchObject({ name: 'كشري الحادقة', delivery_fee: '10.00', pickup_allowed: 1, layout: 'list', zone_id: zone });
 
     await user.click(within(shown).getByRole('button', { name: 'تم' }));
     expect(router.push).toHaveBeenCalledWith(`/stores/${store!.id}`);
@@ -114,11 +120,14 @@ describe('إضافة متجر: a store and its partner account (contract §2, §
 
   it('shows the error when the partner phone already has an account', async () => {
     await insertUser('customer', '01554459196');
+    const zone = await anyZone();
     renderWith(<StoreFormPage />);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('اسم المتجر'), 'كشري');
     await user.type(screen.getByLabelText('الاسم الأول'), 'صابر');
     await user.type(screen.getByLabelText('رقم الهاتف'), '01554459196');
+    await screen.findByRole('option', { name: 'الفيوم' });
+    await user.selectOptions(screen.getByLabelText('منطقة التوصيل'), String(zone));
     await user.click(screen.getByRole('button', { name: 'حفظ' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('رقم الهاتف مسجل بالفعل');
     expect(await sql<unknown[]>('SELECT id FROM stores')).toHaveLength(0);

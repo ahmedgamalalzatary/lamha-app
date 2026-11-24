@@ -52,10 +52,11 @@ export class CatalogService {
   /** Search (§8.13): stores whose name matches, and stores with matching products, each with those products. */
   async search(userId: number, q: string, scope: SearchScope, addressId?: number): Promise<SearchResult[]> {
     const { zoneId } = await this.deliverTo(userId, addressId);
+    // The zone limits every query before its own limit (review F31).
     const [byName, byProduct, rows] = await Promise.all([
-      this.catalog.listStores({ q, activeOnly: true }),
-      this.catalog.storeIdsWithProduct(q, scope),
-      this.catalog.searchProducts(q, scope),
+      this.catalog.listStores({ q, zoneId, activeOnly: true }),
+      this.catalog.storeIdsWithProduct(q, scope, zoneId),
+      this.catalog.searchProducts(q, scope, zoneId),
     ]);
     const products = await this.catalog.withChoices(rows);
     const ids = new Set([...byName.map((s) => s.id), ...byProduct]);
@@ -65,8 +66,10 @@ export class CatalogService {
     return stores.map((store) => ({ store, products: products.filter((p) => p.storeId === store.id) }));
   }
 
-  suggestions(q: string, scope: SearchScope): Promise<SearchSuggestion[]> {
-    return this.catalog.suggestProducts(q, scope, SUGGESTIONS);
+  /** Product names while typing, from the stores that deliver to the chosen address (review F32). */
+  async suggestions(userId: number, q: string, scope: SearchScope, addressId?: number): Promise<SearchSuggestion[]> {
+    const { zoneId } = await this.deliverTo(userId, addressId);
+    return this.catalog.suggestProducts(q, scope, SUGGESTIONS, zoneId);
   }
 
   /** These stores as the apps list them, in the given order; hidden ones are left out. */

@@ -23,6 +23,8 @@ const NEW_STORE = {
   closedNow: false,
   active: true,
   cuisineIds: [] as number[],
+  /** Set in beforeEach: every store delivers in a zone (review F21). */
+  zoneId: 0,
   partner: { firstName: 'حسن', lastName: 'الساقية', phone: '01554459196' },
 };
 
@@ -44,6 +46,7 @@ describe('/v1/admin/stores (e2e, contract §11 الموردين, §2 partner acc
     await resetDb();
     await insertUser('admin', '01000000001', PASSWORD);
     token = (await signIn('01000000001')).accessToken;
+    NEW_STORE.zoneId = (await sql<{ insertId: number }>("INSERT INTO zones (name, polygon) VALUES ('الفيوم', '[]')")).insertId;
   });
   afterAll(async () => {
     await app.close();
@@ -93,6 +96,8 @@ describe('/v1/admin/stores (e2e, contract §11 الموردين, §2 partner acc
       { layout: 'cards' },
       { partner: { firstName: 'x', phone: '0123' } },
       { rating: 5 },
+      { zoneId: null },
+      { zoneId: undefined },
     ]) {
       await http()
         .post('/v1/admin/stores')

@@ -161,6 +161,49 @@ describe('addresses and delivery zones (e2e, contract §8.9)', () => {
     await http().get(`/v1/catalog/stores?addressId=${home.id}`).set(await signIn('01000000009')).expect(404);
   });
 
+  it('lists nothing for an address whose zone is switched off, and filters search and suggestions by zone before their limits (review F17, F31, F32)', async () => {
+    const fayoum = await addZone('الفيوم', FAYOUM);
+    const giza = await addZone('الجيزة', GIZA);
+    const mine = await insertStore({ name: 'مطعم الفيوم' });
+    const theirs = await insertStore({ name: 'مطعم الجيزة' });
+    await sql('UPDATE stores SET zone_id = ? WHERE id = ?', [fayoum.id, mine]);
+    await sql('UPDATE stores SET zone_id = ? WHERE id = ?', [giza.id, theirs]);
+    // 250 matches in the other zone come first: more than the search's product limit.
+    const theirCategory = await insertCategory(theirs);
+    await sql(
+      `INSERT INTO products (store_id, category_id, name, price, active, sort_order) VALUES ${Array.from({ length: 250 }, () => '(?, ?, ?, 10, 1, 0)').join(', ')}`,
+      Array.from({ length: 250 }, (_, i) => [theirs, theirCategory, `بيتزا الجيزة ${i}`]).flat(),
+    );
+    await insertProduct(mine, await insertCategory(mine), 'بيتزا الفيوم');
+    const home = (await http().post('/v1/me/addresses').set(customer).send(TEMP).expect(201)).body as { id: number };
+    const get = async (url: string) => (await http().get(url).set(customer).expect(200)).body;
+    const q = encodeURIComponent('بيتزا');
+
+    const results = (await get(`/v1/catalog/search?q=${q}&addressId=${home.id}`)) as { store: { id: number }; products: { name: string }[] }[];
+    expect(results.map((r) => [r.store.id, r.products.map((p) => p.name)])).toEqual([[mine, ['بيتزا الفيوم']]]);
+    const suggestions = (await get(`/v1/catalog/search/suggestions?q=${q}&addressId=${home.id}`)) as { name: string }[];
+    expect(suggestions.map((s) => s.name)).toEqual(['بيتزا الفيوم']);
+
+    await http().patch(`/v1/admin/zones/${fayoum.id}`).set(admin).send({ active: false }).expect(200);
+    expect(await get(`/v1/catalog/stores?addressId=${home.id}`)).toEqual([]);
+    expect(await get(`/v1/catalog/search?q=${q}&addressId=${home.id}`)).toEqual([]);
+    expect(await get(`/v1/catalog/search/suggestions?q=${q}&addressId=${home.id}`)).toEqual([]);
+  });
+
+  it('refuses an outline with repeated corners, no area or crossing edges (review F20)', async () => {
+    const send = (polygon: object[]) => http().post('/v1/admin/zones').set(admin).send({ name: 'منطقة', polygon, active: true });
+    const [a, b, c, d] = FAYOUM;
+    for (const polygon of [
+      [a, a, b, c],
+      [a, { lat: 29.3, lng: 30.78 }, { lat: 29.36, lng: 30.78 }],
+      [a, c, b, d],
+    ]) {
+      const res = await send(polygon).expect(400);
+      expect(res.body.code).toBe('ZONE_SHAPE');
+    }
+    await send(FAYOUM).expect(201);
+  });
+
   it("the admin sets a store's zone and location (الموردين)", async () => {
     const fayoum = await addZone('الفيوم', FAYOUM);
     const id = await insertStore();
@@ -171,6 +214,8 @@ describe('addresses and delivery zones (e2e, contract §8.9)', () => {
       .expect(200);
     expect(res.body).toMatchObject({ zoneId: fayoum.id, location: { lat: 29.31, lng: 30.84 } });
     await http().patch(`/v1/admin/stores/${id}`).set(admin).send({ zoneId: 999 }).expect(404);
+    // Every store delivers in a zone (review F21, owner): it cannot be taken away.
+    await http().patch(`/v1/admin/stores/${id}`).set(admin).send({ zoneId: null }).expect(400);
     await http().patch(`/v1/admin/stores/${id}`).set(admin).send({ location: { lat: 200, lng: 0 } }).expect(400);
   });
 });

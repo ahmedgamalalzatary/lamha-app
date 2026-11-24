@@ -34,8 +34,8 @@ export class CatalogController {
   }
 
   @Get('search/suggestions')
-  suggestions(@Query() query: SearchQuery): Promise<SearchSuggestion[]> {
-    return this.catalog.suggestions(query.q, query.scope);
+  suggestions(@CurrentUser() me: AuthUser, @Query() query: SearchQuery): Promise<SearchSuggestion[]> {
+    return this.catalog.suggestions(me.id, query.q, query.scope, query.addressId);
   }
 
   @Get('stores/:id')

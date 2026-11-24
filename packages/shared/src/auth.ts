@@ -118,6 +118,8 @@ export type ApiErrorCode =
   | 'TILE_TARGET'
   /** The address's spot is in no delivery zone (§8.9). */
   | 'OUT_OF_ZONE'
+  /** A zone outline with repeated corners, no area or crossing edges (shared `zoneShapeError`). */
+  | 'ZONE_SHAPE'
   /** Two writes clashed at the same moment (a row deleted meanwhile, a deadlock): try again. */
   | 'CONFLICT'
   | 'PHONE_TAKEN'

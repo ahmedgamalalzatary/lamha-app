@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { Ingredient, OptionGroup, Product, ProductOptionsInput, SearchScope, Vertical } from '@tawsela/shared';
-import { and, asc, count, eq, inArray, isNull, like, max, min, ne, or, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull, like, max, min, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { MySqlTable } from 'drizzle-orm/mysql-core';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
+import { zones } from '../addresses/addresses.schema.js';
 import { type NewUser, users } from '../users/users.schema.js';
 import {
   cuisines,
@@ -31,6 +32,13 @@ const SEARCH_LIMIT = 200;
 /** LIKE pattern for "contains": % and _ in the text are matched as themselves. */
 const contains = (text: string) => `%${text.replace(/[\\%_]/g, '\\$&')}%`;
 
+/**
+ * The stores that deliver to a chosen address's zone (§8.9), while that zone is switched on: an
+ * address in a switched-off zone lists nothing (review F17). No zone given: no limit.
+ */
+const inActiveZone = (zoneId: number | undefined): SQL | undefined =>
+  zoneId === undefined ? undefined : and(eq(stores.zoneId, zoneId), sql`EXISTS (SELECT 1 FROM ${zones} WHERE ${zones.id} = ${zoneId} AND ${zones.active} = true)`);
+
 /** مطاعم are restaurants, متاجر أخرى everything else (shared `inSearchScope`). */
 const scopeWhere = (scope: SearchScope): SQL | undefined =>
   scope === 'restaurants' ? eq(stores.vertical, 'restaurant') : scope === 'others' ? ne(stores.vertical, 'restaurant') : undefined;
@@ -46,7 +54,7 @@ export class CatalogRepository {
     filter: { vertical?: Vertical; cuisineId?: number; activeOnly?: boolean; q?: string; ids?: number[]; zoneId?: number } = {},
   ): Promise<StoreRow[]> {
     const where: SQL[] = [];
-    if (filter.zoneId !== undefined) where.push(eq(stores.zoneId, filter.zoneId));
+    if (filter.zoneId !== undefined) where.push(inActiveZone(filter.zoneId)!);
     if (filter.ids) {
       if (!filter.ids.length) return [];
       where.push(inArray(stores.id, filter.ids));
@@ -188,36 +196,36 @@ export class CatalogRepository {
     return rows.map((r) => r.product);
   }
 
-  /** Search (§8.13): products customers may see whose name contains the text, in active stores. */
-  async searchProducts(q: string, scope: SearchScope): Promise<ProductRow[]> {
+  /** Search (§8.13): products customers may see whose name contains the text, in active stores (of the zone, before the limit: review F31). */
+  async searchProducts(q: string, scope: SearchScope, zoneId?: number): Promise<ProductRow[]> {
     const rows = await this.db
       .select({ product: products })
       .from(products)
       .innerJoin(stores, eq(stores.id, products.storeId))
       .innerJoin(storeCategories, eq(storeCategories.id, products.categoryId))
-      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope)))
+      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope), inActiveZone(zoneId)))
       .orderBy(asc(products.storeId), asc(storeCategories.sortOrder), asc(products.sortOrder), asc(products.id))
       .limit(SEARCH_LIMIT);
     return rows.map((r) => r.product);
   }
 
   /** Every store with a product customers may see that matches: not cut by the product list's limit. */
-  async storeIdsWithProduct(q: string, scope: SearchScope): Promise<number[]> {
+  async storeIdsWithProduct(q: string, scope: SearchScope, zoneId?: number): Promise<number[]> {
     const rows = await this.db
       .selectDistinct({ storeId: products.storeId })
       .from(products)
       .innerJoin(stores, eq(stores.id, products.storeId))
-      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope)));
+      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope), inActiveZone(zoneId)));
     return rows.map((r) => r.storeId);
   }
 
   /** Suggestions while typing (§8.13): distinct product names with their store's type. */
-  async suggestProducts(q: string, scope: SearchScope, limit: number): Promise<{ name: string; vertical: Vertical }[]> {
+  async suggestProducts(q: string, scope: SearchScope, limit: number, zoneId?: number): Promise<{ name: string; vertical: Vertical }[]> {
     return this.db
       .select({ name: products.name, vertical: stores.vertical })
       .from(products)
       .innerJoin(stores, eq(stores.id, products.storeId))
-      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope)))
+      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope), inActiveZone(zoneId)))
       .groupBy(products.name, stores.vertical)
       .orderBy(min(products.id))
       .limit(limit);

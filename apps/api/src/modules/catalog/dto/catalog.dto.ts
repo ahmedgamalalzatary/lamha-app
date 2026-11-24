@@ -133,10 +133,10 @@ export class StoreFieldsDto {
   @IsInt({ each: true })
   cuisineIds: number[];
 
-  @ApiPropertyOptional({ type: Number, nullable: true, description: 'The delivery zone it serves (§8.9)' })
-  @IsOptional()
+  /** Every store delivers in a zone (review F21, owner): customers see it once their address is in that zone. */
+  @ApiProperty({ description: 'The delivery zone it serves (§8.9)' })
   @IsInt()
-  zoneId?: number | null;
+  zoneId: number;
 
   @ApiPropertyOptional({ type: LatLngDto, nullable: true, description: 'Where the store is, for "الأقرب إليك"' })
   @IsOptional()
