@@ -1,7 +1,7 @@
 'use client';
 
 import { Eye, EyeOff, LoaderCircle, type LucideIcon } from 'lucide-react';
-import { type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, useEffect, useId, useState } from 'react';
+import { type ButtonHTMLAttributes, type InputHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 /** Tawsilty's primary button (contract §6.3): orange, rounded; faded when disabled. */
 export function Button({
@@ -71,17 +71,44 @@ export function ErrorLine({ children }: { children: ReactNode }) {
   );
 }
 
-/** A white card over a dim page. Escape and a click outside close it. */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * A white card over a dim page. Escape and a click outside close it. Focus moves into it (unless a
+ * field there already took it with autoFocus), Tab and Shift+Tab stay inside, and closing gives
+ * focus back to whatever opened it.
+ */
 export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const titleId = useId();
+  const card = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const box = card.current;
+    if (box && !box.contains(document.activeElement)) (box.querySelector<HTMLElement>(FOCUSABLE) ?? box).focus();
+    return () => opener?.focus();
+  }, []);
+  const trapTab = (e: ReactKeyboardEvent) => {
+    if (e.key !== 'Tab' || !card.current) return;
+    const items = [...card.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+    const first = items[0];
+    const last = items.at(-1);
+    if (!first || !last) return;
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+      <div ref={card} tabIndex={-1} onKeyDown={trapTab} role="dialog" aria-modal="true" aria-labelledby={titleId} className="flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <h2 id={titleId} className="text-lg font-bold">
           {title}
         </h2>

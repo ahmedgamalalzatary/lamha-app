@@ -100,6 +100,21 @@ describe('/v1/admin/admins (e2e, contract §1.1 A23: admin accounts)', () => {
     expect(off.body.code).toBe('OWN_ACCOUNT');
   });
 
+  it('keeps one admin enabled when the last two disable each other at the same moment', async () => {
+    const other = await insertUser('admin', '01000000009', PASSWORD);
+    const otherToken = (await signIn('01000000009')).accessToken;
+    const results = await Promise.all([
+      http().patch(`/v1/admin/admins/${other}`).set('Authorization', `Bearer ${token}`).send({ disabled: true }),
+      http().patch(`/v1/admin/admins/${adminId}`).set('Authorization', `Bearer ${otherToken}`).send({ disabled: true }),
+    ]);
+    // The loser is refused: LAST_ADMIN, or 401 when its own account was already off at the guard.
+    expect(results.filter((r) => r.status === 200)).toHaveLength(1);
+    const lost = results.find((r) => r.status !== 200)!;
+    expect(lost.status === 401 || lost.body.code === 'LAST_ADMIN').toBe(true);
+    const [row] = await sql<{ n: number }[]>("SELECT COUNT(*) AS n FROM users WHERE role = 'admin' AND disabled_at IS NULL");
+    expect(Number(row!.n)).toBe(1);
+  });
+
   it('answers 404 for an account that is not an admin', async () => {
     const partner = await insertUser('partner', '01000000002', PASSWORD);
     const res = await http().post(`/v1/admin/admins/${partner}/password`).set('Authorization', `Bearer ${token}`).expect(404);

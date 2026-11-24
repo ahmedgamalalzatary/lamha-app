@@ -15,7 +15,7 @@ import {
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
 import { ImageField } from '@/components/ImageField';
 import { PasswordShown } from '@/components/PasswordShown';
@@ -91,7 +91,10 @@ function StoreForm({ store }: { store?: AdminStore }) {
   const [partner, setPartner] = useState({ firstName: '', lastName: '', phone: '' });
   const [created, setCreated] = useState<{ id: number; password: string } | null>(null);
   const [saved, setSaved] = useState(false);
+  // Counts edits, so a save confirms only if nothing was typed while it was on its way.
+  const edits = useRef(0);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
+    edits.current++;
     setSaved(false);
     setDraft((d) => ({ ...d, [k]: v }));
   };
@@ -118,7 +121,8 @@ function StoreForm({ store }: { store?: AdminStore }) {
 
   const save = () => {
     if (store) {
-      update.mutate({ id: store.id, ...input() }, { onSuccess: () => setSaved(true) });
+      const sent = edits.current;
+      update.mutate({ id: store.id, ...input() }, { onSuccess: () => setSaved(edits.current === sent) });
     } else {
       create.mutate(
         { ...input(), partner: { firstName: partner.firstName.trim(), lastName: partner.lastName.trim(), phone: normalizePhone(partner.phone) } },

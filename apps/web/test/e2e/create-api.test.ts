@@ -94,6 +94,21 @@ describe("the dashboard's API client (real API)", () => {
     expect(await refreshWorks(shared.saved!.refreshToken)).toBe(true);
   });
 
+  it('does not bring a session back when its renewal answers after sign-out', async () => {
+    await insertUser('admin', '01000000001');
+    const first = memoryStore();
+    await client(first).signIn('01000000001', PASSWORD);
+    const store = memoryStore(expired(first.saved!));
+    // The admin signs out while the renewal is on its way.
+    const signOutMidway: typeof fetch = (input, init) => {
+      if (String(input).endsWith('/auth/refresh')) store.save(null);
+      return fetch(input, init);
+    };
+    const api = createApi({ base: API_URL, fetch: signOutMidway, store });
+    await expect(api.request('/me')).rejects.toMatchObject({ status: 401 });
+    expect(store.saved).toBeNull();
+  });
+
   it('signs out when the session cannot be renewed', async () => {
     await insertUser('admin', '01000000001');
     const first = memoryStore();

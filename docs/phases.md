@@ -88,7 +88,7 @@ Contract §11 and §11.1. One sign-in page; the role decides the area: admins la
 
 **Built:**
 
-- **API:** `/v1/admin/admins` (admins only): list, create with a generated password shown once, reset the password (old sessions end), disable or enable (signed out at once). An admin cannot reset or disable their own account (`OWN_ACCOUNT`), so one admin always stays. Seed: two more admins.
+- **API:** `/v1/admin/admins` (admins only): list, create with a generated password shown once, reset the password (old sessions end), disable or enable (signed out at once). An admin cannot reset or disable their own account (`OWN_ACCOUNT`), and the last enabled admin cannot be disabled even by two admins at once (`LAST_ADMIN`), so one admin always stays. Seed: two more admins.
 - **Dashboard:** the session in `localStorage`, renewed once on a 401, one renewal across tabs (the realestate pattern); `/sign-in` for admins and partners (customers and drivers are turned away and their new session ended); the area gate; the admin sidebar as in the Tawsilty photo plus الإعدادات › حسابات الإدارة; the partner sidebar (الطلبات, المنتجات, المتجر, التقارير, الحساب); empty pages show "قريباً"; sign-out in the sidebar; partner الحساب (name, phone, sign-out).
 - **Tests:** the dashboard tests run against the real API (built `apps/api`) on its own database `tawsela_web_test`, with no mocked requests.
 - **Moved to Phase 4:** the store guard on `/v1/partner/*`. A partner belongs to a store, and stores arrive in Phase 4; until then `/v1/partner/*` has no routes.

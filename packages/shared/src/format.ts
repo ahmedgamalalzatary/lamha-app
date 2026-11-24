@@ -16,12 +16,15 @@ export function formatAmount(amount: number, locale: Locale = 'ar'): string {
 }
 
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+
+/** Arabic-Indic (٠-٩) and Persian (۰-۹) digits, as an Arabic keyboard types them, become 0-9. */
+export const toLatinDigits = (input: string): string =>
+  input.replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d))).replace(/[۰-۹]/g, (d) => String(PERSIAN_DIGITS.indexOf(d)));
 
 /** Any way a customer types an Egyptian mobile number becomes the local 11-digit form "01xxxxxxxxx". */
 export function normalizePhone(input: string): string {
-  let digits = input
-    .replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d)))
-    .replace(/\D/g, '');
+  let digits = toLatinDigits(input).replace(/\D/g, '');
   if (digits.startsWith('0020')) digits = digits.slice(4);
   else if (digits.startsWith('20') && digits.length === 12) digits = digits.slice(2);
   if (digits.length === 10 && digits.startsWith('1')) digits = `0${digits}`;

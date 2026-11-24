@@ -4,8 +4,57 @@ import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
+import { OfflineScreen } from '@/components/OfflineScreen';
+import { OtpInput } from '@/components/OtpInput';
+import { useSubmit } from '@/core/hooks/useSubmit';
 import { toast, ToastHost } from '@/components/Toast';
 import { Package } from 'lucide-react-native';
+
+describe('OtpInput', () => {
+  it('takes digits from an Arabic keyboard (١٢٣٤) as 1234', async () => {
+    const onChange = jest.fn();
+    await render(<OtpInput value="" onChange={onChange} label="رمز التحقق" />);
+    await fireEvent.changeText(screen.getByLabelText('رمز التحقق'), '١٢٣٤٥');
+    expect(onChange).toHaveBeenCalledWith('1234');
+  });
+});
+
+describe('OfflineScreen', () => {
+  it('says the server cannot be reached and retries', async () => {
+    const onRetry = jest.fn(async () => undefined);
+    await render(<OfflineScreen onRetry={onRetry} />);
+    expect(screen.getByText('تعذر الاتصال بالخادم')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'إعادة المحاولة' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useSubmit', () => {
+  it('runs one call at a time, even when tapped twice before the next render', async () => {
+    let finish!: () => void;
+    const fn = jest.fn(() => new Promise<void>((r) => (finish = r)));
+    let run!: () => Promise<void>;
+    function Form() {
+      run = useSubmit(fn).run;
+      return null;
+    }
+    await render(<Form />);
+    let first!: Promise<void>;
+    await act(async () => {
+      first = run();
+      void run();
+    });
+    expect(fn).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      finish();
+      await first;
+    });
+    await act(async () => {
+      void run();
+    });
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe('EmptyState (§6.3)', () => {
   it('shows the bold title and the grey line', async () => {

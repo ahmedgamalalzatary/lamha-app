@@ -326,6 +326,8 @@ Built in Phase 1:
 - Errors come from the API as codes (PHONE_TAKEN, OTP_WRONG with the tries left, BAD_CREDENTIALS, STAFF_RESET_BY_ADMIN…) and the app shows them in Arabic or English as Tawsilty's red toast.
 - A partner or driver who asks for a password reset is told to ask the admin. Deleting an account (customers only) needs the password; the phone can sign up again afterwards.
 - The links to terms and privacy arrive with the app-content pages (§8.14).
+- Sessions: every account has a session version. A password reset, a disable, a deletion or a copied refresh token moves it on, and every token issued under the old version stops working at once (access tokens too). A reset ticket is bound to its account and works once. Each try at a code is counted before the code is checked, so guesses sent at the same moment still get only 5 tries. Arabic-keyboard digits (٠-٩) are read as 0-9 in the code boxes and phone fields.
+- [Open] If the server cannot be reached at launch but a session is stored, the app shows "تعذر الاتصال بالخادم" with "إعادة المحاولة" instead of sending the account to sign-in. Tawsilty's no-connection screen is not captured; this is the app's error line and retry pattern.
 
 ### 8.2 Home
 
@@ -593,7 +595,7 @@ The full list of dashboard modules, with sources and phases, is in §1.1.
 
 - **Sign-in:** one page, `/sign-in`, for admins and partners. Tawsilty's admin sign-in is not captured [Open]; the page uses the app's sign-in words. Customers and drivers are told the dashboard is for admins and stores.
 - **Sidebar:** exactly the sections and pages in the Tawsilty photo, plus الإعدادات › حسابات الإدارة (A23) [Needed]. The other §11 pages join the sidebar with their phases. The account's name and "تسجيل الخروج" sit at its foot.
-- **حسابات الإدارة:** a table in the orders-table look (orange header row, actions in العمليات). Admins are added with a name and phone; the password is generated and shown once, like partner and driver accounts. Reset password and disable/enable ask first, using the address-delete confirm look (§6.3). An admin cannot reset or disable their own account.
+- **حسابات الإدارة:** a table in the orders-table look (orange header row, actions in العمليات). Admins are added with a name and phone; the password is generated and shown once, like partner and driver accounts. Reset password and disable/enable ask first, using the address-delete confirm look (§6.3). An admin cannot reset or disable their own account, and the last enabled admin cannot be disabled.
 
 **Built in Phase 4:**
 
@@ -645,7 +647,7 @@ Built in Phase 4 (partners; drivers join in Phase 12): "الحسابات" with a
 
 First draft; each phase finalises its tables.
 
-- `users` (phone, password hash, name, email, gender, region, role, locale, invite code, invited_by, store_id for partners), `otp_codes`, `refresh_tokens`
+- `users` (phone, password hash, name, email, gender, region, role, locale, invite code, invited_by, store_id for partners, session_version), `otp_codes`, `refresh_tokens` (with the session_version it was issued under)
 - `addresses` (label, type, building, apartment, floor, street, landmark, phone, lat/lng, is_default)
 - `zones` (delivery areas; Phase 8, with each store's zone and location)
 - `home_tiles` (label, image, badge, row fixed/scroll, order, target vertical or store) (built in Phase 4)
@@ -736,3 +738,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-24 | Phase 5 done (§8.2): the customer home with the header, rotating search, tiles and invite card. Stand-ins marked [Open]: the address line until Phase 8, and the closed invite card staying hidden. |
 | 2026-11-24 | Phase 6 done (§8.3, §8.13): store lists with the cuisine circles, chips, sort and rating sheets, closed look and empty state; search with tabs, suggestions and results. Stand-ins marked [Open]: توصيل سريع as 30 minutes or less, the darkened closed picture, the no-results screen, "في <type>" suggestions. Offer chips and badges wait for Phase 19. |
 | 2026-11-24 | Phase 7 done (§8.4, §8.5, §8.14, §12): the store page in both layouts, category pages with sub-categories, the product sheet with option groups, removable ingredients and "تُطلب معًا", the bottom bar, favourites; the admin sets choices and sub-categories. Stand-ins marked [Open]: the in-memory cart until Phase 9, the store search as a category page, optional and multi-choice groups, "تُطلب معًا" as the next items of the menu. Store offer cards and rails wait for Phase 19. |
+| 2026-11-24 | CodeRabbit review of Phases 0–7 (§8.1, §11, §12): sessions end through a per-account session version (reset, disable, deletion, copied token), reset tickets work once and only for their account, code tries are counted before the check, the last enabled admin cannot be disabled (`LAST_ADMIN`), Arabic-keyboard digits in the code boxes. Both apps drop answers that arrive after sign-out and start an empty data cache for each account. The app shows a retry when the server cannot be reached at launch [Open]. Dashboard dialogs keep keyboard focus inside. |

@@ -33,6 +33,8 @@ export const refreshTokens = mysqlTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     tokenHash: char('token_hash', { length: 64 }).notNull().unique(),
+    /** The account's session version when this token was issued (users.session_version). */
+    sessionVersion: int('session_version', { unsigned: true }).notNull().default(0),
     expiresAt: datetime('expires_at').notNull(),
     revokedAt: datetime('revoked_at'),
     createdAt: datetime('created_at').notNull(),

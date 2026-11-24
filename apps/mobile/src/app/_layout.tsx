@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { I18nManager, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { OfflineScreen } from '@/components/OfflineScreen';
 import { ToastHost } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
 import { DEFAULT_LOCALE, isRTL } from '@/core/i18n';
@@ -51,7 +52,11 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+          {status === 'offline' ? (
+            <OfflineScreen onRetry={session.restore} />
+          ) : (
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+          )}
           <ToastHost />
         </QueryClientProvider>
       </SafeAreaProvider>

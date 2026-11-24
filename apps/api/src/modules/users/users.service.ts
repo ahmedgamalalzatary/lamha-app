@@ -56,8 +56,7 @@ export class UsersService {
     if (!(await verifyPassword(row.passwordHash, password))) {
       throw new ApiException(HttpStatus.FORBIDDEN, 'WRONG_PASSWORD', 'Wrong password');
     }
-    const now = new Date();
-    await this.users.update(id, {
+    await this.users.endSessions(id, {
       phone: `deleted-${id}`,
       email: null,
       firstName: '',
@@ -65,8 +64,7 @@ export class UsersService {
       passwordHash: '',
       gender: null,
       inviteCode: null,
-      deletedAt: now,
-      credentialsChangedAt: now,
+      deletedAt: new Date(),
     });
     await this.sessions.revokeAllForUser(id);
   }

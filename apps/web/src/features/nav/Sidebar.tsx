@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { api, useSession } from '@/core/api/client';
-import { filterNav, isActive, type NavGroup } from './admin-nav';
+import { activeHref, filterNav, type NavGroup, navHrefs } from './admin-nav';
 
 /**
  * Tawsilty's admin sidebar (contract §11): light grey, logo and ≡ on top, "ابحث عن شاشة…", sections
@@ -18,6 +18,7 @@ export function Sidebar({ nav }: { nav: NavGroup[] }) {
   const [query, setQuery] = useState('');
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const groups = filterNav(nav, query);
+  const current = activeHref(pathname, navHrefs(nav));
   const name = session ? `${session.user.firstName} ${session.user.lastName}`.trim() : '';
 
   const toggle = (label: string) =>
@@ -49,7 +50,7 @@ export function Sidebar({ nav }: { nav: NavGroup[] }) {
       <nav className="flex flex-col gap-1 text-sm">
         {groups.map(({ label, icon: Icon, href, items }) => {
           if (href) {
-            const active = isActive(pathname, href);
+            const active = current === href;
             return (
               <Link
                 key={label}
@@ -77,7 +78,7 @@ export function Sidebar({ nav }: { nav: NavGroup[] }) {
               {open ? (
                 <ul className="ms-5 flex flex-col gap-0.5 border-s border-tw-line ps-3">
                   {items.map((item) => {
-                    const active = isActive(pathname, item.href);
+                    const active = current === item.href;
                     return (
                       <li key={item.href}>
                         <Link

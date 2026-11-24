@@ -26,9 +26,11 @@ export const users = mysqlTable('users', {
   storeId: int('store_id', { unsigned: true }).references(() => stores.id),
   disabledAt: datetime('disabled_at'),
   deletedAt: datetime('deleted_at'),
-  /** Access tokens issued before this moment stop working (password reset, deletion). */
-  credentialsChangedAt: datetime('credentials_changed_at', { fsp: 3 }),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+  /**
+   * Goes up when every session must end (password reset, disable, deletion, a copied refresh
+   * token). Tokens carry the version they were issued under and stop working once it moves on.
+   */
+  sessionVersion: int('session_version', { unsigned: true }).notNull().default(0),  createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
 });
 

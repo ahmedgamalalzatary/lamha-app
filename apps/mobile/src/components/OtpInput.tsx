@@ -1,4 +1,4 @@
-import { OTP } from '@tawsela/shared';
+import { OTP, toLatinDigits } from '@tawsela/shared';
 import { type ComponentRef, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { colors, radius } from '@/core/theme';
@@ -36,7 +36,7 @@ export function OtpInput({ value, onChange, label }: Props) {
       <TextInput
         ref={input}
         value={value}
-        onChangeText={(text) => onChange(text.replace(/\D/g, '').slice(0, OTP.length))}
+        onChangeText={(text) => onChange(toLatinDigits(text).replace(/\D/g, '').slice(0, OTP.length))}
         accessibilityLabel={label}
         keyboardType="number-pad"
         textContentType="oneTimeCode"

@@ -135,9 +135,17 @@ function TileDialog({ tile, onClose }: { tile?: HomeTile; onClose: () => void })
         options={[...VERTICALS.map((v) => ({ value: v as Target, label: verticalLabel(v) })), { value: 'store', label: 'متجر واحد' }]}
         onChange={setTarget}
       />
-      {target === 'store' ? (
+      {target !== 'store' ? null : stores.isError ? (
+        // The stores list failed: say why and offer a retry; the vertical targets still work.
+        <div className="flex items-center justify-between gap-3">
+          <ErrorLine>{errorMessage(stores.error)}</ErrorLine>
+          <Button tone="soft" loading={stores.isFetching} onClick={() => void stores.refetch()}>
+            إعادة المحاولة
+          </Button>
+        </div>
+      ) : (
         <SelectField label="المتجر" value={pickedStore} options={(stores.data ?? []).map((s) => ({ value: String(s.id), label: s.name }))} onChange={setStoreId} />
-      ) : null}
+      )}
       <ImageField label="الصورة" value={image} onChange={setImage} />
       {save.isError ? <ErrorLine>{errorMessage(save.error)}</ErrorLine> : null}
       <DialogActions ready={ready} busy={save.isPending} onSave={submit} onClose={onClose} />

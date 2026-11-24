@@ -51,8 +51,17 @@ const store: TokenStore = {
   },
 };
 
-const refreshLock = <T,>(fn: () => Promise<T>): Promise<T> =>
-  typeof navigator !== 'undefined' && navigator.locks ? (navigator.locks.request('tawsela-refresh', fn) as Promise<T>) : fn();
+/**
+ * Inside the lock the session is read from storage again, not from the copy: another tab may have
+ * renewed it before this tab heard its storage event, and replaying the old token ends every session.
+ */
+const refreshLock = <T,>(fn: () => Promise<T>): Promise<T> => {
+  const fresh = () => {
+    cached = undefined;
+    return fn();
+  };
+  return typeof navigator !== 'undefined' && navigator.locks ? (navigator.locks.request('tawsela-refresh', fresh) as Promise<T>) : fresh();
+};
 
 export const api = createApi({ base: API_URL, fetch: (...a) => fetch(...a), store, refreshLock });
 

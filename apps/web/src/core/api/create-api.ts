@@ -92,8 +92,18 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
       if (!cur) return false;
       if (captured && cur.refreshToken !== captured.refreshToken) return true;
       const res = await send('/auth/refresh', { method: 'POST', body: { refreshToken: cur.refreshToken } }, undefined);
-      if (res.status === 401 || res.status === 403) return store.load()?.refreshToken !== cur.refreshToken;
-      store.save(await read<AuthResponse>(res));
+      if (res.status === 401 || res.status === 403) {
+        const now = store.load();
+        return !!now && now.refreshToken !== cur.refreshToken;
+      }
+      const next = await read<AuthResponse>(res);
+      // Signed out (or into another account) while this renewal was on its way: drop its session.
+      const now = store.load();
+      if (now?.refreshToken !== cur.refreshToken) {
+        void send('/auth/logout', { method: 'POST', body: { refreshToken: next.refreshToken } }, undefined).catch(() => undefined);
+        return !!now;
+      }
+      store.save(next);
       return true;
     }).finally(() => {
       refreshing = undefined;
@@ -101,14 +111,21 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
     return refreshing;
   }
 
+  /**
+   * A call made by one account is retried only for that account: after a sign-out, or a sign-in
+   * as someone else, its 401 is just returned, never resent with the other account's token.
+   */
   async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-    const sentWith = store.load()?.accessToken;
+    const before = store.load();
+    const sentWith = before?.accessToken;
     let res = await send(path, opts, sentWith);
-    if (res.status === 401 && sentWith) {
-      const now = store.load()?.accessToken;
-      if (now && now !== sentWith) res = await send(path, opts, now);
-      else if (await refreshOnce()) res = await send(path, opts, store.load()?.accessToken);
-      else {
+    const sameAccount = () => !!before && store.load()?.user.id === before.user.id;
+    if (res.status === 401 && sentWith && sameAccount()) {
+      const now = store.load()!.accessToken;
+      if (now !== sentWith) res = await send(path, opts, now);
+      else if (await refreshOnce()) {
+        if (sameAccount()) res = await send(path, opts, store.load()!.accessToken);
+      } else if (sameAccount()) {
         store.save(null);
         onSignedOut?.();
       }

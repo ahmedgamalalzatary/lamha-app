@@ -9,6 +9,12 @@ export default async function setup() {
   const url = process.env.DATABASE_URL!;
   if (!/\/tawsela_test(\?|$)/.test(url)) throw new Error('e2e tests must run against the tawsela_test database');
   const conn = await createConnection({ uri: url });
+  // The URL check can be fooled (a #fragment); ask the server which database this really is.
+  const [[current]] = await conn.query<any[]>('SELECT DATABASE() AS db');
+  if (current?.db !== 'tawsela_test') {
+    await conn.end();
+    throw new Error(`e2e tests must run against tawsela_test, not ${String(current?.db)}`);
+  }
   const [rows] = await conn.query<any[]>(
     'SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()',
   );

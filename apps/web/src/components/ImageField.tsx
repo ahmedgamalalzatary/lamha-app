@@ -57,6 +57,8 @@ export function ImageField({ label, value, onChange }: { label: string; value: s
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic"
           aria-label={`رفع صورة: ${label}`}
+          // One upload at a time, and no delete while one is on its way (its answer would undo it).
+          disabled={busy}
           className="sr-only"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -64,7 +66,13 @@ export function ImageField({ label, value, onChange }: { label: string; value: s
           }}
         />
         {value ? (
-          <button type="button" onClick={() => onChange(null)} aria-label={`حذف الصورة: ${label}`} className="grid size-10 place-items-center rounded-full text-tw-danger hover:bg-tw-danger/10">
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            disabled={busy}
+            aria-label={`حذف الصورة: ${label}`}
+            className="grid size-10 place-items-center rounded-full text-tw-danger hover:bg-tw-danger/10 disabled:opacity-50"
+          >
             <Trash2 className="size-4" aria-hidden />
           </button>
         ) : null}

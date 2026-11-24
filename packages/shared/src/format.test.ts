@@ -7,7 +7,19 @@ import {
   formatPhone,
   isEgyptianMobile,
   normalizePhone,
+  toLatinDigits,
 } from './format.js';
+
+describe('toLatinDigits (an Arabic keyboard types ٠-٩ or ۰-۹)', () => {
+  it.each([
+    ['١٢٣٤', '1234'],
+    ['۰۹۵۶', '0956'],
+    ['12٣4', '1234'],
+    ['abc', 'abc'],
+  ])('%s → %s', (input, want) => {
+    expect(toLatinDigits(input)).toBe(want);
+  });
+});
 
 describe('formatMoney (contract §7: "285.00 ج.م")', () => {
   it.each([

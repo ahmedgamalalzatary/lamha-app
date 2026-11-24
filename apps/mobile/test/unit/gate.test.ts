@@ -5,6 +5,8 @@ describe('gate (one app, the account picks the screens: contract §2)', () => {
   it('waits while the stored session is read', () => {
     expect(gate('loading', null, 'customer')).toBe('wait');
     expect(gate('loading', null, 'auth')).toBe('wait');
+    // Offline at launch: the stored session is kept, so nobody is sent to sign-in yet.
+    expect(gate('offline', null, 'customer')).toBe('wait');
   });
 
   it('sends a signed-out visitor to sign-in, and lets them use the sign-in screens', () => {

@@ -15,7 +15,9 @@ async function waitForHealth(api: ChildProcess) {
   const deadline = Date.now() + 30_000;
   while (Date.now() < deadline) {
     if (api.exitCode !== null) throw new Error(`The API stopped (exit ${api.exitCode})`);
-    const ok = await fetch(`${API_URL}/health`).then(
+    // Each try is bounded, so an API that accepts but never answers cannot stall past the deadline.
+    const wait = Math.max(1, Math.min(2_000, deadline - Date.now()));
+    const ok = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(wait) }).then(
       (r) => r.ok,
       () => false,
     );
@@ -33,7 +35,7 @@ export default async function setup() {
   config({ path: path.resolve(__dirname, '../../../../.env.test'), override: true, quiet: true });
   const url = mobileTestDbUrl();
   // An API left from an interrupted run would answer instead of the fresh one.
-  const busy = await fetch(`${API_URL}/health`).then(
+  const busy = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then(
     () => true,
     () => false,
   );

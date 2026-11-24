@@ -12,6 +12,7 @@ describe('errorMessage (the API sends a code, the dashboard shows Arabic: contra
   it('translates the account-management codes', () => {
     expect(errorMessage(new ApiRequestError(409, 'x', 'PHONE_TAKEN'))).toBe('رقم الهاتف مسجل بالفعل');
     expect(errorMessage(new ApiRequestError(400, 'x', 'OWN_ACCOUNT'))).toBe('لا يمكنك تغيير حسابك من هنا، اطلب ذلك من مسؤول آخر');
+    expect(errorMessage(new ApiRequestError(400, 'x', 'LAST_ADMIN'))).toBe('يجب أن يبقى مسؤول واحد مفعّل على الأقل');
   });
 
   it('explains a network failure and the rate limit', () => {

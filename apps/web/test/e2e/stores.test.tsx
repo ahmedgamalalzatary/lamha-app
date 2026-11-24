@@ -128,6 +128,17 @@ describe('تعديل متجر (real API)', () => {
     expect(row).toEqual({ delivery_fee: '22.50', closed_now: 1 });
   });
 
+  it('does not say "saved" for an edit typed while the save was on its way', async () => {
+    const id = await insertStore({ name: 'شاورما الساقية' });
+    renderWith(<StoreFormPage storeId={id} />);
+    const user = userEvent.setup();
+    const name = await screen.findByLabelText('اسم المتجر');
+    await user.click(screen.getByRole('button', { name: 'حفظ' }));
+    await user.type(name, ' 2');
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'حفظ' })).toBeEnabled());
+    expect(screen.queryByText('تم حفظ التغييرات')).not.toBeInTheDocument();
+  });
+
   it("lists the store's partner accounts and resets one's password", async () => {
     const id = await insertStore();
     await linkPartner(await insertUser('partner', '01000000002', 'حسن'), id);

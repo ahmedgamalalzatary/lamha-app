@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
-import type { OtpPurpose } from '@tawsela/shared';
+import { and, desc, eq, isNull, lt, sql } from 'drizzle-orm';
+import { OTP, type OtpPurpose } from '@tawsela/shared';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type OtpRow, otpCodes } from './auth.schema.js';
 
@@ -23,11 +23,21 @@ export class OtpRepository {
     await this.db.insert(otpCodes).values(row);
   }
 
-  async addAttempt(id: number): Promise<void> {
-    await this.db
+  /**
+   * Takes one of the code's tries before the typed code is compared, in one statement, so guesses
+   * sent at the same moment cannot all slip under the limit. False when none is left (or it was used).
+   */
+  async takeAttempt(id: number): Promise<boolean> {
+    const [res] = await this.db
       .update(otpCodes)
       .set({ attempts: sql`${otpCodes.attempts} + 1` })
-      .where(eq(otpCodes.id, id));
+      .where(and(eq(otpCodes.id, id), lt(otpCodes.attempts, OTP.maxAttempts), isNull(otpCodes.consumedAt)));
+    return res.affectedRows === 1;
+  }
+
+  async find(id: number): Promise<OtpRow | undefined> {
+    const [row] = await this.db.select().from(otpCodes).where(eq(otpCodes.id, id));
+    return row;
   }
 
   /** Marks the code used; false when another request used it first. */

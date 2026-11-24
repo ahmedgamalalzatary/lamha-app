@@ -86,6 +86,8 @@ export interface CreatedAccount extends GeneratedPassword {
 /** Machine-readable reasons the API gives with an error, translated by the apps. */
 export type ApiErrorCode =
   | 'OWN_ACCOUNT'
+  /** Disabling this admin would leave no enabled admin. */
+  | 'LAST_ADMIN'
   | 'ACCOUNT_NOT_FOUND'
   /** A store, category, product, cuisine or home tile that does not exist. */
   | 'NOT_FOUND'

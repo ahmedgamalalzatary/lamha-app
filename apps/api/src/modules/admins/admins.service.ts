@@ -44,15 +44,20 @@ export class AdminsService {
   async resetPassword(meId: number, id: number): Promise<GeneratedPassword> {
     await this.other(meId, id);
     const password = generatePassword();
-    await this.users.update(id, { passwordHash: await hashPassword(password), credentialsChangedAt: new Date() });
+    await this.users.endSessions(id, { passwordHash: await hashPassword(password) });
     await this.sessions.revokeAllForUser(id);
     return { password };
   }
 
-  /** A disabled account is signed out at once (the access-token guard re-reads the account). */
+  /**
+   * A disabled account is signed out at once (the access-token guard re-reads the account). The
+   * last enabled admin cannot be disabled, even by two admins disabling each other at once.
+   */
   async setDisabled(meId: number, id: number, disabled: boolean): Promise<StaffAccount> {
     await this.other(meId, id);
-    await this.users.update(id, { disabledAt: disabled ? new Date() : null });
+    if (!(await this.users.setAdminDisabled(id, disabled))) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'LAST_ADMIN', 'At least one admin must stay enabled');
+    }
     if (disabled) await this.sessions.revokeAllForUser(id);
     return toStaffAccount((await this.users.findLiveById(id))!, meId);
   }

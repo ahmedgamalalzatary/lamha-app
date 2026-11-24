@@ -8,6 +8,7 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   DASHBOARD_ROLE: 'لوحة التحكم للإدارة والمطاعم فقط، استخدم التطبيق',
   PHONE_TAKEN: 'رقم الهاتف مسجل بالفعل',
   OWN_ACCOUNT: 'لا يمكنك تغيير حسابك من هنا، اطلب ذلك من مسؤول آخر',
+  LAST_ADMIN: 'يجب أن يبقى مسؤول واحد مفعّل على الأقل',
   ACCOUNT_NOT_FOUND: 'الحساب غير موجود',
   NOT_FOUND: 'العنصر غير موجود، ربما حُذف',
   CATEGORY_NOT_EMPTY: 'احذف منتجات القسم وأقسامه الفرعية أو انقلها أولاً',

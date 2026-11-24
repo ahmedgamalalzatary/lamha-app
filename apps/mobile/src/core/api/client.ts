@@ -49,9 +49,11 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
  * An expired access token is refreshed once and the call retried; if that fails, the app signs out.
  */
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  // A call is retried only for the session that made it, never with another account's token.
+  const gen = session.generation();
   let res = await send(path, options);
-  if (res.status === 401 && options.auth !== false && session.accessToken()) {
-    if (await session.refresh()) res = await send(path, options);
+  if (res.status === 401 && options.auth !== false && session.accessToken() && session.generation() === gen) {
+    if ((await session.refresh()) && session.generation() === gen) res = await send(path, options);
   }
 
   const data = (await res.json().catch(() => undefined)) as (ApiError & { code?: ApiErrorCode }) | undefined;

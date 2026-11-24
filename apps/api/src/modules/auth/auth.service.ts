@@ -22,14 +22,17 @@ export interface AccessPayload {
   typ: 'access';
   sub: number;
   role: string;
-  /** Issue time in ms, compared with credentialsChangedAt. */
-  iatMs: number;
+  /** The account's session version at issue; the guard refuses the token once it moves on. */
+  ver: number;
 }
 interface TicketPayload {
   typ: 'ticket';
   purpose: OtpPurpose;
   phone: string;
   email: string;
+  /** Reset tickets only: the account the code was checked for, and its session version then. */
+  sub?: number;
+  ver?: number;
 }
 
 const TICKET_TTL = '15m';
@@ -73,17 +76,26 @@ export class AuthService {
 
   /** Step 2: the 4 digits. A right code gives a ticket for step 3 (or the new password). */
   async verifyCode(phone: string, purpose: OtpPurpose, code: string): Promise<OtpVerified> {
+    const expired = () => new ApiException(HttpStatus.BAD_REQUEST, 'OTP_EXPIRED', 'The code has expired');
+    const locked = () => new ApiException(HttpStatus.TOO_MANY_REQUESTS, 'OTP_LOCKED', 'Too many wrong codes');
     const row = await this.otps.latest(phone, purpose);
     const result = row ? checkCode(row, codeHash(phone, purpose, code), new Date()) : 'expired';
-    if (result === 'expired' || !row) throw new ApiException(HttpStatus.BAD_REQUEST, 'OTP_EXPIRED', 'The code has expired');
-    if (result === 'locked') throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, 'OTP_LOCKED', 'Too many wrong codes');
+    if (result === 'expired' || !row) throw expired();
+    if (result === 'locked') throw locked();
+    // The try is taken before the answer counts, so parallel guesses share the 5 tries.
+    if (!(await this.otps.takeAttempt(row.id))) throw (await this.otps.find(row.id))?.consumedAt ? expired() : locked();
     if (result === 'wrong') {
-      await this.otps.addAttempt(row.id);
-      const triesLeft = Math.max(0, OTP.maxAttempts - row.attempts - 1);
+      const triesLeft = Math.max(0, OTP.maxAttempts - ((await this.otps.find(row.id))?.attempts ?? OTP.maxAttempts));
       throw new ApiException(HttpStatus.BAD_REQUEST, 'OTP_WRONG', 'Wrong code', { triesLeft });
     }
-    if (!(await this.otps.consume(row.id))) throw new ApiException(HttpStatus.BAD_REQUEST, 'OTP_EXPIRED', 'The code has expired');
+    if (!(await this.otps.consume(row.id))) throw expired();
     const payload: TicketPayload = { typ: 'ticket', purpose, phone, email: row.email };
+    if (purpose === 'reset') {
+      const user = await this.users.findLiveByPhone(phone);
+      if (!user) throw expired();
+      payload.sub = user.id;
+      payload.ver = user.sessionVersion;
+    }
     return { ticket: await this.jwt.signAsync(payload, { expiresIn: TICKET_TTL }) };
   }
 
@@ -115,20 +127,21 @@ export class AuthService {
       inviteCode: await this.profiles.uniqueInviteCode(),
       invitedById,
     });
-    return this.issue(id);
+    return this.issue(id, 0);
   }
 
-  /** Sets the new password after the emailed code; every older session ends. */
+  /**
+   * Sets the new password after the emailed code; every older session ends. The ticket is bound
+   * to the account and its session version, so it works once and only for that account.
+   */
   async resetPassword(body: ResetPasswordDto): Promise<AuthResponse> {
     const ticket = await this.readTicket(body.ticket, 'reset');
-    const user = await this.users.findLiveByPhone(ticket.phone);
-    if (!user || user.role !== 'customer') throw this.badTicket();
-    const changedAt = new Date();
-    await this.users.update(user.id, { passwordHash: await hashPassword(body.password), credentialsChangedAt: changedAt });
+    if (ticket.sub === undefined || ticket.ver === undefined) throw this.badTicket();
+    const user = await this.users.findLiveById(ticket.sub);
+    if (!user || user.role !== 'customer' || user.phone !== ticket.phone) throw this.badTicket();
+    if (!(await this.users.resetPasswordAt(user.id, ticket.ver, await hashPassword(body.password)))) throw this.badTicket();
     await this.sessions.revokeAllForUser(user.id);
-    // The new access token must be issued after the change, or the guard would refuse it too.
-    while (Date.now() <= changedAt.getTime()) await new Promise((r) => setTimeout(r, 1));
-    return this.issue(user.id);
+    return this.issue(user.id, ticket.ver + 1);
   }
 
   /** Every role signs in with phone + password (contract §2). */
@@ -139,20 +152,24 @@ export class AuthService {
       throw new ApiException(HttpStatus.UNAUTHORIZED, 'BAD_CREDENTIALS', 'Wrong phone or password');
     }
     if (user.disabledAt) throw new ApiException(HttpStatus.FORBIDDEN, 'ACCOUNT_DISABLED', 'This account is disabled');
-    return this.issue(user.id);
+    // Issued only if the password checked here is still the account's (no reset landed meanwhile).
+    return this.issue(user.id, user.sessionVersion);
   }
 
-  /** Rotates the refresh token. A token used twice means it was copied: every session ends. */
+  /**
+   * Rotates the refresh token. A token used twice means it was copied: every session ends, access
+   * tokens too. The new token keeps the old one's session version, so a rotation racing a reset,
+   * a disable or that alarm is refused.
+   */
   async refresh(refreshToken: string): Promise<AuthResponse> {
     const row = await this.sessions.findByHash(sha256(refreshToken));
     if (!row || row.expiresAt.getTime() < Date.now()) throw this.sessionExpired();
     if (row.revokedAt || !(await this.sessions.revoke(row.id))) {
+      await this.users.endSessions(row.userId);
       await this.sessions.revokeAllForUser(row.userId);
       throw this.sessionExpired();
     }
-    const user = await this.users.findLiveById(row.userId);
-    if (!user || user.disabledAt) throw this.sessionExpired();
-    return this.issue(row.userId);
+    return this.issue(row.userId, row.sessionVersion);
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -193,15 +210,17 @@ export class AuthService {
     return new ApiException(HttpStatus.UNAUTHORIZED, 'SESSION_EXPIRED', 'Session expired, please sign in again');
   }
 
-  private async issue(userId: number): Promise<AuthResponse> {
+  /** A session at the account's session version `version`; refused if the account moved past it. */
+  private async issue(userId: number, version: number): Promise<AuthResponse> {
     const row = await this.users.findLiveById(userId);
     if (!row) throw this.sessionExpired();
-    const payload: AccessPayload = { typ: 'access', sub: row.id, role: row.role, iatMs: Date.now() };
+    const refreshToken = randomBytes(32).toString('base64url');
+    const expiresAt = new Date(Date.now() + AUTH.refreshTokenDays * 86_400_000);
+    if (!(await this.sessions.create(row.id, version, sha256(refreshToken), expiresAt))) throw this.sessionExpired();
+
+    const payload: AccessPayload = { typ: 'access', sub: row.id, role: row.role, ver: version };
     const accessToken = await this.jwt.signAsync(payload, { expiresIn: AUTH.accessTokenTtl });
     const { exp, iat } = this.jwt.decode<{ exp: number; iat: number }>(accessToken);
-
-    const refreshToken = randomBytes(32).toString('base64url');
-    await this.sessions.create(row.id, sha256(refreshToken), new Date(Date.now() + AUTH.refreshTokenDays * 86_400_000));
     return { user: toMe(row), accessToken, refreshToken, expiresIn: exp - iat };
   }
 }

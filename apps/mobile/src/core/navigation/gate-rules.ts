@@ -9,7 +9,7 @@ export type Area = 'auth' | 'account' | Role;
  * sign-in; after it, the account's role picks the tabs). 'wait' while the session is being read.
  */
 export function gate(status: SessionStatus, user: Me | null, area: Area): string | null | 'wait' {
-  if (status === 'loading') return 'wait';
+  if (status === 'loading' || status === 'offline') return 'wait';
   if (status === 'signedOut' || !user) return area === 'auth' ? null : '/sign-in';
   const home = `/${user.role}`;
   if (area === 'auth') return home;

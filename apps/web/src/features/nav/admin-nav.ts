@@ -87,3 +87,11 @@ export function isActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/';
   return pathname === href || pathname.startsWith(`${href}/`);
 }
+
+/** Every page the sidebar links to. */
+export const navHrefs = (nav: NavGroup[]): string[] => nav.flatMap((g) => [...(g.href ? [g.href] : []), ...g.items.map((i) => i.href)]);
+
+/** The one page to mark: the most specific match, so /products/inactive does not also mark /products. */
+export function activeHref(pathname: string, hrefs: string[]): string | undefined {
+  return hrefs.filter((href) => isActive(pathname, href)).sort((a, b) => b.length - a.length)[0];
+}

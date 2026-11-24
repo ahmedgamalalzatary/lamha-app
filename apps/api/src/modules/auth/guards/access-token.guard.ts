@@ -37,7 +37,7 @@ export class AccessTokenGuard implements CanActivate {
     if (payload?.typ !== 'access') return undefined;
     const row = await this.users.findLiveById(payload.sub);
     if (!row || row.disabledAt) return undefined;
-    if (row.credentialsChangedAt && payload.iatMs < row.credentialsChangedAt.getTime()) return undefined;
+    if (payload.ver !== row.sessionVersion) return undefined;
     return { id: row.id, role: row.role };
   }
 }

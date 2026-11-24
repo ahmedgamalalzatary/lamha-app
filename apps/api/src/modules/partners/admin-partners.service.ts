@@ -51,7 +51,7 @@ export class AdminPartnersService {
   async resetPassword(id: number): Promise<GeneratedPassword> {
     await this.partnerOrThrow(id);
     const password = generatePassword();
-    await this.users.update(id, { passwordHash: await hashPassword(password), credentialsChangedAt: new Date() });
+    await this.users.endSessions(id, { passwordHash: await hashPassword(password) });
     await this.sessions.revokeAllForUser(id);
     return { password };
   }
@@ -59,8 +59,12 @@ export class AdminPartnersService {
   /** A disabled account is signed out at once. */
   async setDisabled(meId: number, id: number, disabled: boolean): Promise<PartnerAccount> {
     await this.partnerOrThrow(id);
-    await this.users.update(id, { disabledAt: disabled ? new Date() : null });
-    if (disabled) await this.sessions.revokeAllForUser(id);
+    if (disabled) {
+      await this.users.endSessions(id, { disabledAt: new Date() });
+      await this.sessions.revokeAllForUser(id);
+    } else {
+      await this.users.update(id, { disabledAt: null });
+    }
     return toPartnerAccount((await this.partners.find(id))!, meId);
   }
 

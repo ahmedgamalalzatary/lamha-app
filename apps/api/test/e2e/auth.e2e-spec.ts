@@ -101,6 +101,18 @@ describe('Accounts (e2e, contract §8.1)', () => {
       expect(locked.body.code).toBe('OTP_LOCKED');
     });
 
+    it('counts guesses sent at the same moment too: 10 at once use up the 5 tries', async () => {
+      await http().post('/v1/auth/signup/code').send({ phone: '01012345678', email: 'a@b.co' }).expect(201);
+      const right = lastCodeTo('a@b.co');
+      const wrong = right === '0000' ? '1111' : '0000';
+      const guesses = await Promise.all(
+        Array.from({ length: 10 }, () => http().post('/v1/auth/code/verify').send({ phone: '01012345678', purpose: 'signup', code: wrong })),
+      );
+      expect(guesses.filter((r) => r.body.code === 'OTP_WRONG')).toHaveLength(5);
+      const locked = await http().post('/v1/auth/code/verify').send({ phone: '01012345678', purpose: 'signup', code: right }).expect(429);
+      expect(locked.body.code).toBe('OTP_LOCKED');
+    });
+
     it('refuses an expired code', async () => {
       await http().post('/v1/auth/signup/code').send({ phone: '01012345678', email: 'a@b.co' }).expect(201);
       // The app stores UTC (core/db); this connection may run in Cairo time.
@@ -184,8 +196,9 @@ describe('Accounts (e2e, contract §8.1)', () => {
 
       const reused = await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(401);
       expect(reused.body.code).toBe('SESSION_EXPIRED');
-      // The stolen copy took the rotated one down too.
+      // The stolen copy took the rotated one down too, and its access token.
       await http().post('/v1/auth/refresh').send({ refreshToken: next.body.refreshToken }).expect(401);
+      await http().get('/v1/me').set('Authorization', `Bearer ${next.body.accessToken}`).expect(401);
     });
 
     it('signs out: the refresh token stops working', async () => {
@@ -220,6 +233,35 @@ describe('Accounts (e2e, contract §8.1)', () => {
       await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(401);
       await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(401);
       await http().post('/v1/auth/login').send({ phone: '01554459196', password: 'newpass99' }).expect(201);
+    });
+
+    it('uses a reset ticket once, and a session from before the reset never comes back', async () => {
+      const auth = await signUp('01554459196', 'ahmed@gmail.com');
+      await http().post('/v1/auth/password/code').send({ phone: '01554459196' }).expect(201);
+      const { body } = await http()
+        .post('/v1/auth/code/verify')
+        .send({ phone: '01554459196', purpose: 'reset', code: lastCodeTo('ahmed@gmail.com') });
+      await http().post('/v1/auth/password/reset').send({ ticket: body.ticket, password: 'newpass99' }).expect(201);
+      const again = await http().post('/v1/auth/password/reset').send({ ticket: body.ticket, password: 'other999' }).expect(401);
+      expect(again.body.code).toBe('TICKET_INVALID');
+
+      // Even if the old token had escaped the sign-out (a refresh racing the reset), it is from before it.
+      await sql('UPDATE refresh_tokens SET revoked_at = NULL');
+      await http().post('/v1/auth/refresh').send({ refreshToken: auth.refreshToken }).expect(401);
+      await http().get('/v1/me').set('Authorization', `Bearer ${auth.accessToken}`).expect(401);
+    });
+
+    it('does not let a ticket reset a new account that took the number of a deleted one', async () => {
+      const auth = await signUp('01554459196', 'ahmed@gmail.com');
+      await http().post('/v1/auth/password/code').send({ phone: '01554459196' }).expect(201);
+      const { body } = await http()
+        .post('/v1/auth/code/verify')
+        .send({ phone: '01554459196', purpose: 'reset', code: lastCodeTo('ahmed@gmail.com') });
+      await http().delete('/v1/me').set('Authorization', `Bearer ${auth.accessToken}`).send({ password: PASSWORD }).expect(204);
+      await sql('DELETE FROM otp_codes');
+      await signUp('01554459196', 'new@gmail.com');
+      await http().post('/v1/auth/password/reset').send({ ticket: body.ticket, password: 'newpass99' }).expect(401);
+      await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(201);
     });
 
     it('tells partners and drivers to ask the admin', async () => {

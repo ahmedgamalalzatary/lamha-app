@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ADMIN_NAV, filterNav, isActive, PARTNER_NAV, pageTitle } from '@/features/nav/admin-nav';
+import { ADMIN_NAV, activeHref, filterNav, isActive, navHrefs, PARTNER_NAV, pageTitle } from '@/features/nav/admin-nav';
 
 const labels = (groups: ReturnType<typeof filterNav>) =>
   groups.map((g) => [g.label, ...g.items.map((i) => i.label)]);
@@ -90,5 +90,20 @@ describe('isActive', () => {
   it('marks home only on home', () => {
     expect(isActive('/', '/')).toBe(true);
     expect(isActive('/orders', '/')).toBe(false);
+  });
+});
+
+describe('activeHref', () => {
+  it('marks only the most specific page: /products/inactive is not also /products', () => {
+    const hrefs = ['/products', '/products/inactive', '/orders'];
+    expect(activeHref('/products/inactive', hrefs)).toBe('/products/inactive');
+    expect(activeHref('/products/12', hrefs)).toBe('/products');
+    expect(activeHref('/settings', hrefs)).toBeUndefined();
+  });
+
+  it('reads every page of the sidebar, in sections or alone', () => {
+    const all = navHrefs(ADMIN_NAV);
+    expect(all).toContain('/');
+    expect(all).toContain('/products/inactive');
   });
 });
