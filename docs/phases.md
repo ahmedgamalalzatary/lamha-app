@@ -18,19 +18,19 @@ The order in which the real product is built. Each phase points at the contract 
 
 **Order:** phases run in order. A phase blocked by an open decision (contract §15.1) waits for it; its "Decide first" column lists them.
 
-**Status values:** ⬜ not started, 🟨 in progress, ✅ done, ⛔ excluded for now (not built until the owner says otherwise).
+**Status values:** ⬜ not started, 🟨 in progress, 🔍 in-verify (built and full green, but its mobile screens are not yet checked by hand on a phone, rule 7), ✅ done (also checked on a phone), ⛔ excluded for now (not built until the owner says otherwise). A phase with mobile screens stays 🔍 until the owner checks it in the app.
 
 ## Overview
 
 | # | Phase | Status | Decide first (§15.1) |
 |---|---|---|---|
-| 0 | Foundation | ✅ | none |
-| 1 | Accounts: phone, email code and password | ✅ | none (#1 decided: email) |
+| 0 | Foundation | 🔍 in-verify | none |
+| 1 | Accounts: phone, email code and password | 🔍 in-verify | none (#1 decided: email) |
 | 2 | Production server and deploys (moved to just before the first real mobile build) | ⬜ | owner provides the VPS (#6) |
 | 3 | Dashboard shell and sign-in (admin and partner areas) | ✅ | |
-| 4 | Catalog: verticals, stores, categories, products | ✅ | |
-| 5 | Customer home | ✅ | |
-| 6 | Store lists, filters and search | ✅ | |
+| 4 | Catalog: verticals, stores, categories, products | 🔍 in-verify | |
+| 5 | Customer home | 🔍 in-verify | |
+| 6 | Store lists, filters and search | 🔍 in-verify | |
 | 7 | Store page and product sheet | ⬜ | |
 | 8 | Addresses, zones and the map picker | ⬜ | |
 | 9 | Cart | ⬜ | |
