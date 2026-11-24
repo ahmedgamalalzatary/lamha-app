@@ -25,11 +25,20 @@ jobs:
       - name: Check the release settings
         run: |
           test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable to the production API"; exit 1; }
-          case "$EXPO_PUBLIC_API_URL" in https://*) ;; *) echo "::error::A store build needs an https API URL"; exit 1 ;; esac
+          case "$EXPO_PUBLIC_API_URL" in https://*/v1) ;; *) echo "::error::A store build needs the production API: https://<host>/v1"; exit 1 ;; esac
+          case "$EXPO_PUBLIC_API_URL" in *localhost*|*127.0.0.1*|*10.0.2.2*|*192.168.*) echo "::error::A store build must not point at a local address"; exit 1 ;; esac
 
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # The package ID can never change once on Google Play (contract §15.1 #8).
+      - name: Check the app identity
+        run: |
+          if grep -q "com.placeholder" apps/mobile/app.config.ts; then
+            echo "::error::Set the real app ID in apps/mobile/app.config.ts (IDENTITY.id) before a store build"
+            exit 1
+          fi
 
       - name: Set the build number
         run: echo "APP_BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"

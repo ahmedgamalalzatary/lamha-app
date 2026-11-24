@@ -25,6 +25,11 @@ import { zones } from '../../modules/addresses/addresses.schema.js';
 
 config({ path: '../../.env', quiet: true });
 
+// Try-out accounts share one known password: never on the live server (review F61).
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('The seed makes try-out accounts with a shared password; it does not run in production');
+}
+
 const url = process.env.DATABASE_URL;
 const password = process.env.SEED_PASSWORD;
 if (!url || !password) throw new Error('DATABASE_URL and SEED_PASSWORD must be set in the root .env');

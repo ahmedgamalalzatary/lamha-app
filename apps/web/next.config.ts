@@ -1,4 +1,10 @@
+import path from "node:path";
+import { config } from "dotenv";
 import type { NextConfig } from "next";
+
+// The one .env lives at the repo root (contract §5); Next only reads its own folder. Values already
+// set (CI, the shell) win. Read before Next builds, so NEXT_PUBLIC_API_URL reaches the browser code.
+config({ path: path.resolve(process.cwd(), "../../.env"), quiet: true });
 
 const nextConfig: NextConfig = {
   /* config options here */
