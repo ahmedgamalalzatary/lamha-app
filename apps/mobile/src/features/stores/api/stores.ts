@@ -1,5 +1,5 @@
 import type { CatalogStore, Cuisine, SearchResult, SearchScope, SearchSuggestion, StoreFilter, Vertical } from '@tawsela/shared';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/core/api/client';
 import { useDeliveryScope } from '@/features/addresses/chosen-address';
 
@@ -18,7 +18,8 @@ const qs = (params: Record<string, string | number | boolean | undefined>) =>
 
 /**
  * A store list (contract §8.3): only the stores of the chosen address's zone, "الأقرب إليك" measured
- * from it (§8.9). The old list stays up while a new filter loads.
+ * from it (§8.9). The old list stays up while a new filter loads, never while another address's
+ * loads: it lists another zone's stores (review F78).
  */
 export function useStores(query: StoresQuery) {
   const { ready, addressId } = useDeliveryScope();
@@ -26,7 +27,7 @@ export function useStores(query: StoresQuery) {
     queryKey: ['stores', query, addressId],
     queryFn: () => api<CatalogStore[]>(`/catalog/stores?${qs({ ...query, addressId })}`),
     enabled: ready,
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === addressId ? previous : undefined),
   });
 }
 

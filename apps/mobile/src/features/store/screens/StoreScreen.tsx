@@ -9,6 +9,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
+import { toast } from '@/components/Toast';
 import { errorMessage } from '@/core/api/error-message';
 import { mediaUrl } from '@/core/api/client';
 import { useT } from '@/core/i18n';
@@ -38,7 +39,10 @@ const BOTTOM_ROOM = 140;
 export function StoreScreen() {
   const t = useT();
   const insets = useSafeAreaInsets();
-  const storeId = Number(useLocalSearchParams<{ id: string }>().id);
+  const params = useLocalSearchParams<{ id: string; product?: string }>();
+  const storeId = Number(params.id);
+  const linkedId = params.product ? Number(params.product) : undefined;
+  const [linkOpen, setLinkOpen] = useState(true);
   const page = useStorePage(storeId);
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
@@ -82,7 +86,15 @@ export function StoreScreen() {
   const favorite = {
     on: isFavorite,
     busy: toggle.isPending || favorites.isPending,
-    onPress: () => toggle.mutate({ storeId, on: !isFavorite }),
+    // A failed heart says so instead of looking like an ignored tap (review F44).
+    onPress: () => toggle.mutate({ storeId, on: !isFavorite }, { onError: (e) => toast.show(errorMessage(e), 'error') }),
+  };
+  // A search result opens the store on its product (review F81) until that sheet is closed.
+  const linked = linkOpen && linkedId ? menu.find((p) => p.id === linkedId) : undefined;
+  const shown = sheet ?? linked ?? null;
+  const closeSheet = () => {
+    setLinkOpen(false);
+    setSheet(null);
   };
 
   return (
@@ -109,7 +121,7 @@ export function StoreScreen() {
         </>
       )}
       <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
-      <ProductSheet product={sheet} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
+      <ProductSheet product={shown} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
     </View>
   );
 }
@@ -132,7 +144,6 @@ function MenuList({
   onScrollY: (y: number) => void;
   renderTopBar: (tabs: ReactNode) => ReactNode;
 }) {
-  const t = useT();
   const insets = useSafeAreaInsets();
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const sections = store.categories.filter((c) => c.products.length > 0);

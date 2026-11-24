@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
+import { Button } from '@/components/Button';
+import { Skeleton } from '@/components/Skeleton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PressableScale } from '@/components/PressableScale';
 import { toast } from '@/components/Toast';
@@ -45,10 +47,18 @@ export function AddressesSheet({ visible, onClose }: { visible: boolean; onClose
           {t('address.saved')}
         </AppText>
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-          {addresses.data?.length === 0 ? (
+          {addresses.isError ? (
+            // [Open] Not captured: the failure and its retry (review F24).
+            <View style={styles.failed}>
+              <AppText color={colors.danger}>{t('address.loadFailed')}</AppText>
+              <Button label={t('common.retry')} variant="soft" onPress={() => void addresses.refetch()} />
+            </View>
+          ) : addresses.isPending ? (
+            [0, 1].map((i) => <Skeleton key={i} style={styles.skeleton} />)
+          ) : addresses.data.length === 0 ? (
             <AppText color={colors.ink2}>{t('address.none')}</AppText>
           ) : (
-            addresses.data?.map((a, i) => {
+            addresses.data.map((a, i) => {
               const on = a.id === chosen?.id;
               return (
                 <View key={a.id} style={[styles.row, i > 0 && styles.divider]}>
@@ -132,6 +142,8 @@ const styles = StyleSheet.create({
   body: { gap: spacing.lg, minHeight: 560 },
   close: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
   list: { flexGrow: 1 },
+  failed: { gap: spacing.md, alignItems: 'flex-start' },
+  skeleton: { height: 72, borderRadius: radius.md },
   listContent: { gap: spacing.md },
   row: { gap: spacing.sm, paddingVertical: spacing.md },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },

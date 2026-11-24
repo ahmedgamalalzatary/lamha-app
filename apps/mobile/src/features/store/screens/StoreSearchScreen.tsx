@@ -1,3 +1,4 @@
+import { SEARCH_MAX_LENGTH } from '@tawsela/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Search } from 'lucide-react-native';
 import { useState } from 'react';
@@ -51,6 +52,7 @@ export function StoreSearchScreen() {
             onChangeText={setQ}
             accessibilityLabel={t('store.search')}
             placeholder={store ? t('store.searchIn', { name: store.name }) : ''}
+            maxLength={SEARCH_MAX_LENGTH}
             placeholderTextColor={colors.ink}
             returnKeyType="search"
             autoFocus

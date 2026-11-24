@@ -1,7 +1,8 @@
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
 import { Text } from 'react-native';
+import { SEARCH_MAX_LENGTH } from '@tawsela/shared';
 import { session } from '@/core/auth/session';
 import { SearchScreen } from '@/features/search/screens/SearchScreen';
 import { insertProduct, insertStore } from '../utils/catalog';
@@ -17,10 +18,14 @@ function Root() {
   );
 }
 
-const Opened = () => <Text>opened</Text>;
+function Opened() {
+  const { product } = useLocalSearchParams<{ product?: string }>();
+  return <Text>{product ? `opened product ${product}` : 'opened'}</Text>;
+}
 const ROUTES = { _layout: Root, search: SearchScreen, 'store/[id]': Opened };
 
 let crinkle: number;
+let pizza: number;
 
 beforeEach(async () => {
   client = testQueryClient();
@@ -28,7 +33,7 @@ beforeEach(async () => {
   await resetDb();
   await insertUser('customer', '01554459196');
   crinkle = await insertStore('كرينكل - CRINKLE');
-  await insertProduct(crinkle, 'مايو بيتزا فرايز', 110);
+  pizza = await insertProduct(crinkle, 'مايو بيتزا فرايز', 110);
   await insertProduct(await insertStore('ماركت الخير', 'market'), 'صوص بيتزا', 30);
   await session.signIn(await signInAs('01554459196'));
 });
@@ -67,6 +72,15 @@ describe('search (contract §8.13; real API)', () => {
     await fireEvent.press(screen.getByRole('tab', { name: 'مطاعم' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'كرينكل - CRINKLE' }));
     await waitFor(() => expect(screen).toHavePathname(`/store/${crinkle}`));
+  });
+
+  it('a product card opens its store on that product, and the box takes no more than the API allows (review F81, F42)', async () => {
+    await renderApp(ROUTES, { initialUrl: '/search' });
+    expect(screen.getByLabelText('بحث').props.maxLength).toBe(SEARCH_MAX_LENGTH);
+    await fireEvent.changeText(screen.getByLabelText('بحث'), 'بيتزا');
+    await fireEvent.press(await screen.findByRole('button', { name: 'ابحث عن «بيتزا»' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'مايو بيتزا فرايز' }));
+    expect(await screen.findByText(`opened product ${pizza}`)).toBeTruthy();
   });
 
   it('says so when nothing matches', async () => {

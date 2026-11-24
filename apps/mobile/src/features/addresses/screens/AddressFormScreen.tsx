@@ -2,7 +2,7 @@ import { ADDRESS_TYPES, type AddressError, type AddressType, addressErrors, isEg
 import { router, useLocalSearchParams } from 'expo-router';
 import { BadgeCheck, Briefcase, Building2, CircleCheck, CircleX, House, type LucideIcon, MapPin } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
@@ -10,7 +10,7 @@ import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
 import { PressableScale } from '@/components/PressableScale';
 import { TextField } from '@/components/TextField';
-import { useSession } from '@/core/auth/session';
+import { session, useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { type TranslationKey, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
@@ -30,10 +30,34 @@ const TYPE_ICONS: Record<AddressType, LucideIcon> = { apartment: Building2, offi
 export function AddressFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editId = id === undefined || id === 'new' ? undefined : Number(id);
+  const t = useT();
+  const insets = useSafeAreaInsets();
   const addresses = useAddresses();
-  // Editing fills the fields from the saved address, so wait for it.
-  if (editId !== undefined && !addresses.data) return <View style={styles.screen} />;
-  return <AddressForm editId={editId} />;
+  if (editId === undefined) return <AddressForm editId={editId} />;
+  // Editing fills the fields from the saved address: wait for it, and say so when it fails or is gone (review F24).
+  if (addresses.data?.some((a) => a.id === editId)) return <AddressForm editId={editId} />;
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top + spacing.sm }]}>
+      <View style={styles.header}>
+        <BackButton />
+        <AppText weight="bold" size={fontSizes.sectionTitle + 1}>
+          {t('address.editTitle')}
+        </AppText>
+      </View>
+      <View style={styles.content}>
+        {addresses.isError ? (
+          <>
+            <AppText color={colors.danger}>{t('address.loadFailed')}</AppText>
+            <Button label={t('common.retry')} variant="soft" onPress={() => void addresses.refetch()} />
+          </>
+        ) : addresses.isPending ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <AppText color={colors.ink2}>{t('address.notFound')}</AppText>
+        )}
+      </View>
+    </View>
+  );
 }
 
 function AddressForm({ editId }: { editId: number | undefined }) {
@@ -42,6 +66,7 @@ function AddressForm({ editId }: { editId: number | undefined }) {
   const addresses = useAddresses();
   const editing = addresses.data?.find((a) => a.id === editId);
   const accountPhone = useSession((s) => s.user?.phone ?? '');
+  const userId = useSession((s) => s.user?.id);
   const actions = useAddressActions();
 
   const [type, setType] = useState<AddressType>(editing?.type ?? 'apartment');
@@ -65,6 +90,7 @@ function AddressForm({ editId }: { editId: number | undefined }) {
   useEffect(() => () => usePickedSpot.setState({ spot: null }), []);
   const spot = usePickedSpot((s) => s.spot);
   const zone = useZoneCheck(spot && { lat: spot.lat, lng: spot.lng });
+  // Unknown while the check is on its way or failed: the save waits for a yes (review F27).
   const deliverable = zone.data ? zone.data.zone !== null : undefined;
 
   const firstAddress = editId === undefined && addresses.data?.length === 0;
@@ -74,7 +100,9 @@ function AddressForm({ editId }: { editId: number | undefined }) {
     const input = { landmark, apartment, phone: normalizePhone(phone) };
     const found = addressErrors(input);
     setErrors(found);
-    if (Object.keys(found).length || !spot) return;
+    if (Object.keys(found).length || !spot || userId === undefined) return;
+    // The account and session that made the save: a late answer acts for no one else (review F79).
+    const gen = session.generation();
     const saved = await actions.save({
       id: editId,
       type,
@@ -86,7 +114,8 @@ function AddressForm({ editId }: { editId: number | undefined }) {
       lng: spot.lng,
       isDefault,
     });
-    if (editId === undefined) chooseAddress(saved.id);
+    if (gen !== session.generation()) return;
+    if (editId === undefined) chooseAddress(userId, saved.id);
     router.back();
   });
 
@@ -125,7 +154,24 @@ function AddressForm({ editId }: { editId: number | undefined }) {
             <AppText color={colors.ink2} size={fontSizes.body} numberOfLines={1}>
               {spot?.label ?? ''}
             </AppText>
-            {deliverable === undefined ? null : (
+            {zone.isError ? (
+              // [Open] Not captured: the check failed (review F27).
+              <View style={styles.zoneRow}>
+                <CircleX size={16} color={colors.danger} />
+                <AppText weight="semibold" size={fontSizes.body} color={colors.danger}>
+                  {t('address.checkFailed')}
+                </AppText>
+                <PressableScale accessibilityRole="button" accessibilityLabel={t('common.retry')} onPress={() => void zone.refetch()} hitSlop={8}>
+                  <AppText weight="semibold" color={colors.primary}>
+                    {t('common.retry')}
+                  </AppText>
+                </PressableScale>
+              </View>
+            ) : spot && deliverable === undefined ? (
+              <AppText color={colors.ink2} size={fontSizes.body}>
+                {t('address.checking')}
+              </AppText>
+            ) : deliverable === undefined ? null : (
               <View style={styles.zoneRow}>
                 {deliverable ? <CircleCheck size={16} color={colors.success} /> : <CircleX size={16} color={colors.danger} />}
                 <AppText weight="semibold" size={fontSizes.body} color={deliverable ? colors.success : colors.danger}>
@@ -215,7 +261,7 @@ function AddressForm({ editId }: { editId: number | undefined }) {
           />
         </View>
 
-        <Button label={t('address.save')} loading={submit.busy} disabled={!spot || deliverable === false} onPress={() => submit.run()} />
+        <Button label={t('address.save')} loading={submit.busy} disabled={!spot || deliverable !== true} onPress={() => submit.run()} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

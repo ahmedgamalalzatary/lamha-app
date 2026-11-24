@@ -10,6 +10,7 @@ import { AddressFormScreen } from '@/features/addresses/screens/AddressFormScree
 import { MapPickerScreen } from '@/features/addresses/screens/MapPickerScreen';
 import { HomeScreen } from '@/features/home/screens/HomeScreen';
 import { StoresScreen } from '@/features/stores/screens/StoresScreen';
+import { shortPlusCode } from '@tawsela/shared';
 import { insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { renderApp, testQueryClient } from '../utils/render';
@@ -23,9 +24,11 @@ jest.mock('react-native-maps', () => {
   const { forwardRef, useImperativeHandle } = jest.requireActual<typeof import('react')>('react');
   const { Pressable, Text, View } = jest.requireActual<typeof import('react-native')>('react-native');
   const MapView = forwardRef(
-    ({ onRegionChangeComplete, children }: { onRegionChangeComplete?: (r: MockRegion) => void; children?: MockNode }, ref) => {
+    ({ onRegionChangeComplete, children }: { onRegionChangeComplete?: (r: MockRegion, details?: { isGesture: boolean }) => void; children?: MockNode }, ref) => {
       useImperativeHandle(ref, () => ({ animateToRegion: (r: MockRegion) => onRegionChangeComplete?.(r) }));
-      const go = (latitude: number, longitude: number) => onRegionChangeComplete?.({ latitude, longitude, latitudeDelta: 0.002, longitudeDelta: 0.002 });
+      // A finger on the map: the real map reports it as a gesture.
+      const go = (latitude: number, longitude: number) =>
+        onRegionChangeComplete?.({ latitude, longitude, latitudeDelta: 0.002, longitudeDelta: 0.002 }, { isGesture: true });
       // The form's small map is not moved by hand.
       if (!onRegionChangeComplete) return <View>{children}</View>;
       return (
@@ -187,6 +190,78 @@ describe('addresses (contract §8.9; real API)', () => {
     expect(await screen.findByText('التوصيل متاح لهذا الموقع')).toBeTruthy();
     await press('حفظ العنوان');
     await waitFor(async () => expect(await sql<{ floor: string }[]>('SELECT floor FROM addresses WHERE id = ?', [home])).toEqual([{ floor: '3' }]));
+  });
+
+  it('says so when the saved addresses cannot load, instead of listing every store or opening the map (review F78, F24)', async () => {
+    await insertAddress('علامه', true);
+    const near = await insertStore('كشري الفيوم');
+    await insertStore('كشري الجيزة');
+    await sql('UPDATE stores SET zone_id = ? WHERE id = ?', [zoneId, near]);
+    await sql('RENAME TABLE addresses TO addresses_away');
+    try {
+      await renderApp(ROUTES, { initialUrl: '/stores/restaurant' });
+      expect(await screen.findByText('تعذر تحميل العناوين')).toBeTruthy();
+      expect(screen.queryByText('كشري الجيزة')).toBeNull();
+      // The header opens the sheet, which says so too, never the map.
+      await fireEvent.press(screen.getByRole('button', { name: 'التوصيل إلى حدد موقعك' }));
+      const sheet = await screen.findByTestId('addresses-sheet');
+      expect(within(sheet).getByText('تعذر تحميل العناوين')).toBeTruthy();
+      expect(screen.queryByText('تأكيد الموقع')).toBeNull();
+    } finally {
+      await sql('RENAME TABLE addresses_away TO addresses');
+    }
+    await fireEvent.press(within(screen.getByTestId('addresses-sheet')).getByRole('button', { name: 'إعادة المحاولة' }));
+    expect(await screen.findByText('كشري الفيوم')).toBeTruthy();
+    expect(screen.queryByText('كشري الجيزة')).toBeNull();
+  });
+
+  it('an address that no longer exists says so on its edit screen (review F24)', async () => {
+    await renderApp(ROUTES, { initialUrl: '/address/999' });
+    expect(await screen.findByText('العنوان غير موجود')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'حفظ العنوان' })).toBeNull();
+  });
+
+  it('keeps the spot the customer moved to when the location fix comes late, and the code always matches the pin (review F25, F80)', async () => {
+    mockPermission.granted = true;
+    let fix: (v: { coords: typeof mockHere }) => void = () => undefined;
+    mockLocation.getCurrentPositionAsync.mockImplementationOnce(() => new Promise((resolve) => (fix = resolve)));
+    // The area name is slow too: the plus code must not wait for it.
+    mockLocation.reverseGeocodeAsync.mockImplementation(() => new Promise(() => undefined));
+    try {
+      await renderApp(ROUTES, { initialUrl: '/address/map' });
+      await press('test: pan to Alexandria');
+      expect(await screen.findByText(shortPlusCode(31.2, 29.9))).toBeTruthy();
+      fix({ coords: mockHere });
+      await waitFor(() => expect(mockLocation.getCurrentPositionAsync).toHaveBeenCalled());
+      expect(await screen.findByText(shortPlusCode(31.2, 29.9))).toBeTruthy();
+      expect(screen.queryByText(shortPlusCode(29.3205, 30.8364))).toBeNull();
+    } finally {
+      mockLocation.reverseGeocodeAsync.mockImplementation(async () => [{ district: 'Qesm Al Fayoum', city: 'Fayoum' }]);
+    }
+  });
+
+  it('shows the location banner, not a crash, when the phone cannot get a fix (review F25)', async () => {
+    mockPermission.granted = true;
+    mockLocation.getCurrentPositionAsync.mockRejectedValueOnce(new Error('no fix'));
+    await renderApp(ROUTES, { initialUrl: '/address/map' });
+    expect(await screen.findByText('خدمة الموقع غير مفعّلة، يمكنك تحديد موقعك يدوياً على الخريطة')).toBeTruthy();
+  });
+
+  it('holds the save while the delivery check is unanswered, and offers a retry when it fails (review F27)', async () => {
+    await renderApp(ROUTES, { initialUrl: '/address/map' });
+    await press('test: zoom in');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'تأكيد الموقع' })).toBeEnabled());
+    await sql('RENAME TABLE zones TO zones_away');
+    try {
+      await press('تأكيد الموقع');
+      expect(await screen.findByText('تعذر التحقق من التوصيل')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'حفظ العنوان' })).toBeDisabled();
+    } finally {
+      await sql('RENAME TABLE zones_away TO zones');
+    }
+    await press('إعادة المحاولة');
+    expect(await screen.findByText('التوصيل متاح لهذا الموقع')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'حفظ العنوان' })).toBeEnabled();
   });
 
   it("lists only the stores of the chosen address's zone (§8.3)", async () => {

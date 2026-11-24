@@ -1,4 +1,4 @@
-import { RATING_FLOORS, type StoreFilter, type StoreSort, STORE_SORTS, type Vertical, VERTICALS, verticalLabel } from '@tawsela/shared';
+import { RATING_FLOORS, SEARCH_MAX_LENGTH, type StoreFilter, type StoreSort, STORE_SORTS, type Vertical, VERTICALS, verticalLabel } from '@tawsela/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { Search, SearchX, Star } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
+import { useDeliveryScope } from '@/features/addresses/chosen-address';
 import { useCuisines, useStores } from '../api/stores';
 import { CuisineCircles } from '../components/CuisineCircles';
 import { FilterChips } from '../components/FilterChips';
@@ -48,6 +49,7 @@ export function StoresScreen() {
   const [sheet, setSheet] = useState<'sort' | 'rating' | null>(null);
 
   const stores = useStores({ vertical, cuisineId, q, ...filter });
+  const scope = useDeliveryScope();
   const cuisines = useCuisines(vertical === 'restaurant');
   const count = stores.data?.length ?? 0;
 
@@ -60,6 +62,7 @@ export function StoresScreen() {
           onChangeText={setText}
           placeholder={t('stores.searchIn', { name: title })}
           placeholderTextColor={colors.ink2}
+          maxLength={SEARCH_MAX_LENGTH}
           returnKeyType="search"
           style={styles.input}
         />
@@ -76,14 +79,20 @@ export function StoresScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <StoresTopBar />
       <FlatList
-        data={stores.isPending ? [] : (stores.data ?? [])}
+        data={stores.isPending || scope.failed ? [] : (stores.data ?? [])}
         keyExtractor={(s) => String(s.id)}
         renderItem={({ item }) => <StoreRow store={item} />}
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={stores.isRefetching && !stores.isPlaceholderData} onRefresh={() => void stores.refetch()} tintColor={colors.primary} />}
         ListEmptyComponent={
-          stores.isPending ? (
+          scope.failed ? (
+            // Without the addresses the zone is unknown: never list every store (review F78).
+            <View style={styles.errorBox}>
+              <AppText color={colors.danger}>{t('address.loadFailed')}</AppText>
+              <Button label={t('common.retry')} variant="soft" onPress={scope.retry} />
+            </View>
+          ) : stores.isPending ? (
             <View>
               {[0, 1, 2, 3].map((i) => (
                 <StoreRowSkeleton key={i} />

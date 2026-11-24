@@ -1,4 +1,4 @@
-import { formatMoney, type Product, SEARCH_SCOPES, type SearchResult, type SearchScope } from '@tawsela/shared';
+import { formatMoney, type Product, SEARCH_MAX_LENGTH, SEARCH_SCOPES, type SearchResult, type SearchScope } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { type Href, router } from 'expo-router';
 import { ArrowRight, ArrowUpLeft, ChevronLeft, Search, ShoppingBasket, Store, UtensilsCrossed, X } from 'lucide-react-native';
@@ -14,6 +14,7 @@ import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { type TranslationKey, useT } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
+import { useDeliveryScope } from '@/features/addresses/chosen-address';
 import { useSearch, useSuggestions } from '@/features/stores/api/stores';
 import { StoreMeta } from '@/features/stores/components/StoreMeta';
 
@@ -21,6 +22,8 @@ const TAB_LABEL: Record<SearchScope, TranslationKey> = { all: 'search.all', rest
 const TYPING_MS = 250;
 
 const openStore = (id: number) => router.push(`/store/${id}` as Href);
+/** A matched product opens its store on that product's sheet (review F81). */
+const openProduct = (p: Product) => router.push(`/store/${p.storeId}?product=${p.id}` as Href);
 
 /** The typed text once typing pauses, for the suggestions. */
 function useSettled(value: string) {
@@ -93,7 +96,7 @@ function Suggestions({ text, scope, onSearch, onFill }: { text: string; scope: S
 function ProductCard({ product }: { product: Product }) {
   const uri = mediaUrl(product.image);
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={product.name} onPress={() => openStore(product.storeId)} style={styles.product}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={product.name} onPress={() => openProduct(product)} style={styles.product}>
       <View style={styles.productImage}>
         {uri ? <Image source={{ uri }} contentFit="cover" style={StyleSheet.absoluteFill} transition={150} /> : <UtensilsCrossed size={32} color={colors.primary} />}
       </View>
@@ -134,6 +137,15 @@ function Result({ result }: { result: SearchResult }) {
 function Results({ q, scope }: { q: string; scope: SearchScope }) {
   const t = useT();
   const results = useSearch(q, scope);
+  const delivery = useDeliveryScope();
+  // Without the addresses the zone is unknown: never search every store (review F78).
+  if (delivery.failed)
+    return (
+      <View style={styles.result}>
+        <AppText color={colors.danger}>{t('address.loadFailed')}</AppText>
+        <Button label={t('common.retry')} variant="soft" onPress={delivery.retry} />
+      </View>
+    );
   if (results.isPending)
     return (
       <View style={styles.result}>
@@ -185,6 +197,7 @@ export function SearchScreen() {
             onChangeText={setText}
             onSubmitEditing={() => search(text)}
             placeholder={t('search.placeholder')}
+            maxLength={SEARCH_MAX_LENGTH}
             placeholderTextColor={colors.ink2}
             returnKeyType="search"
             autoFocus

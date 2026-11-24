@@ -7,6 +7,7 @@ import {
   HOME_TILE_ROWS,
   PRODUCT_OPTIONS,
   RATING_FLOORS,
+  SEARCH_MAX_LENGTH,
   SEARCH_SCOPES,
   type SearchScope,
   STORE_SORTS,
@@ -48,7 +49,6 @@ const IMAGE_PATH = /^\/uploads\/[A-Za-z0-9/_.-]+$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MONEY = { maxDecimalPlaces: 2 } as const;
 const MAX_MONEY = 100_000;
-const SEARCH_MAX_LENGTH = 100;
 
 const Name = () =>
   applyDecorators(

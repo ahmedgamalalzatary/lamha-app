@@ -27,6 +27,9 @@ export const AUTH = {
 /** Customers' invite codes: 6 capitals and digits, like Tawsilty's "3JXDEB" (§8.17). */
 export const INVITE_CODE_LENGTH = 6;
 
+/** Longest search text the API takes; the apps' search boxes stop there (review F42). */
+export const SEARCH_MAX_LENGTH = 100;
+
 /** Passwords the admin generates for admin, partner and driver accounts, shown once (contract §2). */
 export const GENERATED_PASSWORD_LENGTH = 10;
 

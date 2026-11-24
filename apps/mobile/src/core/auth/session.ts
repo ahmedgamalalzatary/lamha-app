@@ -2,6 +2,7 @@ import type { AuthResponse, Me } from '@tawsela/shared';
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import { api, ApiRequestError } from '../api/client';
+import { cartStore } from '@/features/cart/cart-store';
 import { queryClient } from '../query';
 
 /**
@@ -58,6 +59,8 @@ export const session = {
     const gen = ++generation;
     currentRefresh = null;
     queryClient.clear();
+    // The cart belongs to the account that filled it (review F30).
+    cartStore.clear();
     await keep(res, gen);
   },
 
@@ -106,13 +109,16 @@ export const session = {
     useSession.setState({ status: lastRefusal === 'unreachable' ? 'offline' : 'signedOut', user: null });
   },
 
-  /** "تسجيل الخروج": the server forgets this device's token, then the app forgets everything. */
+  /**
+   * "تسجيل الخروج": the app forgets everything at once, then tells the server to forget this
+   * device's token (review F10): a slow or unreachable server never holds the customer on the screen.
+   */
   async signOut(): Promise<void> {
     const refreshToken = await storedToken();
+    await session.signOutLocally();
     if (refreshToken) {
       await api('/auth/logout', { method: 'POST', body: { refreshToken }, auth: false }).catch(() => undefined);
     }
-    await session.signOutLocally();
   },
 
   async signOutLocally(): Promise<void> {
@@ -120,6 +126,7 @@ export const session = {
     accessToken = null;
     currentRefresh = null;
     queryClient.clear();
+    cartStore.clear();
     useSession.setState({ status: 'signedOut', user: null });
     await SecureStore.deleteItemAsync(REFRESH_KEY).catch(() => undefined);
   },

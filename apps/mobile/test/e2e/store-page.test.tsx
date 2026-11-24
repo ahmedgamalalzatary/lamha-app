@@ -2,6 +2,7 @@ import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
 import { Text } from 'react-native';
+import { ToastHost } from '@/components/Toast';
 import { session } from '@/core/auth/session';
 import { FavoritesScreen } from '@/features/favorites/screens/FavoritesScreen';
 import { CategoryScreen } from '@/features/store/screens/CategoryScreen';
@@ -16,6 +17,7 @@ function Root() {
   return (
     <QueryClientProvider client={client}>
       <Stack screenOptions={{ headerShown: false }} />
+      <ToastHost />
     </QueryClientProvider>
   );
 }
@@ -179,6 +181,30 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     await renderApp(ROUTES, { initialUrl: `/store/${kebab}` });
     expect(await screen.findByText('لا توجد منتجات حاليا')).toBeTruthy();
     expect(screen.getByText('مجاني')).toBeTruthy();
+  });
+
+  it('opens straight on the product a search result named (review F81)', async () => {
+    const maky = await insertStore('Maky');
+    const category = await insertCategory(maky, 'برجر');
+    await insertMenuItem(maky, category, 'تشيز برجر', 90);
+    const burger = await insertMenuItem(maky, category, 'ماكي برجر', 120, 1);
+    await renderApp(ROUTES, { initialUrl: `/store/${maky}?product=${burger}` });
+    expect(await screen.findByRole('button', { name: 'أضف للسلة 120.00 ج.م' })).toBeTruthy();
+  });
+
+  it('says so when the heart cannot be saved (review F44)', async () => {
+    const maky = await insertStore('Maky');
+    await insertMenuItem(maky, await insertCategory(maky, 'برجر'), 'ماكي برجر', 120);
+    await renderApp(ROUTES, { initialUrl: `/store/${maky}` });
+    const heart = await screen.findByRole('button', { name: 'أضف إلى المفضلة' });
+    await sql('RENAME TABLE favorite_stores TO favorite_stores_away');
+    try {
+      await fireEvent.press(heart);
+      expect(await screen.findByText('حدث خطأ، حاول مرة أخرى')).toBeTruthy();
+    } finally {
+      await sql('RENAME TABLE favorite_stores_away TO favorite_stores');
+    }
+    expect(screen.getByRole('button', { name: 'أضف إلى المفضلة' })).toBeEnabled();
   });
 
   it('the heart saves the store in المفضلة; the list is empty again once removed', async () => {

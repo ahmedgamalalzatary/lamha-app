@@ -2,6 +2,8 @@ import * as SecureStore from 'expo-secure-store';
 import { api } from '@/core/api/client';
 import { session, useSession } from '@/core/auth/session';
 import { queryClient } from '@/core/query';
+import { cartStore } from '@/features/cart/cart-store';
+import type { Product } from '@tawsela/shared';
 import { insertUser, pastRefreshGrace, refreshWorks, resetDb, signInAs } from '../utils/db';
 
 beforeEach(async () => {
@@ -118,6 +120,38 @@ describe('session (real API)', () => {
     await session.signIn(b);
     await expect(call).rejects.toMatchObject({ status: 401 });
     expect(useSession.getState().user?.phone).toBe('01000000001');
+  });
+
+  it("empties the cart on sign-in and sign-out, so no account sees another's (review F30)", async () => {
+    const product: Product = { id: 1, storeId: 7, categoryId: 1, name: 'شاورما', description: null, price: 50, unit: null, image: null, active: true, sortOrder: 0, optionGroups: [], ingredients: [] };
+    await insertUser('customer', '01554459196');
+    await session.signIn(await signInAs('01554459196'));
+    cartStore.add(7, { product, optionIds: [], removedIngredientIds: [], quantity: 2 });
+    await session.signOutLocally();
+    expect(cartStore.lines(7)).toEqual([]);
+
+    cartStore.add(7, { product, optionIds: [], removedIngredientIds: [], quantity: 1 });
+    await session.signIn(await signInAs('01554459196'));
+    expect(cartStore.lines(7)).toEqual([]);
+  });
+
+  it('signs out on the phone first, then tells the server (review F10)', async () => {
+    await insertUser('customer', '01554459196');
+    const auth = await signInAs('01554459196');
+    await session.signIn(auth);
+    const real = global.fetch;
+    let statusWhenSent: string | undefined;
+    const spy = jest.spyOn(global, 'fetch').mockImplementation((input, init) => {
+      if (String(input).endsWith('/auth/logout')) statusWhenSent = useSession.getState().status;
+      return real(input, init);
+    });
+    try {
+      await session.signOut();
+    } finally {
+      spy.mockRestore();
+    }
+    expect(statusWhenSent).toBe('signedOut');
+    expect(await refreshWorks(auth.refreshToken)).toBe(false);
   });
 
   it("empties the data cache on sign-in and sign-out, so no account sees another's", async () => {

@@ -32,19 +32,24 @@ export function useChosenAddress(): { address: Address | undefined; choose: (id:
 
 /**
  * What store lists and search send (§8.9): the chosen address, once the addresses are known, so a list
- * never shows every store first. Accounts with no addresses (admins) are ready at once.
+ * never shows every store first. Accounts with no addresses (admins) are ready at once. When the
+ * addresses cannot load, `failed` says so and nothing is listed: never every store (review F78).
  */
-export function useDeliveryScope(): { ready: boolean; addressId: number | undefined } {
+export function useDeliveryScope(): { ready: boolean; addressId: number | undefined; failed: boolean; retry: () => void } {
   const addresses = useAddresses();
   const { address } = useChosenAddress();
-  return { ready: !addresses.isLoading, addressId: address?.id };
+  // A query that is switched off (not a customer) stays pending without fetching: nothing to wait for.
+  const ready = addresses.isSuccess || (addresses.isPending && addresses.fetchStatus === 'idle');
+  return { ready, addressId: address?.id, failed: addresses.isError, retry: () => void addresses.refetch() };
 }
 
 /** Forgets every choice (tests start from nothing: a reset database reuses address ids). */
 export const resetChosenAddresses = () => useChosenStore.setState({ byUser: {} });
 
-/** Choosing outside React (after a save). */
-export function chooseAddress(addressId: number) {
-  const userId = useSession.getState().user?.id;
-  if (userId !== undefined) useChosenStore.getState().choose(userId, addressId);
+/**
+ * Choosing outside React (after a save), for the account that made the save: a late answer never
+ * chooses for whoever signed in since (review F79).
+ */
+export function chooseAddress(userId: number, addressId: number) {
+  useChosenStore.getState().choose(userId, addressId);
 }

@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Layers, LocateFixed, LocateOff, MapPin, X, ZoomIn } from 'lucide-react-native';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { AppState, Linking, StyleSheet, View } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
@@ -21,17 +21,17 @@ const EGYPT: Region = { latitude: 30.4, longitude: 31.2, latitudeDelta: 14, long
 const STREET = 0.003;
 const near = (p: LatLng): Region => ({ latitude: p.lat, longitude: p.lng, latitudeDelta: STREET, longitudeDelta: STREET });
 
-/** "8RCP+FJM، Qesm Al Fayoum": the plus code and the area the phone names. */
-async function describe(p: LatLng): Promise<string> {
-  const code = shortPlusCode(p.lat, p.lng);
+/** The area the phone names for a spot ("Qesm Al Fayoum"), or '' when it cannot. */
+async function areaOf(p: LatLng): Promise<string> {
   try {
     const [place] = await Location.reverseGeocodeAsync({ latitude: p.lat, longitude: p.lng });
-    const area = place?.district ?? place?.subregion ?? place?.city;
-    return area ? `${code}، ${area}` : code;
+    return place?.district ?? place?.subregion ?? place?.city ?? '';
   } catch {
-    return code;
+    return '';
   }
 }
+
+const keyOf = (p: LatLng) => `${p.lat},${p.lng}`;
 
 /**
  * Tawsilty's map picker (contract §8.9): the layers button, ✕ ("تخطي" before the first address), the
@@ -47,41 +47,70 @@ export function MapPickerScreen() {
   const start = from === 'form' ? usePickedSpot.getState().spot : null;
   const map = useRef<MapView>(null);
   const [region, setRegion] = useState<Region>(start ? near(start) : EGYPT);
-  const [label, setLabel] = useState('');
+  /** The area named for a spot; it arrives later than the spot, so it is kept with the spot it names. */
+  const [place, setPlace] = useState<{ key: string; area: string } | null>(null);
   const [locationOn, setLocationOn] = useState(true);
   const [satellite, setSatellite] = useState(false);
-  const asked = useRef(0);
+  /** The customer has moved the map by hand: a location fix that arrives later leaves it there (review F25). */
+  const touched = useRef(false);
   const withMap = mapAvailable();
 
   const spot = { lat: region.latitude, lng: region.longitude };
   const zoomedIn = zoomOf(region.longitudeDelta) >= PIN_ZOOM;
+  // "8RCP+FJM، Qesm Al Fayoum": the plus code always from the pin itself, the area once named (review F80).
+  const area = place?.key === keyOf(spot) ? place.area : '';
+  const label = area ? `${shortPlusCode(spot.lat, spot.lng)}، ${area}` : shortPlusCode(spot.lat, spot.lng);
 
-  const moveTo = useCallback((r: Region) => {
-    setRegion(r);
-    const n = ++asked.current;
-    void describe({ lat: r.latitude, lng: r.longitude }).then((text) => n === asked.current && setLabel(text));
+  const nameArea = useCallback((p: LatLng) => {
+    void areaOf(p).then((name) => setPlace({ key: keyOf(p), area: name }));
   }, []);
 
-  /** Flies to the phone's location; false when location is off or refused. */
-  const locate = useCallback(async () => {
-    const permission = await Location.getForegroundPermissionsAsync();
-    if (!permission.granted || !(await Location.hasServicesEnabledAsync())) {
-      setLocationOn(false);
-      return false;
-    }
-    setLocationOn(true);
-    const { coords } = await Location.getCurrentPositionAsync({});
-    const there = near({ lat: coords.latitude, lng: coords.longitude });
-    if (map.current) map.current.animateToRegion(there);
-    else moveTo(there);
-    return true;
-  }, [moveTo]);
+  const moveTo = useCallback(
+    (r: Region, details?: { isGesture?: boolean }) => {
+      if (details?.isGesture) touched.current = true;
+      setRegion(r);
+      nameArea({ lat: r.latitude, lng: r.longitude });
+    },
+    [nameArea],
+  );
+
+  /**
+   * Flies to the phone's location; false when location is off, refused or cannot be found. `onOpen`:
+   * the automatic try on opening, which never moves a map the customer has already moved.
+   */
+  const locate = useCallback(
+    async (onOpen = false) => {
+      try {
+        const permission = await Location.getForegroundPermissionsAsync();
+        if (!permission.granted || !(await Location.hasServicesEnabledAsync())) {
+          setLocationOn(false);
+          return false;
+        }
+        setLocationOn(true);
+        const { coords } = await Location.getCurrentPositionAsync({});
+        if (onOpen && touched.current) return true;
+        const there = near({ lat: coords.latitude, lng: coords.longitude });
+        if (map.current) map.current.animateToRegion(there);
+        else moveTo(there);
+        return true;
+      } catch {
+        // No fix (indoors, the service failed): the customer places the pin by hand.
+        setLocationOn(false);
+        return false;
+      }
+    },
+    [moveTo],
+  );
 
   useEffect(() => {
-    const n = ++asked.current;
-    void describe({ lat: region.latitude, lng: region.longitude }).then((text) => n === asked.current && setLabel(text));
+    nameArea({ lat: region.latitude, lng: region.longitude });
     // Where the phone is, unless the form handed a spot over. Asked after the first render.
-    if (!start) void Promise.resolve().then(locate);
+    if (!start) void Promise.resolve().then(() => locate(true));
+    // Back from the phone's settings with location now on: hide the banner (review F25).
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void locate(true);
+    });
+    return () => sub.remove();
     // Once, on opening.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
