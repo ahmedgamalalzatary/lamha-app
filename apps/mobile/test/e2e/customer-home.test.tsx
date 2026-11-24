@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
 import { Text } from 'react-native';
@@ -7,7 +7,7 @@ import { session } from '@/core/auth/session';
 import { HomeScreen } from '@/features/home/screens/HomeScreen';
 import { insertStore, insertTile } from '../utils/catalog';
 import { insertUser, resetDb, signInAs } from '../utils/db';
-import { renderApp } from '../utils/render';
+import { renderApp, testQueryClient } from '../utils/render';
 
 let client: QueryClient;
 function Root() {
@@ -25,7 +25,7 @@ const ROUTES = { _layout: Root, 'customer/index': HomeScreen, 'stores/[vertical]
 let maky: number;
 
 beforeEach(async () => {
-  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client = testQueryClient();
   await AsyncStorage.clear();
   await session.signOutLocally();
   await resetDb();

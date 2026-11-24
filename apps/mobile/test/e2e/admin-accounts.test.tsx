@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { Stack } from 'expo-router';
 import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
@@ -8,7 +8,7 @@ import { session } from '@/core/auth/session';
 import { AccountsScreen } from '@/features/accounts/screens/AccountsScreen';
 import { insertStore, linkPartner } from '../utils/catalog';
 import { insertUser, resetDb, signInAs } from '../utils/db';
-import { renderApp } from '../utils/render';
+import { renderApp, testQueryClient } from '../utils/render';
 
 /** The app's root layout provides React Query; a fresh client per test keeps no cache between tests. */
 let client: QueryClient;
@@ -39,7 +39,7 @@ const signsIn = (phone: string, password: string) =>
 let sakia: number;
 
 beforeEach(async () => {
-  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client = testQueryClient();
   await session.signOutLocally();
   toast.clear();
   await resetDb();

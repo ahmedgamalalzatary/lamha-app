@@ -16,6 +16,9 @@ beforeEach(() => {
 // tests then go back to real ones, which drops any update queued in between (the screen stays on
 // its skeleton). A microtask is not a timer, so updates always land.
 require('@tanstack/react-query').notifyManager.setScheduler(queueMicrotask);
+// The app's own client (screens rendered without a test client use it): no 5-minute garbage-collection
+// timer, which would keep Jest from exiting for those 5 minutes (test/utils/render.ts testQueryClient).
+require('@/core/query').queryClient.setDefaultOptions({ queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } });
 
 // AsyncStorage has no native module under Jest, so use its official mock.
 jest.mock('@react-native-async-storage/async-storage', () =>
