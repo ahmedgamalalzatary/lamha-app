@@ -1,5 +1,5 @@
 import { gate } from '@/core/navigation/gate-rules';
-import { me } from '../utils/api-mock';
+import { me } from '../utils/fixtures';
 
 describe('gate (one app, the account picks the screens: contract §2)', () => {
   it('waits while the stored session is read', () => {

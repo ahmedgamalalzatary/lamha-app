@@ -1,61 +1,47 @@
+import type { HealthResponse } from '@tawsela/shared';
 import { api, ApiRequestError } from '@/core/api/client';
+import { emailedCode, insertUser, resetDb } from '../utils/db';
 
-const realFetch = global.fetch;
-
-function respond(status: number, body: unknown) {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  }) as unknown as typeof fetch;
-}
-
-afterEach(() => {
-  global.fetch = realFetch;
+beforeEach(async () => {
+  await resetDb();
 });
 
-describe('api', () => {
-  it('calls the API URL from the root .env and returns the JSON', async () => {
-    respond(200, { status: 'ok' });
-    await expect(api('/health')).resolves.toEqual({ status: 'ok' });
-    expect(global.fetch).toHaveBeenCalledWith(
-      `${process.env.EXPO_PUBLIC_API_URL}/health`,
-      expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/json' }) }),
+describe('api (real API)', () => {
+  it('calls the API URL from the env and returns the JSON', async () => {
+    await expect(api<HealthResponse>('/health', { auth: false })).resolves.toMatchObject({ status: 'ok', db: 'up' });
+  });
+
+  it('sends a JSON body and turns an error response into an ApiRequestError with its code', async () => {
+    await insertUser('customer', '01554459196');
+    const err = await api('/auth/login', { method: 'POST', body: { phone: '01554459196', password: 'wrongpass' }, auth: false }).catch(
+      (e: unknown) => e,
     );
-  });
-
-  it('sends a JSON body', async () => {
-    respond(201, {});
-    await api('/things', { method: 'POST', body: { a: 1 } });
-    const init = (global.fetch as jest.Mock).mock.calls[0][1];
-    expect(init.method).toBe('POST');
-    expect(init.body).toBe('{"a":1}');
-    expect(init.headers['Content-Type']).toBe('application/json');
-  });
-
-  it('turns an error response into an ApiRequestError with the API message', async () => {
-    respond(404, { statusCode: 404, message: 'Cannot GET /v1/nope', error: 'Not Found' });
-    const err = await api('/nope').catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ApiRequestError);
-    expect(err).toMatchObject({ status: 404, message: 'Cannot GET /v1/nope' });
+    expect(err).toMatchObject({ status: 401, code: 'BAD_CREDENTIALS' });
   });
 
   it('uses the first validation message', async () => {
-    respond(400, { statusCode: 400, message: ['phone is wrong', 'email is wrong'], error: 'Bad Request' });
-    await expect(api('/x')).rejects.toMatchObject({ status: 400, message: 'phone is wrong' });
-  });
-
-  it('passes on the error code and its numbers', async () => {
-    respond(400, { statusCode: 400, code: 'OTP_WRONG', message: 'Wrong code', triesLeft: 3 });
-    await expect(api('/auth/code/verify', { method: 'POST', body: {} })).rejects.toMatchObject({
+    await expect(api('/auth/login', { method: 'POST', body: { phone: '0123', password: 'x' }, auth: false })).rejects.toMatchObject({
       status: 400,
-      code: 'OTP_WRONG',
-      triesLeft: 3,
+      message: 'phone must be an Egyptian mobile number',
     });
   });
 
-  it('reports a network failure as status 0', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new TypeError('Network request failed')) as unknown as typeof fetch;
-    await expect(api('/health')).rejects.toMatchObject({ status: 0 });
+  it('passes on the error code and its numbers (tries left)', async () => {
+    await api('/auth/signup/code', { method: 'POST', body: { phone: '01554459196', email: 'a@b.co' }, auth: false });
+    const wrong = (await emailedCode('01554459196', 'signup')) === '0000' ? '1111' : '0000';
+    await expect(
+      api('/auth/code/verify', { method: 'POST', body: { phone: '01554459196', purpose: 'signup', code: wrong }, auth: false }),
+    ).rejects.toMatchObject({ status: 400, code: 'OTP_WRONG', triesLeft: 4 });
+  });
+
+  it('reports a server it cannot reach as status 0', async () => {
+    const url = process.env.EXPO_PUBLIC_API_URL;
+    process.env.EXPO_PUBLIC_API_URL = 'http://localhost:9/v1';
+    try {
+      await expect(api('/health', { auth: false })).rejects.toMatchObject({ status: 0 });
+    } finally {
+      process.env.EXPO_PUBLIC_API_URL = url;
+    }
   });
 });

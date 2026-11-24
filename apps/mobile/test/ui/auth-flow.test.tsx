@@ -9,7 +9,8 @@ import { SignInScreen } from '@/features/auth/screens/SignInScreen';
 import { SignUpDetailsScreen } from '@/features/auth/screens/SignUpDetailsScreen';
 import { SignUpScreen } from '@/features/auth/screens/SignUpScreen';
 import { VerifyCodeScreen } from '@/features/auth/screens/VerifyCodeScreen';
-import { auth, mockApi } from '../utils/api-mock';
+import { emailedCode, insertUser, PASSWORD, resetDb, signInAs, sql } from '../utils/db';
+import { renderApp } from '../utils/render';
 
 function Root() {
   return (
@@ -34,31 +35,32 @@ const ROUTES = {
 
 const type = (label: string, text: string) => fireEvent.changeText(screen.getByLabelText(label), text);
 const press = (name: string) => fireEvent.press(screen.getByRole('button', { name }));
+const otpRows = async () => (await sql<{ n: number }[]>('SELECT COUNT(*) AS n FROM otp_codes'))[0]!.n;
 
 beforeEach(async () => {
   await session.signOutLocally();
   toast.clear();
+  await resetDb();
 });
 
-describe('sign-in (every role, contract §2)', () => {
+describe('sign-in (every role, contract §2; real API)', () => {
   it('signs a partner in and opens the partner tabs', async () => {
-    const api = mockApi({ 'POST /auth/login': [201, auth('partner')] });
-    await renderRouter(ROUTES, { initialUrl: '/sign-in' });
+    await insertUser('partner', '01000000002');
+    await renderApp(ROUTES, { initialUrl: '/sign-in' });
 
     expect(screen.getByRole('button', { name: 'تسجيل الدخول' })).toBeDisabled();
     await type('رقم الهاتف', '01000000002');
-    await type('كلمة المرور', 'secret123');
+    await type('كلمة المرور', PASSWORD);
     await press('تسجيل الدخول');
 
     expect(await screen.findByText('واجهة المورد')).toBeTruthy();
     expect(screen).toHavePathname('/partner');
-    expect(api.calls[0]?.body).toEqual({ phone: '01000000002', password: 'secret123' });
-    expect(useSession.getState().user?.role).toBe('partner');
+    expect(useSession.getState().user).toMatchObject({ role: 'partner', phone: '01000000002' });
   });
 
   it('says so when the phone or password is wrong', async () => {
-    mockApi({ 'POST /auth/login': [401, { statusCode: 401, code: 'BAD_CREDENTIALS', message: 'x' }] });
-    await renderRouter(ROUTES, { initialUrl: '/sign-in' });
+    await insertUser('partner', '01000000002');
+    await renderApp(ROUTES, { initialUrl: '/sign-in' });
     await type('رقم الهاتف', '01000000002');
     await type('كلمة المرور', 'wrongpass');
     await press('تسجيل الدخول');
@@ -66,24 +68,18 @@ describe('sign-in (every role, contract §2)', () => {
   });
 
   it('checks the phone before calling the API', async () => {
-    const api = mockApi({});
-    await renderRouter(ROUTES, { initialUrl: '/sign-in' });
+    await renderApp(ROUTES, { initialUrl: '/sign-in' });
     await type('رقم الهاتف', '0123');
-    await type('كلمة المرور', 'secret123');
+    await type('كلمة المرور', PASSWORD);
     await press('تسجيل الدخول');
     expect(screen.getByText('أدخل رقم موبايل مصري صحيح')).toBeTruthy();
-    expect(api.calls).toHaveLength(0);
   });
 });
 
-describe('sign-up (contract §8.1)', () => {
-  it('phone and email → code → personal details → signed in as a customer', async () => {
-    const api = mockApi({
-      'POST /auth/signup/code': [201, { email: 'ahmed@gmail.com', resendIn: 59 }],
-      'POST /auth/code/verify': [201, { ticket: 'T1' }],
-      'POST /auth/signup': [201, auth('customer')],
-    });
-    await renderRouter(ROUTES, { initialUrl: '/sign-in' });
+describe('sign-up (contract §8.1; real API)', () => {
+  it('phone and email → emailed code → personal details → signed in as a customer', async () => {
+    const friend = await insertUser('customer', '01000000007', { email: 'friend@gmail.com', inviteCode: '3JXDEB' });
+    await renderApp(ROUTES, { initialUrl: '/sign-in' });
 
     await press('إنشاء حساب');
     await type('رقم الهاتف', '01554459196');
@@ -94,8 +90,7 @@ describe('sign-up (contract §8.1)', () => {
     expect(screen.getByText('ahmed@gmail.com')).toBeTruthy();
     expect(screen.getByText('00:59')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'تأكيد' })).toBeDisabled();
-    await type('رمز التحقق', '12a34');
-    expect(screen.getByRole('button', { name: 'تأكيد' })).toBeEnabled();
+    await type('رمز التحقق', await emailedCode('01554459196', 'signup'));
     await press('تأكيد');
 
     expect(await screen.findByText('التفاصيل الشخصية')).toBeTruthy();
@@ -107,82 +102,83 @@ describe('sign-up (contract §8.1)', () => {
     await press('متابعة');
 
     expect(await screen.findByText('واجهة العميل')).toBeTruthy();
-    expect(api.calls.map((c) => c.route)).toEqual(['POST /auth/signup/code', 'POST /auth/code/verify', 'POST /auth/signup']);
-    expect(api.calls[0]?.body).toEqual({ phone: '01554459196', email: 'ahmed@gmail.com' });
-    expect(api.calls[1]?.body).toEqual({ phone: '01554459196', purpose: 'signup', code: '1234' });
-    expect(api.calls[2]?.body).toEqual({
-      ticket: 'T1',
-      firstName: 'احمد',
-      lastName: 'الزعتري',
-      password: 'secret123',
-      inviteCode: '3JXDEB',
-    });
+    const [row] = await sql<{ email: string; first_name: string; invited_by_id: number }[]>(
+      'SELECT email, first_name, invited_by_id FROM users WHERE phone = ?',
+      ['01554459196'],
+    );
+    expect(row).toEqual({ email: 'ahmed@gmail.com', first_name: 'احمد', invited_by_id: friend });
+    await expect(signInAs('01554459196', 'secret123')).resolves.toBeTruthy();
+  });
+
+  it('keeps only the digits of the code', async () => {
+    await renderApp(ROUTES, { initialUrl: '/verify?purpose=signup&phone=01554459196&email=a%40b.co' });
+    await type('رمز التحقق', '12a34');
+    expect(screen.getByRole('button', { name: 'تأكيد' })).toBeEnabled();
   });
 
   it('tells a known phone to sign in instead', async () => {
-    mockApi({ 'POST /auth/signup/code': [409, { statusCode: 409, code: 'PHONE_TAKEN', message: 'x' }] });
-    await renderRouter(ROUTES, { initialUrl: '/sign-up' });
+    await insertUser('customer', '01554459196', { email: 'ahmed@gmail.com' });
+    await renderApp(ROUTES, { initialUrl: '/sign-up' });
     await type('رقم الهاتف', '01554459196');
-    await type('البريد الإلكتروني', 'ahmed@gmail.com');
+    await type('البريد الإلكتروني', 'new@gmail.com');
     await press('متابعة');
     expect(await screen.findByText('رقم الهاتف مسجل بالفعل، سجّل الدخول')).toBeTruthy();
   });
 
   it('shows the wrong-code message with the tries left', async () => {
-    mockApi({ 'POST /auth/code/verify': [400, { statusCode: 400, code: 'OTP_WRONG', message: 'x', triesLeft: 2 }] });
-    await renderRouter(ROUTES, { initialUrl: '/verify?purpose=signup&phone=01554459196&email=a%40b.co' });
-    await type('رمز التحقق', '9999');
+    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/signup/code`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ phone: '01554459196', email: 'a@b.co' }),
+    });
+    const wrong = (await emailedCode('01554459196', 'signup')) === '9999' ? '1111' : '9999';
+    await renderApp(ROUTES, { initialUrl: '/verify?purpose=signup&phone=01554459196&email=a%40b.co' });
+    await type('رمز التحقق', wrong);
     await press('تأكيد');
-    expect(await screen.findByText('الرمز غير صحيح، متبقي 2 محاولات')).toBeTruthy();
+    expect(await screen.findByText('الرمز غير صحيح، متبقي 4 محاولات')).toBeTruthy();
   });
 
-  it('offers a new code once the 00:59 countdown ends', async () => {
-    jest.useFakeTimers();
-    const api = mockApi({ 'POST /auth/signup/code': [201, { email: 'a@b.co', resendIn: 59 }] });
+  it('offers a new code once the 00:59 countdown ends, and sends it', async () => {
+    // renderRouter keeps the fake timers on, to run the countdown.
     await renderRouter(ROUTES, { initialUrl: '/verify?purpose=signup&phone=01554459196&email=a%40b.co' });
     expect(screen.queryByRole('button', { name: 'إعادة إرسال الرمز' })).toBeNull();
     await act(() => jest.advanceTimersByTime(59_000));
-    await press('إعادة إرسال الرمز');
-    expect(api.calls[0]).toMatchObject({ route: 'POST /auth/signup/code', body: { phone: '01554459196', email: 'a@b.co' } });
+    // The request itself runs on real timers.
     jest.useRealTimers();
+    await press('إعادة إرسال الرمز');
+    await waitFor(async () => expect(await otpRows()).toBe(1));
   });
 
   it('refuses a short password on the details screen', async () => {
-    const api = mockApi({});
-    await renderRouter(ROUTES, { initialUrl: '/sign-up/details?ticket=T1&phone=01554459196&email=a%40b.co' });
+    await renderApp(ROUTES, { initialUrl: '/sign-up/details?ticket=T1&phone=01554459196&email=a%40b.co' });
     await type('الاسم الأول', 'احمد');
     await type('اسم العائلة', 'الزعتري');
     await type('كلمة المرور', '1234567');
     await press('متابعة');
     expect(screen.getByText('8 خانات على الأقل (حروف أو أرقام أو رموز)')).toBeTruthy();
-    expect(api.calls).toHaveLength(0);
   });
 });
 
-describe('forgot password', () => {
+describe('forgot password (real API)', () => {
   it('sends the code to the masked email and sets the new password', async () => {
-    const api = mockApi({
-      'POST /auth/password/code': [201, { email: 'a***d@gmail.com', resendIn: 59 }],
-      'POST /auth/code/verify': [201, { ticket: 'R1' }],
-      'POST /auth/password/reset': [201, auth('customer')],
-    });
-    await renderRouter(ROUTES, { initialUrl: '/sign-in' });
+    await insertUser('customer', '01554459196', { email: 'ahmed@gmail.com' });
+    await renderApp(ROUTES, { initialUrl: '/sign-in' });
     await press('نسيت كلمة المرور؟');
     await type('رقم الهاتف', '01554459196');
     await press('إرسال الرمز');
     expect(await screen.findByText('a***d@gmail.com')).toBeTruthy();
-    await type('رمز التحقق', '4321');
+    await type('رمز التحقق', await emailedCode('01554459196', 'reset'));
     await press('تأكيد');
     expect(await screen.findByText('كلمة مرور جديدة')).toBeTruthy();
     await type('كلمة المرور', 'newpass99');
     await press('حفظ');
     expect(await screen.findByText('واجهة العميل')).toBeTruthy();
-    expect(api.calls[2]?.body).toEqual({ ticket: 'R1', password: 'newpass99' });
+    await expect(signInAs('01554459196', 'newpass99')).resolves.toBeTruthy();
   });
 
   it('tells partners and drivers to ask the admin', async () => {
-    mockApi({ 'POST /auth/password/code': [403, { statusCode: 403, code: 'STAFF_RESET_BY_ADMIN', message: 'x' }] });
-    await renderRouter(ROUTES, { initialUrl: '/forgot-password' });
+    await insertUser('partner', '01000000002');
+    await renderApp(ROUTES, { initialUrl: '/forgot-password' });
     await type('رقم الهاتف', '01000000002');
     await press('إرسال الرمز');
     await waitFor(() => expect(screen.getByText('تواصل مع الإدارة لإعادة تعيين كلمة المرور')).toBeTruthy());

@@ -47,6 +47,8 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@node-rs/argon2": "^2.2.2",
+    "@tawsela/api": "workspace:*",
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
@@ -55,6 +57,7 @@
     "eslint-config-expo": "~58.0.4",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.14",
+    "mysql2": "^3.24.6",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -72,6 +75,11 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "globalSetup": "<rootDir>/test/utils/global-setup.ts",
+    "globalTeardown": "<rootDir>/test/utils/global-teardown.ts",
+    "testEnvironment": "<rootDir>/test/utils/environment.js",
+    "maxWorkers": 1,
+    "testTimeout": 20000,
     "setupFiles": [
       "<rootDir>/jest.env.js",
       "react-native-gesture-handler/jestSetup"

@@ -29,6 +29,12 @@ async function waitForHealth(api: ChildProcess) {
 export default async function setup() {
   config({ path: '../../.env.test', override: true, quiet: true });
   const url = webTestDbUrl();
+  // An API left from an interrupted run would answer instead of the fresh one.
+  const busy = await fetch(`${API_URL}/health`).then(
+    () => true,
+    () => false,
+  );
+  if (busy) throw new Error(`Something already answers on ${API_URL}: stop the API left from an earlier test run`);
 
   const server = await createConnection({ uri: url.replace(/\/[^/?]+(\?|$)/, '/$1') });
   await server.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
