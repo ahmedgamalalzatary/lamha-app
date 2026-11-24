@@ -33,6 +33,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 6 | Store lists, filters and search | 🔍 in-verify | |
 | 7 | Store page and product sheet | 🔍 in-verify | |
 | 8 | Addresses, zones and the map picker | 🔍 in-verify | Google Maps key |
+| 8a | English LTR and the language switch (project review F47) | ⬜ | none |
 | 9 | Cart | ⬜ | |
 | 10 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
 | 11 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens), 11 |
@@ -212,6 +213,15 @@ Contract §8.9: saved addresses sheet, map picker with zoom gate and location ba
   - See contract §8.9.
   - The map needs `GOOGLE_MAPS_API_KEY` in the root `.env`, or as a CI secret, for Android builds.
   - Delivery fees per zone wait for checkout (§15.1 #3).
+
+## Phase 8a: English LTR and the language switch
+
+Contract §7, §14 and S2 (it was due in Phase 0; the project review, F47, found it missing). Both dictionaries exist, but the app always uses Arabic and forces RTL.
+
+- The visible language switch on the account screen [Client: "عايز اللغة تبان من بره"], saved in the profile's `locale` (`PATCH /v1/me`) and on the phone, so the next launch opens in it.
+- `useT()` follows the chosen language; the layout turns LTR for English and back to RTL for Arabic (React Native needs a reload when the direction flips).
+- Every screen checked in both directions: icons that point a way (back, chevrons) mirror, numbers and money keep their formats (§7).
+- Catalog text (store, product, category names) stays as the admin typed it, one language, until the client decides whether merchants enter both (review F48).
 
 ## Phase 9: Cart
 
