@@ -1,11 +1,13 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
+import { existsSync } from 'node:fs';
 import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 import { createTestApp, lastCodeTo, mailbox } from '../utils/app.js';
 import type { ResultSetHeader } from 'mysql2/promise';
+import { insertStore } from '../utils/catalog.js';
 import { insertUser, resetDb, sql } from '../utils/db.js';
 
 const PASSWORD = 'secret123';
@@ -100,7 +102,10 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
       "INSERT INTO addresses (user_id, zone_id, type, apartment, landmark, phone, lat, lng) VALUES (?, ?, 'apartment', '2', 'علامه', '01554459196', 29.3, 30.8)",
       [id, zone.insertId],
     );
+    const store = await insertStore();
+    await sql('INSERT INTO favorite_stores (user_id, store_id) VALUES (?, ?)', [id, store]);
     const { accessToken, refreshToken } = await signIn('01554459196');
+    await http().post('/v1/me/phone/code').set('Authorization', `Bearer ${accessToken}`).send({ phone: '01550000001' }).expect(201);
     const wrong = await http().delete('/v1/me').set('Authorization', `Bearer ${accessToken}`).send({ password: 'wrongpass' }).expect(403);
     expect(wrong.body.code).toBe('WRONG_PASSWORD');
 
@@ -108,6 +113,9 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     await http().get('/v1/me').set('Authorization', `Bearer ${accessToken}`).expect(401);
     await http().post('/v1/auth/refresh').send({ refreshToken }).expect(401);
     expect(await sql<unknown[]>('SELECT id FROM addresses WHERE user_id = ?', [id])).toHaveLength(0);
+    // Its favourites and the codes sent to its phone or email go too (review F13).
+    expect(await sql<unknown[]>('SELECT store_id FROM favorite_stores WHERE user_id = ?', [id])).toHaveLength(0);
+    expect(await sql<unknown[]>("SELECT id FROM otp_codes WHERE phone = '01554459196' OR email = 'ahmed@gmail.com'")).toHaveLength(0);
     await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(401);
     await http().post('/v1/auth/signup/code').send({ phone: '01554459196', email: 'ahmed@gmail.com' }).expect(201);
   });
@@ -167,7 +175,23 @@ describe('/v1/me (e2e, contract §8.14 profile)', () => {
     expect(res.body.avatar).toMatch(/^\/uploads\/avatars\/[\w-]+\.jpg$/);
     const me = await http().get('/v1/me').set('Authorization', `Bearer ${accessToken}`).expect(200);
     expect(me.body.avatar).toBe(res.body.avatar);
-    // The test API saves into the dev uploads folder: leave nothing behind.
-    await unlink(path.resolve(res.body.avatar.slice(1)));
+
+    // A new photo removes the old file, and so does deleting the account (review F13).
+    const next = await http()
+      .post('/v1/me/avatar')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .attach('image', png, { filename: 'me.png', contentType: 'image/png' })
+      .expect(201);
+    const first = path.resolve(res.body.avatar.slice(1));
+    const latest = path.resolve(next.body.avatar.slice(1));
+    try {
+      expect(existsSync(first)).toBe(false);
+      expect(existsSync(latest)).toBe(true);
+      await http().delete('/v1/me').set('Authorization', `Bearer ${accessToken}`).send({ password: PASSWORD }).expect(204);
+      expect(existsSync(latest)).toBe(false);
+    } finally {
+      // The test API saves into the dev uploads folder: leave nothing behind.
+      for (const file of [first, latest]) if (existsSync(file)) await unlink(file);
+    }
   });
 });

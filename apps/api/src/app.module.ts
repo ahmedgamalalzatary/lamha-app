@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { PartnersModule } from './modules/partners/partners.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -49,6 +50,7 @@ import { UsersModule } from './modules/users/users.module.js';
     AddressesModule,
     PartnersModule,
     UploadsModule,
+    MaintenanceModule,
   ],
 })
 export class AppModule {}

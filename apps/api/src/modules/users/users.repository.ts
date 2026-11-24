@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { Role } from '@tawsela/shared';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { addresses } from '../addresses/addresses.schema.js';
-import { refreshTokens } from '../auth/auth.schema.js';
+import { otpCodes, refreshTokens } from '../auth/auth.schema.js';
+import { favoriteStores } from '../favorites/favorites.schema.js';
 import { type NewUser, type UserRow, users } from './users.schema.js';
 
 /** Database access for accounts. "Live" means not deleted (a disabled account is still live). */
@@ -76,17 +77,20 @@ export class UsersRepository {
 
   /**
    * "حذف الحساب" in one transaction (review F04): the account row is locked (address writes lock it
-   * too, so none lands after), its personal data goes, every session ends and its addresses go. An
-   * interruption leaves the account as it was, so the customer can try again. False when already gone.
+   * too, so none lands after), its personal data goes, every session ends, and its addresses,
+   * favourites and the codes sent to its phone or email go (F13). An interruption leaves the account
+   * as it was, so the customer can try again. False when already gone.
    */
   async deleteAccount(id: number, scrub: Partial<NewUser>): Promise<boolean> {
     return this.db.transaction(async (tx) => {
       const [row] = await tx
-        .select({ id: users.id })
+        .select({ id: users.id, phone: users.phone, email: users.email })
         .from(users)
         .where(and(eq(users.id, id), isNull(users.deletedAt)))
         .for('update');
       if (!row) return false;
+      await tx.delete(favoriteStores).where(eq(favoriteStores.userId, id));
+      await tx.delete(otpCodes).where(row.email ? or(eq(otpCodes.phone, row.phone), eq(otpCodes.email, row.email)) : eq(otpCodes.phone, row.phone));
       await tx
         .update(users)
         .set({ ...scrub, sessionVersion: sql`${users.sessionVersion} + 1` })

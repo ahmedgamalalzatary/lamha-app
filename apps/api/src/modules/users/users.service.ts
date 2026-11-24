@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Me } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
 import { verifyPassword } from '../auth/password.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 import type { UpdateMeDto } from './dto/me.dto.js';
 import { newInviteCode } from './invite-code.js';
 import { UsersRepository } from './users.repository.js';
@@ -28,6 +29,7 @@ export function toMe(row: UserRow): Me {
 export class UsersService {
   constructor(
     private readonly users: UsersRepository,
+    private readonly uploads: UploadsService,
   ) {}
 
   async getMe(id: number): Promise<Me> {
@@ -42,9 +44,11 @@ export class UsersService {
     return this.getMe(id);
   }
 
-  /** The profile photo ("اختر صورة"): the path of the saved image. */
+  /** The profile photo ("اختر صورة"): the path of the saved image. The old photo's file goes (review F13). */
   async setAvatar(id: number, avatar: string): Promise<Me> {
+    const before = await this.users.findLiveById(id);
     await this.users.update(id, { avatar });
+    if (before?.avatar && before.avatar !== avatar) await this.uploads.remove(before.avatar);
     return this.getMe(id);
   }
 
@@ -70,6 +74,7 @@ export class UsersService {
       deletedAt: new Date(),
     });
     if (!deleted) throw new UnauthorizedException();
+    await this.uploads.remove(row.avatar);
   }
 
   /** A fresh invite code no one has yet. */

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CATALOG, UPLOADS_DIR, type UploadedImage } from '@tawsela/shared';
@@ -29,5 +29,15 @@ export class UploadsService {
     const name = `${randomUUID()}.jpg`;
     await writeFile(path.join(dir, name), jpeg);
     return { url: `/uploads/${folder}/${name}` };
+  }
+
+  /**
+   * Deletes a saved image that nothing points at any more (review F13). Only files this service
+   * saved: a path of another shape, or a file already gone, is left alone.
+   */
+  async remove(url: string | null | undefined): Promise<void> {
+    const match = url?.match(/^\/uploads\/(catalog|avatars)\/([\w-]+\.jpg)$/);
+    if (!match) return;
+    await unlink(path.resolve(UPLOADS_DIR, match[1]!, match[2]!)).catch(() => undefined);
   }
 }
