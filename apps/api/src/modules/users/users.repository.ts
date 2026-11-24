@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Role } from '@tawsela/shared';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type NewUser, type UserRow, users } from './users.schema.js';
 
@@ -17,6 +17,16 @@ export class UsersRepository {
   /** Oldest first. */
   async listLiveByRole(role: Role): Promise<UserRow[]> {
     return this.db.select().from(users).where(and(eq(users.role, role), isNull(users.deletedAt))).orderBy(asc(users.id));
+  }
+
+  /** The partner accounts of these stores, oldest first (contract §2). */
+  async listLivePartnersOf(storeIds: number[]): Promise<UserRow[]> {
+    if (!storeIds.length) return [];
+    return this.db
+      .select()
+      .from(users)
+      .where(and(eq(users.role, 'partner'), inArray(users.storeId, storeIds), isNull(users.deletedAt)))
+      .orderBy(asc(users.id));
   }
 
   async findLiveByPhone(phone: string): Promise<UserRow | undefined> {

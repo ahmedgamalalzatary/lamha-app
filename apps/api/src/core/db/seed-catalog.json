@@ -1,0 +1,1454 @@
+{
+ "cuisines": [
+  {
+   "key": "مصري",
+   "name": "أكل مصري",
+   "image": "koshari1.jpg"
+  },
+  {
+   "key": "شاورما",
+   "name": "شاورما",
+   "image": "wrap1.jpg"
+  },
+  {
+   "key": "برجر",
+   "name": "برجر",
+   "image": "burger3.jpg"
+  },
+  {
+   "key": "بيتزا",
+   "name": "بيتزا",
+   "image": "pizza1.jpg"
+  },
+  {
+   "key": "مشويات",
+   "name": "مشويات",
+   "image": "grill2.jpg"
+  },
+  {
+   "key": "أسماك",
+   "name": "أسماك",
+   "image": "fish1.jpg"
+  },
+  {
+   "key": "حلويات",
+   "name": "حلويات",
+   "image": "kunafa1.jpg"
+  },
+  {
+   "key": "قهوة",
+   "name": "قهوة",
+   "image": "coffee1.jpg"
+  },
+  {
+   "key": "فطار",
+   "name": "فطار",
+   "image": "taameya1.jpg"
+  },
+  {
+   "key": "صحي",
+   "name": "صحي",
+   "image": "salad1.jpg"
+  }
+ ],
+ "stores": [
+  {
+   "key": "sakia-shawarma",
+   "vertical": "restaurant",
+   "name": "شاورما الساقية",
+   "cover": "shawarma1.jpg",
+   "deliveryMinutes": 25,
+   "deliveryFee": 15,
+   "minimumOrder": 60,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "شاورما"
+   ],
+   "categories": [
+    {
+     "name": "سندوتشات الشاورما",
+     "products": [
+      {
+       "name": "شاورما فراخ",
+       "description": "فراخ متتبلة على الفحم بالثومية والمخلل",
+       "price": 85,
+       "unit": null,
+       "image": "wrap1.jpg"
+      },
+      {
+       "name": "شاورما لحمة",
+       "description": "لحمة بلدي بالطحينة والبصل والسماق",
+       "price": 110,
+       "unit": null,
+       "image": "wrap2.jpg"
+      },
+      {
+       "name": "سندوتش كريسبي",
+       "description": null,
+       "price": 90,
+       "unit": null,
+       "image": "chicken2.jpg"
+      }
+     ]
+    },
+    {
+     "name": "وجبات",
+     "products": [
+      {
+       "name": "وجبة شاورما فراخ عربي",
+       "description": "سندوتش مقطع، بطاطس، ثومية ومخلل",
+       "price": 175,
+       "unit": null,
+       "image": "shawarma1.jpg"
+      },
+      {
+       "name": "فتة شاورما",
+       "description": "عيش محمص ورز وشاورما بصوص الزبادي",
+       "price": 160,
+       "unit": null,
+       "image": "rice1.jpg"
+      },
+      {
+       "name": "طبق شاورما",
+       "description": "شاورما على رز بسمتي وسلطات",
+       "price": 195,
+       "unit": null,
+       "image": "grill1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "جانبي",
+     "products": [
+      {
+       "name": "بطاطس",
+       "description": null,
+       "price": 35,
+       "unit": null,
+       "image": "fries2.jpg"
+      },
+      {
+       "name": "ثومية",
+       "description": null,
+       "price": 10,
+       "unit": null,
+       "image": "parfait1.jpg"
+      },
+      {
+       "name": "حمص بالطحينة",
+       "description": null,
+       "price": 40,
+       "unit": null,
+       "image": "bowl1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "hadaqa-koshari",
+   "vertical": "restaurant",
+   "name": "كشري الحادقة",
+   "cover": "koshari1.jpg",
+   "deliveryMinutes": 20,
+   "deliveryFee": 10,
+   "minimumOrder": 35,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "مصري"
+   ],
+   "categories": [
+    {
+     "name": "الكشري",
+     "products": [
+      {
+       "name": "كشري",
+       "description": "رز وعدس ومكرونة وحمص، صلصة دقة وتقلية مقرمشة",
+       "price": 35,
+       "unit": null,
+       "image": "koshari1.jpg"
+      },
+      {
+       "name": "كشري باللحمة",
+       "description": "كشري كبير ومعاه لحمة مفرومة متسبكة",
+       "price": 95,
+       "unit": null,
+       "image": "koshari1.jpg"
+      },
+      {
+       "name": "طاجن مكرونة باللحمة",
+       "description": "مكرونة في الفرن بالصلصة واللحمة المفرومة",
+       "price": 85,
+       "unit": null,
+       "image": "pasta1.jpg"
+      },
+      {
+       "name": "مكرونة بالبشاميل",
+       "description": "طبقة بشاميل ذهبية فوق مكرونة ولحمة",
+       "price": 90,
+       "unit": null,
+       "image": "pasta2.jpg"
+      }
+     ]
+    },
+    {
+     "name": "حلويات",
+     "products": [
+      {
+       "name": "أرز باللبن",
+       "description": "بالمكسرات وجوز الهند",
+       "price": 35,
+       "unit": null,
+       "image": "parfait1.jpg"
+      },
+      {
+       "name": "مهلبية",
+       "description": "باردة وبماء الورد",
+       "price": 30,
+       "unit": null,
+       "image": "parfait1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مشروبات",
+     "products": [
+      {
+       "name": "كوكا كولا",
+       "description": null,
+       "price": 25,
+       "unit": null,
+       "image": "water1.jpg"
+      },
+      {
+       "name": "مياه معدنية",
+       "description": null,
+       "price": 10,
+       "unit": null,
+       "image": "water1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "am-saber",
+   "vertical": "restaurant",
+   "name": "فول وطعمية عم صابر",
+   "cover": "taameya2.jpg",
+   "deliveryMinutes": 15,
+   "deliveryFee": 8,
+   "minimumOrder": 30,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "فطار",
+    "مصري"
+   ],
+   "categories": [
+    {
+     "name": "سندوتشات",
+     "products": [
+      {
+       "name": "سندوتش طعمية",
+       "description": "طعمية خضرا سخنة بالسلطة والطحينة",
+       "price": 12,
+       "unit": null,
+       "image": "taameya1.jpg"
+      },
+      {
+       "name": "سندوتش فول",
+       "description": "فول مدمس بالزيت الحار والكمون",
+       "price": 12,
+       "unit": null,
+       "image": "falafelplate.jpg"
+      },
+      {
+       "name": "سندوتش بطاطس",
+       "description": "شيبسي بيتي في عيش بلدي",
+       "price": 14,
+       "unit": null,
+       "image": "fries1.jpg"
+      },
+      {
+       "name": "سندوتش بيض بالبسطرمة",
+       "description": null,
+       "price": 30,
+       "unit": null,
+       "image": "eggs1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "أطباق الفطار",
+     "products": [
+      {
+       "name": "فطار العيلة",
+       "description": "فول وطعمية وبطاطس وبيض وسلطة وعيش لـ 4 أفراد",
+       "price": 165,
+       "unit": null,
+       "image": "taameya2.jpg"
+      },
+      {
+       "name": "طبق فول",
+       "description": null,
+       "price": 25,
+       "unit": null,
+       "image": "falafelplate.jpg"
+      },
+      {
+       "name": "طبق طعمية (6 قطع)",
+       "description": null,
+       "price": 30,
+       "unit": null,
+       "image": "taameya2.jpg"
+      },
+      {
+       "name": "بيض أومليت",
+       "description": null,
+       "price": 35,
+       "unit": null,
+       "image": "breakfast1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "smash-lab",
+   "vertical": "restaurant",
+   "name": "سماش لاب",
+   "cover": "burger1.jpg",
+   "deliveryMinutes": 30,
+   "deliveryFee": 20,
+   "minimumOrder": 120,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "برجر"
+   ],
+   "categories": [
+    {
+     "name": "سماش برجر",
+     "products": [
+      {
+       "name": "كلاسيك سماش",
+       "description": "قطعتين لحم مضغوطين، شيدر، بصل مكرمل وصوص البيت",
+       "price": 165,
+       "unit": null,
+       "image": "burger1.jpg"
+      },
+      {
+       "name": "فاير برجر",
+       "description": "صوص حار مدخن، هالابينو، شيدر",
+       "price": 180,
+       "unit": null,
+       "image": "burger3.jpg"
+      },
+      {
+       "name": "ماشروم سويس",
+       "description": "مشروم سوتيه وجبنة سويسري",
+       "price": 190,
+       "unit": null,
+       "image": "burger2.jpg"
+      }
+     ]
+    },
+    {
+     "name": "فراخ",
+     "products": [
+      {
+       "name": "كرسبي تشيكن برجر",
+       "description": null,
+       "price": 150,
+       "unit": null,
+       "image": "chicken1.jpg"
+      },
+      {
+       "name": "تندرز (5 قطع)",
+       "description": null,
+       "price": 170,
+       "unit": null,
+       "image": "chicken2.jpg"
+      }
+     ]
+    },
+    {
+     "name": "جانبي",
+     "products": [
+      {
+       "name": "بطاطس بالجبنة",
+       "description": null,
+       "price": 70,
+       "unit": null,
+       "image": "fries1.jpg"
+      },
+      {
+       "name": "بطاطس ودجز",
+       "description": null,
+       "price": 55,
+       "unit": null,
+       "image": "fries2.jpg"
+      },
+      {
+       "name": "ميلك شيك أوريو",
+       "description": null,
+       "price": 95,
+       "unit": null,
+       "image": "shake1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "qarun-pizza",
+   "vertical": "restaurant",
+   "name": "بيتزا قارون",
+   "cover": "pizza2.jpg",
+   "deliveryMinutes": 35,
+   "deliveryFee": 18,
+   "minimumOrder": 100,
+   "deliveredBy": "store",
+   "open": true,
+   "cuisines": [
+    "بيتزا"
+   ],
+   "categories": [
+    {
+     "name": "بيتزا",
+     "products": [
+      {
+       "name": "مارجريتا",
+       "description": "صلصة طماطم إيطالية وموتزاريلا وريحان",
+       "price": 150,
+       "unit": null,
+       "image": "pizza3.jpg"
+      },
+      {
+       "name": "بيبروني",
+       "description": "بيبروني بقري وموتزاريلا",
+       "price": 195,
+       "unit": null,
+       "image": "pizza1.jpg"
+      },
+      {
+       "name": "سوبر سوبريم",
+       "description": "سجق، لحمة، فلفل، زيتون، مشروم",
+       "price": 220,
+       "unit": null,
+       "image": "pizza2.jpg"
+      }
+     ]
+    },
+    {
+     "name": "باستا",
+     "products": [
+      {
+       "name": "بينا أرابياتا",
+       "description": null,
+       "price": 130,
+       "unit": null,
+       "image": "pasta1.jpg"
+      },
+      {
+       "name": "فوسيلي بالخضار والبيستو",
+       "description": null,
+       "price": 140,
+       "unit": null,
+       "image": "pasta2.jpg"
+      }
+     ]
+    },
+    {
+     "name": "سلطات",
+     "products": [
+      {
+       "name": "سيزر سالاد",
+       "description": null,
+       "price": 110,
+       "unit": null,
+       "image": "salad2.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "waha-grill",
+   "vertical": "restaurant",
+   "name": "مشويات الواحة",
+   "cover": "grill1.jpg",
+   "deliveryMinutes": 40,
+   "deliveryFee": 20,
+   "minimumOrder": 150,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "مشويات",
+    "مصري"
+   ],
+   "categories": [
+    {
+     "name": "مشويات بالكيلو",
+     "products": [
+      {
+       "name": "كفتة",
+       "description": "كفتة بلدي على الفحم",
+       "price": 160,
+       "unit": "ربع كيلو",
+       "image": "grill2.jpg"
+      },
+      {
+       "name": "مشكل مشويات",
+       "description": "كفتة وطرب وكباب وريش",
+       "price": 340,
+       "unit": "نص كيلو",
+       "image": "grill1.jpg"
+      },
+      {
+       "name": "نص فرخة مشوية",
+       "description": "متتبلة بالليمون والثوم مع رز وسلطة",
+       "price": 220,
+       "unit": null,
+       "image": "chicken1.jpg"
+      },
+      {
+       "name": "ريش ضاني",
+       "description": null,
+       "price": 420,
+       "unit": "نص كيلو",
+       "image": "steak1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مع المشويات",
+     "products": [
+      {
+       "name": "رز بسمتي",
+       "description": null,
+       "price": 35,
+       "unit": null,
+       "image": "rice1.jpg"
+      },
+      {
+       "name": "سلطة بلدي",
+       "description": null,
+       "price": 25,
+       "unit": null,
+       "image": "salad1.jpg"
+      },
+      {
+       "name": "طحينة",
+       "description": null,
+       "price": 20,
+       "unit": null,
+       "image": "bowl1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "qarun-fish",
+   "vertical": "restaurant",
+   "name": "أسماك بحيرة قارون",
+   "cover": "seafood1.jpg",
+   "deliveryMinutes": 45,
+   "deliveryFee": 25,
+   "minimumOrder": 150,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "أسماك"
+   ],
+   "categories": [
+    {
+     "name": "سمك بحيرة قارون",
+     "products": [
+      {
+       "name": "بلطي مشوي",
+       "description": "بلطي طازة من البحيرة، ردة وليمون",
+       "price": 190,
+       "unit": "كيلو",
+       "image": "fish1.jpg"
+      },
+      {
+       "name": "جمبري",
+       "description": "جمبري وسط مشوي أو مقلي",
+       "price": 320,
+       "unit": "نص كيلو",
+       "image": "shrimp1.jpg"
+      },
+      {
+       "name": "طاجن سي فود",
+       "description": null,
+       "price": 280,
+       "unit": null,
+       "image": "seafood1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "جانبي",
+     "products": [
+      {
+       "name": "رز صيادية",
+       "description": null,
+       "price": 40,
+       "unit": null,
+       "image": "rice1.jpg"
+      },
+      {
+       "name": "شوربة سي فود",
+       "description": null,
+       "price": 85,
+       "unit": null,
+       "image": "soup1.jpg"
+      },
+      {
+       "name": "سلطة طحينة",
+       "description": null,
+       "price": 25,
+       "unit": null,
+       "image": "bowl1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "qarun-sweets",
+   "vertical": "restaurant",
+   "name": "حلواني الفيوم",
+   "cover": "kunafa1.jpg",
+   "deliveryMinutes": 25,
+   "deliveryFee": 12,
+   "minimumOrder": 60,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "حلويات"
+   ],
+   "categories": [
+    {
+     "name": "حلويات شرقي",
+     "products": [
+      {
+       "name": "كنافة بالقشطة",
+       "description": "كنافة بلدي ساخنة وقشطة طازة",
+       "price": 90,
+       "unit": null,
+       "image": "kunafa1.jpg"
+      },
+      {
+       "name": "كنافة نابلسية",
+       "description": null,
+       "price": 110,
+       "unit": null,
+       "image": "kunafa1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "حلويات غربي",
+     "products": [
+      {
+       "name": "كيكة شوكولاتة",
+       "description": "تورتة شوكولاتة بلجيكي",
+       "price": 85,
+       "unit": null,
+       "image": "cake1.jpg"
+      },
+      {
+       "name": "دونتس (3 قطع)",
+       "description": null,
+       "price": 75,
+       "unit": null,
+       "image": "donut1.jpg"
+      },
+      {
+       "name": "كوكيز",
+       "description": null,
+       "price": 60,
+       "unit": null,
+       "image": "cookies1.jpg"
+      },
+      {
+       "name": "آيس كريم صنداي",
+       "description": null,
+       "price": 80,
+       "unit": null,
+       "image": "icecream1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "masalla-cafe",
+   "vertical": "restaurant",
+   "name": "قهوة المسلة",
+   "cover": "coffee2.jpg",
+   "deliveryMinutes": 20,
+   "deliveryFee": 12,
+   "minimumOrder": 50,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [
+    "قهوة"
+   ],
+   "categories": [
+    {
+     "name": "مشروبات سخنة",
+     "products": [
+      {
+       "name": "لاتيه",
+       "description": null,
+       "price": 75,
+       "unit": null,
+       "image": "coffee2.jpg"
+      },
+      {
+       "name": "قهوة تركي",
+       "description": null,
+       "price": 40,
+       "unit": null,
+       "image": "cafetray.jpg"
+      },
+      {
+       "name": "كابتشينو",
+       "description": null,
+       "price": 70,
+       "unit": null,
+       "image": "coffee1.jpg"
+      },
+      {
+       "name": "شاي بلبن",
+       "description": null,
+       "price": 35,
+       "unit": null,
+       "image": "tea1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مشروبات ساقعة",
+     "products": [
+      {
+       "name": "آيس لاتيه",
+       "description": null,
+       "price": 85,
+       "unit": null,
+       "image": "coffee3.jpg"
+      },
+      {
+       "name": "سموزي فراولة وموز",
+       "description": null,
+       "price": 80,
+       "unit": null,
+       "image": "smoothie1.jpg"
+      },
+      {
+       "name": "ميلك شيك",
+       "description": null,
+       "price": 90,
+       "unit": null,
+       "image": "shake1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مع القهوة",
+     "products": [
+      {
+       "name": "وافل",
+       "description": null,
+       "price": 95,
+       "unit": null,
+       "image": "waffle1.jpg"
+      },
+      {
+       "name": "بان كيك بالعسل",
+       "description": null,
+       "price": 110,
+       "unit": null,
+       "image": "pancake1.jpg"
+      },
+      {
+       "name": "فرنش توست",
+       "description": null,
+       "price": 100,
+       "unit": null,
+       "image": "toast1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "nakhla-juice",
+   "vertical": "restaurant",
+   "name": "عصاير النخلة",
+   "cover": "juice2.jpg",
+   "deliveryMinutes": 20,
+   "deliveryFee": 10,
+   "minimumOrder": 40,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [],
+   "categories": [
+    {
+     "name": "عصاير فريش",
+     "products": [
+      {
+       "name": "برتقال",
+       "description": null,
+       "price": 40,
+       "unit": null,
+       "image": "juice1.jpg"
+      },
+      {
+       "name": "مانجو",
+       "description": null,
+       "price": 50,
+       "unit": null,
+       "image": "juice2.jpg"
+      },
+      {
+       "name": "كوكتيل فواكه",
+       "description": null,
+       "price": 55,
+       "unit": null,
+       "image": "smoothie1.jpg"
+      },
+      {
+       "name": "فخفخينا",
+       "description": "فواكه وآيس كريم ومكسرات",
+       "price": 75,
+       "unit": null,
+       "image": "parfait1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "سلطة فواكه",
+     "products": [
+      {
+       "name": "سلطة فواكه بالقشطة",
+       "description": null,
+       "price": 70,
+       "unit": null,
+       "image": "fruits1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "green-bowl",
+   "vertical": "restaurant",
+   "name": "جرين بول",
+   "cover": "salad1.jpg",
+   "deliveryMinutes": 30,
+   "deliveryFee": 18,
+   "minimumOrder": 120,
+   "deliveredBy": "platform",
+   "open": false,
+   "cuisines": [
+    "صحي"
+   ],
+   "categories": [
+    {
+     "name": "بولز",
+     "products": [
+      {
+       "name": "بول فراخ مشوية",
+       "description": "كينوا، أفوكادو، خضار مشوي وصوص زبادي",
+       "price": 175,
+       "unit": null,
+       "image": "salad1.jpg"
+      },
+      {
+       "name": "بول خضار",
+       "description": null,
+       "price": 140,
+       "unit": null,
+       "image": "bowl1.jpg"
+      },
+      {
+       "name": "سلمون بول",
+       "description": null,
+       "price": 260,
+       "unit": null,
+       "image": "fish1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "سلطات",
+     "products": [
+      {
+       "name": "سلطة خضرا كبيرة",
+       "description": null,
+       "price": 95,
+       "unit": null,
+       "image": "vegetables1.jpg"
+      },
+      {
+       "name": "سلطة مكرونة",
+       "description": null,
+       "price": 90,
+       "unit": null,
+       "image": "pasta2.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "crepe-street",
+   "vertical": "restaurant",
+   "name": "كريب ستريت",
+   "cover": "crepe1.jpg",
+   "deliveryMinutes": 25,
+   "deliveryFee": 15,
+   "minimumOrder": 70,
+   "deliveredBy": "store",
+   "open": true,
+   "cuisines": [],
+   "categories": [
+    {
+     "name": "كريب حادق",
+     "products": [
+      {
+       "name": "كريب فراخ رانش",
+       "description": "فراخ، موتزاريلا، صوص رانش وخضار",
+       "price": 120,
+       "unit": null,
+       "image": "crepe1.jpg"
+      },
+      {
+       "name": "كريب سجق",
+       "description": null,
+       "price": 110,
+       "unit": null,
+       "image": "crepe1.jpg"
+      },
+      {
+       "name": "توست مشكل جبن",
+       "description": null,
+       "price": 80,
+       "unit": null,
+       "image": "sandwich1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "كريب حلو",
+     "products": [
+      {
+       "name": "كريب نوتيلا وموز",
+       "description": null,
+       "price": 115,
+       "unit": null,
+       "image": "pancake1.jpg"
+      },
+      {
+       "name": "كريب لوتس",
+       "description": null,
+       "price": 125,
+       "unit": null,
+       "image": "waffle1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "lamha-mart",
+   "vertical": "market",
+   "name": "توصيلة ماركت",
+   "cover": "market1.jpg",
+   "deliveryMinutes": 15,
+   "deliveryFee": 10,
+   "minimumOrder": 50,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [],
+   "categories": [
+    {
+     "name": "خضار وفاكهة",
+     "products": [
+      {
+       "name": "طماطم",
+       "description": null,
+       "price": 22,
+       "unit": "كيلو",
+       "image": "tomato1.jpg"
+      },
+      {
+       "name": "موز",
+       "description": null,
+       "price": 38,
+       "unit": "كيلو",
+       "image": "banana1.jpg"
+      },
+      {
+       "name": "سلة فاكهة الموسم",
+       "description": null,
+       "price": 165,
+       "unit": "3 كيلو",
+       "image": "fruits1.jpg"
+      },
+      {
+       "name": "خضار سلطة مشكل",
+       "description": null,
+       "price": 35,
+       "unit": "علبة",
+       "image": "vegetables1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "ألبان وبيض",
+     "products": [
+      {
+       "name": "لبن كامل الدسم",
+       "description": null,
+       "price": 48,
+       "unit": "لتر",
+       "image": "milk1.jpg"
+      },
+      {
+       "name": "لبن طبيعي",
+       "description": null,
+       "price": 52,
+       "unit": "1 لتر",
+       "image": "milk2.jpg"
+      },
+      {
+       "name": "بيض أحمر",
+       "description": null,
+       "price": 175,
+       "unit": "30 بيضة",
+       "image": "eggsraw1.jpg"
+      },
+      {
+       "name": "جبنة رومي",
+       "description": null,
+       "price": 95,
+       "unit": "ربع كيلو",
+       "image": "cheese1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مخبوزات",
+     "products": [
+      {
+       "name": "عيش بلدي",
+       "description": null,
+       "price": 15,
+       "unit": "10 أرغفة",
+       "image": "bread1.jpg"
+      },
+      {
+       "name": "عيش أسمر",
+       "description": null,
+       "price": 30,
+       "unit": "كيس",
+       "image": "bread1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مشروبات",
+     "products": [
+      {
+       "name": "مياه معدنية",
+       "description": null,
+       "price": 60,
+       "unit": "6 × 1.5 لتر",
+       "image": "water1.jpg"
+      },
+      {
+       "name": "عصير برتقال",
+       "description": null,
+       "price": 45,
+       "unit": "لتر",
+       "image": "juice1.jpg"
+      },
+      {
+       "name": "بن محوج",
+       "description": null,
+       "price": 145,
+       "unit": "ربع كيلو",
+       "image": "coffee1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "سناكس وشوكولاتة",
+     "products": [
+      {
+       "name": "شيبسي كبير",
+       "description": null,
+       "price": 20,
+       "unit": "كيس",
+       "image": "snacks1.jpg"
+      },
+      {
+       "name": "شوكولاتة داكنة",
+       "description": null,
+       "price": 75,
+       "unit": "100 جم",
+       "image": "chocolate1.jpg"
+      },
+      {
+       "name": "كوكيز شوكولاتة",
+       "description": null,
+       "price": 55,
+       "unit": "علبة",
+       "image": "cookies1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "منظفات",
+     "products": [
+      {
+       "name": "منظف أسطح",
+       "description": null,
+       "price": 65,
+       "unit": "1 لتر",
+       "image": "cleaning1.jpg"
+      },
+      {
+       "name": "سائل أطباق",
+       "description": null,
+       "price": 48,
+       "unit": "750 مل",
+       "image": "cleaning1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "shifa-pharmacy",
+   "vertical": "pharmacy",
+   "name": "صيدلية الشفاء",
+   "cover": "pharmacy1.jpg",
+   "deliveryMinutes": 15,
+   "deliveryFee": 10,
+   "minimumOrder": 0,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [],
+   "categories": [
+    {
+     "name": "برد وأنفلونزا",
+     "products": [
+      {
+       "name": "باراسيتامول 500 مجم",
+       "description": null,
+       "price": 32,
+       "unit": "شريط 20 قرص",
+       "image": "pills1.jpg"
+      },
+      {
+       "name": "أقراص برد وزكام",
+       "description": null,
+       "price": 45,
+       "unit": "شريط 10",
+       "image": "pharmacy1.jpg"
+      },
+      {
+       "name": "شراب كحة للأطفال",
+       "description": null,
+       "price": 58,
+       "unit": "120 مل",
+       "image": "meds1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مسكنات",
+     "products": [
+      {
+       "name": "إيبوبروفين 400 مجم",
+       "description": null,
+       "price": 40,
+       "unit": "شريط 20 قرص",
+       "image": "pills1.jpg"
+      },
+      {
+       "name": "جل مسكن للعضلات",
+       "description": null,
+       "price": 75,
+       "unit": "50 جم",
+       "image": "meds1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "فيتامينات",
+     "products": [
+      {
+       "name": "فيتامين سي 1000 فوار",
+       "description": null,
+       "price": 85,
+       "unit": "20 قرص",
+       "image": "vitamins1.jpg"
+      },
+      {
+       "name": "فيتامين د 5000",
+       "description": null,
+       "price": 120,
+       "unit": "30 كبسولة",
+       "image": "vitamins1.jpg"
+      },
+      {
+       "name": "مالتي فيتامين",
+       "description": null,
+       "price": 165,
+       "unit": "30 قرص",
+       "image": "pharmacy1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "عناية شخصية",
+     "products": [
+      {
+       "name": "كمامات طبية",
+       "description": null,
+       "price": 60,
+       "unit": "علبة 50",
+       "image": "meds1.jpg"
+      },
+      {
+       "name": "مطهر يدين",
+       "description": null,
+       "price": 45,
+       "unit": "250 مل",
+       "image": "cleaning1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "nour-pharmacy",
+   "vertical": "pharmacy",
+   "name": "صيدلية النور",
+   "cover": "pills1.jpg",
+   "deliveryMinutes": 20,
+   "deliveryFee": 13,
+   "minimumOrder": 0,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [],
+   "categories": [
+    {
+     "name": "برد وأنفلونزا",
+     "products": [
+      {
+       "name": "باراسيتامول 500 مجم",
+       "description": null,
+       "price": 32,
+       "unit": "شريط 20 قرص",
+       "image": "pills1.jpg"
+      },
+      {
+       "name": "أقراص برد وزكام",
+       "description": null,
+       "price": 45,
+       "unit": "شريط 10",
+       "image": "pharmacy1.jpg"
+      },
+      {
+       "name": "شراب كحة للأطفال",
+       "description": null,
+       "price": 58,
+       "unit": "120 مل",
+       "image": "meds1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مسكنات",
+     "products": [
+      {
+       "name": "إيبوبروفين 400 مجم",
+       "description": null,
+       "price": 40,
+       "unit": "شريط 20 قرص",
+       "image": "pills1.jpg"
+      },
+      {
+       "name": "جل مسكن للعضلات",
+       "description": null,
+       "price": 75,
+       "unit": "50 جم",
+       "image": "meds1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "فيتامينات",
+     "products": [
+      {
+       "name": "فيتامين سي 1000 فوار",
+       "description": null,
+       "price": 85,
+       "unit": "20 قرص",
+       "image": "vitamins1.jpg"
+      },
+      {
+       "name": "فيتامين د 5000",
+       "description": null,
+       "price": 120,
+       "unit": "30 كبسولة",
+       "image": "vitamins1.jpg"
+      },
+      {
+       "name": "مالتي فيتامين",
+       "description": null,
+       "price": 165,
+       "unit": "30 قرص",
+       "image": "pharmacy1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "عناية شخصية",
+     "products": [
+      {
+       "name": "كمامات طبية",
+       "description": null,
+       "price": 60,
+       "unit": "علبة 50",
+       "image": "meds1.jpg"
+      },
+      {
+       "name": "مطهر يدين",
+       "description": null,
+       "price": 45,
+       "unit": "250 مل",
+       "image": "cleaning1.jpg"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "jamaa-pharmacy",
+   "vertical": "pharmacy",
+   "name": "صيدليات الجامعة",
+   "cover": "vitamins1.jpg",
+   "deliveryMinutes": 25,
+   "deliveryFee": 13,
+   "minimumOrder": 0,
+   "deliveredBy": "platform",
+   "open": true,
+   "cuisines": [],
+   "categories": [
+    {
+     "name": "برد وأنفلونزا",
+     "products": [
+      {
+       "name": "باراسيتامول 500 مجم",
+       "description": null,
+       "price": 32,
+       "unit": "شريط 20 قرص",
+       "image": "pills1.jpg"
+      },
+      {
+       "name": "أقراص برد وزكام",
+       "description": null,
+       "price": 45,
+       "unit": "شريط 10",
+       "image": "pharmacy1.jpg"
+      },
+      {
+       "name": "شراب كحة للأطفال",
+       "description": null,
+       "price": 58,
+       "unit": "120 مل",
+       "image": "meds1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "مسكنات",
+     "products": [
+      {
+       "name": "إيبوبروفين 400 مجم",
+       "description": null,
+       "price": 40,
+       "unit": "شريط 20 قرص",
+       "image": "pills1.jpg"
+      },
+      {
+       "name": "جل مسكن للعضلات",
+       "description": null,
+       "price": 75,
+       "unit": "50 جم",
+       "image": "meds1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "فيتامينات",
+     "products": [
+      {
+       "name": "فيتامين سي 1000 فوار",
+       "description": null,
+       "price": 85,
+       "unit": "20 قرص",
+       "image": "vitamins1.jpg"
+      },
+      {
+       "name": "فيتامين د 5000",
+       "description": null,
+       "price": 120,
+       "unit": "30 كبسولة",
+       "image": "vitamins1.jpg"
+      },
+      {
+       "name": "مالتي فيتامين",
+       "description": null,
+       "price": 165,
+       "unit": "30 قرص",
+       "image": "pharmacy1.jpg"
+      }
+     ]
+    },
+    {
+     "name": "عناية شخصية",
+     "products": [
+      {
+       "name": "كمامات طبية",
+       "description": null,
+       "price": 60,
+       "unit": "علبة 50",
+       "image": "meds1.jpg"
+      },
+      {
+       "name": "مطهر يدين",
+       "description": null,
+       "price": 45,
+       "unit": "250 مل",
+       "image": "cleaning1.jpg"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

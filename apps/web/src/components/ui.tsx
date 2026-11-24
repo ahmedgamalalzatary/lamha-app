@@ -137,3 +137,121 @@ export function EmptyState({ icon: Icon, title, message }: { icon: LucideIcon; t
     </div>
   );
 }
+
+/** A square icon button with its name for screen readers and as a tooltip. */
+export function IconButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="grid size-9 place-items-center rounded-lg text-tw-ink-2 hover:bg-tw-50 hover:text-tw disabled:opacity-30 disabled:hover:bg-transparent"
+    >
+      {children}
+    </button>
+  );
+}
+
+/** An on/off switch (orange when on), announced as a switch with its label. */
+export function Switch({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (on: boolean) => void; disabled?: boolean }) {
+  return (
+    <label className="flex items-center justify-between gap-4 text-sm font-medium">
+      <span>{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${checked ? 'bg-tw' : 'bg-tw-line'}`}
+      >
+        <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-all ${checked ? 'start-5.5' : 'start-0.5'}`} />
+      </button>
+    </label>
+  );
+}
+
+/** A labelled select on the grey input fill. */
+export function SelectField<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm font-medium text-tw-ink">
+        {label}
+      </label>
+      <select id={id} value={value} onChange={(e) => onChange(e.target.value as T)} className="h-12 rounded-xl bg-tw-input px-4 text-sm outline-none focus:ring-2 focus:ring-tw/40">
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/** Tawsilty's admin table (contract §11): an orange header row, rows on thin lines. */
+export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-tw-line">
+      <table className="w-full text-start text-sm">
+        <thead className="bg-tw text-white">
+          <tr>
+            {headers.map((h) => (
+              <th key={h} className="px-4 py-3 text-start font-semibold whitespace-nowrap">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}
+
+/** A small rounded status label: green, red or grey. */
+export function Pill({ tone, children }: { tone: 'ok' | 'danger' | 'muted'; children: ReactNode }) {
+  const tones = { ok: 'bg-tw-ok-50 text-tw-ok', danger: 'bg-tw-danger/10 text-tw-danger', muted: 'bg-tw-input text-tw-ink-2' };
+  return <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${tones[tone]}`}>{children}</span>;
+}
+
+/** The loading block, and the error line with a retry, every list page shows. */
+export function LoadState({ error, onRetry }: { error?: string; onRetry: () => void }) {
+  if (!error) return <div className="h-48 animate-pulse rounded-xl bg-tw-surface" />;
+  return (
+    <div className="flex items-center gap-4">
+      <p className="font-medium text-tw-danger">{error}</p>
+      <Button tone="soft" onClick={onRetry}>
+        إعادة المحاولة
+      </Button>
+    </div>
+  );
+}
+
+/** A dialog's حفظ (disabled until ready) and إلغاء. */
+export function DialogActions({ ready, busy, onSave, onClose }: { ready: boolean; busy: boolean; onSave: () => void; onClose: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Button disabled={!ready} loading={busy} onClick={onSave} className="flex-1">
+        حفظ
+      </Button>
+      <button type="button" onClick={onClose} className="h-11 flex-1 rounded-full text-sm font-semibold text-tw-ink-2">
+        إلغاء
+      </button>
+    </div>
+  );
+}

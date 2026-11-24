@@ -6,7 +6,10 @@ import { DbModule } from './core/db/db.module.js';
 import { MailModule } from './core/mail/mailer.js';
 import { AdminsModule } from './modules/admins/admins.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { PartnersModule } from './modules/partners/partners.module.js';
+import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
@@ -39,6 +42,9 @@ import { UsersModule } from './modules/users/users.module.js';
     AuthModule,
     UsersModule,
     AdminsModule,
+    CatalogModule,
+    PartnersModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}

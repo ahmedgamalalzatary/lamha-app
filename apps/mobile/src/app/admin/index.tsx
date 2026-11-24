@@ -1,5 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { AccountsScreen } from '@/features/accounts/screens/AccountsScreen';
 
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.accounts" />;
-}
+export default AccountsScreen;

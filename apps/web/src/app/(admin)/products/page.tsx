@@ -1,3 +1,11 @@
-import { ComingSoon } from '@/features/shell/ComingSoon';
+import { Suspense } from 'react';
+import { StoreProductsRoute } from '@/features/products/StoreProductsRoute';
 
-export default ComingSoon;
+// The search params are only known in the browser, so the page waits for them inside Suspense.
+export default function Page() {
+  return (
+    <Suspense>
+      <StoreProductsRoute />
+    </Suspense>
+  );
+}

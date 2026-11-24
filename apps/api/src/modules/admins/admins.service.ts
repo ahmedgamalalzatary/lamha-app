@@ -6,21 +6,8 @@ import { SessionsRepository } from '../auth/sessions.repository.js';
 import { generatePassword } from '../users/generated-password.js';
 import { UsersRepository } from '../users/users.repository.js';
 import type { UserRow } from '../users/users.schema.js';
+import { toStaffAccount } from '../users/staff-account.js';
 import type { CreateAdminDto } from './dto/admins.dto.js';
-
-/** What the dashboard sees of an account it manages. */
-export function toStaffAccount(row: UserRow, meId: number): StaffAccount {
-  return {
-    id: row.id,
-    role: row.role,
-    phone: row.phone,
-    firstName: row.firstName,
-    lastName: row.lastName,
-    disabled: !!row.disabledAt,
-    createdAt: row.createdAt.toISOString(),
-    you: row.id === meId,
-  };
-}
 
 /**
  * الإعدادات › حسابات الإدارة (contract §1.1 A23). Like partner and driver accounts (§2), an admin

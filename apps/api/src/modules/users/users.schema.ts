@@ -1,5 +1,6 @@
 import { GENDERS, ROLES } from '@tawsela/shared';
 import { datetime, int, mysqlEnum, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
+import { stores } from '../catalog/catalog.schema.js';
 
 /**
  * Every account: customers sign up themselves; partners, drivers and admins are created by an admin
@@ -21,6 +22,8 @@ export const users = mysqlTable('users', {
   locale: mysqlEnum('locale', ['ar', 'en']).notNull().default('ar'),
   inviteCode: varchar('invite_code', { length: 12 }).unique(),
   invitedById: int('invited_by_id', { unsigned: true }),
+  /** Partners only: the store the account runs (contract §2). */
+  storeId: int('store_id', { unsigned: true }).references(() => stores.id),
   disabledAt: datetime('disabled_at'),
   deletedAt: datetime('deleted_at'),
   /** Access tokens issued before this moment stop working (password reset, deletion). */

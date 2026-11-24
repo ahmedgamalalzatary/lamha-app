@@ -87,6 +87,18 @@ export interface CreatedAccount extends GeneratedPassword {
 export type ApiErrorCode =
   | 'OWN_ACCOUNT'
   | 'ACCOUNT_NOT_FOUND'
+  /** A store, category, product, cuisine or home tile that does not exist. */
+  | 'NOT_FOUND'
+  /** A category that still holds products cannot be deleted. */
+  | 'CATEGORY_NOT_EMPTY'
+  /** A product's category belongs to another store. */
+  | 'CATEGORY_OTHER_STORE'
+  /** A partner account with no store (contract §2). */
+  | 'NO_STORE'
+  /** The upload is not an image the server can read. */
+  | 'IMAGE_INVALID'
+  /** A home tile must open exactly one vertical or one store. */
+  | 'TILE_TARGET'
   | 'PHONE_TAKEN'
   | 'EMAIL_TAKEN'
   | 'PHONE_NOT_FOUND'

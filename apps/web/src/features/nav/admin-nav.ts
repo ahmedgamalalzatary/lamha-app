@@ -29,6 +29,9 @@ export const ADMIN_NAV: NavGroup[] = [
     items: [
       { label: 'منتجات الموردين', href: '/products' },
       { label: 'منتجات غير فعالة', href: '/products/inactive' },
+      // [Client] A12: not in the Tawsilty photo; the names are ours [Open].
+      { label: 'أنواع الأكل', href: '/catalog/cuisines' },
+      { label: 'مربعات الرئيسية', href: '/catalog/home-tiles' },
     ],
   },
   { label: 'التسويق والعروض', icon: Megaphone, items: [{ label: 'الإشعارات التفاعلية', href: '/marketing/notifications' }] },

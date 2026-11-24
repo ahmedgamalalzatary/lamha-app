@@ -32,6 +32,18 @@ jest.mock('expo-haptics', () => ({
 // Gesture Handler binds to the UI runtime, which Jest (running worklets as plain JS) does not have.
 jest.mock('react-native-worklets', () => ({ ...jest.requireActual('react-native-worklets'), getUIRuntimeHolder: () => ({}) }));
 
+// expo-clipboard's own mock keeps nothing; keep the copied text in memory so tests can read it back.
+jest.mock('expo-clipboard', () => {
+  let text = '';
+  return {
+    setStringAsync: jest.fn(async (value: string) => {
+      text = value;
+      return true;
+    }),
+    getStringAsync: jest.fn(async () => text),
+  };
+});
+
 // expo-secure-store has no native module under Jest: keep values in memory.
 jest.mock('expo-secure-store', () => {
   const store = new Map<string, string>();

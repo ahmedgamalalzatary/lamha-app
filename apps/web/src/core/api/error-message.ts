@@ -9,6 +9,12 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   PHONE_TAKEN: 'رقم الهاتف مسجل بالفعل',
   OWN_ACCOUNT: 'لا يمكنك تغيير حسابك من هنا، اطلب ذلك من مسؤول آخر',
   ACCOUNT_NOT_FOUND: 'الحساب غير موجود',
+  NOT_FOUND: 'العنصر غير موجود، ربما حُذف',
+  CATEGORY_NOT_EMPTY: 'احذف منتجات القسم أو انقلها أولاً',
+  CATEGORY_OTHER_STORE: 'هذا القسم تابع لمتجر آخر',
+  NO_STORE: 'هذا الحساب غير مربوط بمتجر، تواصل مع الإدارة',
+  IMAGE_INVALID: 'تعذر قراءة الصورة، اختر صورة JPEG أو PNG',
+  TILE_TARGET: 'اختر قسماً أو متجراً واحداً يفتحه المربع',
 };
 
 export const GENERIC_ERROR = 'حدث خطأ، حاول مرة أخرى';

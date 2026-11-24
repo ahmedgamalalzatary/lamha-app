@@ -7,7 +7,8 @@ export default defineConfig({
   esbuild: { jsx: 'automatic' },
   test: {
     include: ['test/**/*.test.{ts,tsx}'],
-    environment: 'jsdom',
+    // jsdom with Node's FormData and File, so uploads reach the real API (test/utils/environment.ts).
+    environment: './test/utils/environment.ts',
     setupFiles: ['test/setup.ts'],
     // The page tests talk to the real API on its own test database (test/utils/global-setup.ts).
     globalSetup: ['test/utils/global-setup.ts'],

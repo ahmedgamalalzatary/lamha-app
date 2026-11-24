@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiRequestError, createApi, type TokenStore } from '@/core/api/create-api';
 import { insertUser, PASSWORD, resetDb, sql } from '../utils/db';
 import { API_URL } from '../utils/env';
+import { pngFile, removeUpload } from '../utils/image';
 
 /** The tests run against the real API and its test database (test/utils/global-setup.ts). */
 function memoryStore(start: AuthResponse | null = null): TokenStore & { saved: AuthResponse | null } {
@@ -119,5 +120,16 @@ describe("the dashboard's API client (real API)", () => {
     await api.signOut();
     expect(store.saved).toBeNull();
     expect(await refreshWorks(refreshToken)).toBe(false);
+  });
+
+  it('sends a form with a file as multipart (the image upload)', async () => {
+    await insertUser('admin', '01000000001');
+    const api = client();
+    await api.signIn('01000000001', PASSWORD);
+    const form = new FormData();
+    form.append('image', pngFile());
+    const { url } = await api.request<{ url: string }>('/admin/uploads', { method: 'POST', body: form });
+    expect(url).toMatch(/^\/uploads\/catalog\/.+\.jpg$/);
+    await removeUpload(url);
   });
 });

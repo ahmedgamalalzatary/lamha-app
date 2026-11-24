@@ -4,7 +4,8 @@ import { isEgyptianMobile, normalizePhone, type StaffAccount } from '@tawsela/sh
 import { Ban, CircleCheck, KeyRound, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
-import { Button, ConfirmDialog, Dialog, ErrorLine, TextField } from '@/components/ui';
+import { PasswordShown } from '@/components/PasswordShown';
+import { Button, ConfirmDialog, Dialog, ErrorLine, IconButton, TextField } from '@/components/ui';
 import { useAdmins, useCreateAdmin, useResetAdminPassword, useSetAdminDisabled } from './api';
 
 const fullName = (a: StaffAccount) => `${a.firstName} ${a.lastName}`.trim();
@@ -136,14 +137,6 @@ const MESSAGES = {
   enable: (name: string) => `سيستطيع ${name} الدخول مرة أخرى بكلمة مروره.`,
 };
 
-function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button type="button" aria-label={label} title={label} onClick={onClick} className="grid size-9 place-items-center rounded-lg text-tw-ink-2 hover:bg-tw-50 hover:text-tw">
-      {children}
-    </button>
-  );
-}
-
 function AddAdmin({ onClose, onCreated }: { onClose: () => void; onCreated: (password: string) => void }) {
   const create = useCreateAdmin();
   const [firstName, setFirstName] = useState('');
@@ -169,33 +162,6 @@ function AddAdmin({ onClose, onCreated }: { onClose: () => void; onCreated: (pas
         <button type="button" onClick={onClose} className="h-11 flex-1 rounded-full text-sm font-semibold text-tw-ink-2">
           إلغاء
         </button>
-      </div>
-    </Dialog>
-  );
-}
-
-/** The generated password, once (contract §2): copy it and hand it over. */
-function PasswordShown({ password, onClose }: { password: string; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Dialog title="كلمة المرور الجديدة" onClose={onClose}>
-      <p className="text-sm text-tw-ink-2">انسخ كلمة المرور وسلّمها لصاحب الحساب، لن تظهر مرة أخرى.</p>
-      <p data-testid="generated-password" dir="ltr" className="rounded-xl bg-tw-input px-4 py-3 text-center font-mono text-xl font-bold tracking-wider">
-        {password}
-      </p>
-      <div className="flex items-center gap-3">
-        <Button
-          tone="soft"
-          className="flex-1"
-          onClick={() => {
-            void navigator.clipboard.writeText(password).then(() => setCopied(true));
-          }}
-        >
-          {copied ? 'تم النسخ' : 'نسخ'}
-        </Button>
-        <Button onClick={onClose} className="flex-1">
-          تم
-        </Button>
       </div>
     </Dialog>
   );

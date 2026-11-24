@@ -28,7 +28,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 1 | Accounts: phone, email code and password | ✅ | none (#1 decided: email) |
 | 2 | Production server and deploys (moved to just before the first real mobile build) | ⬜ | owner provides the VPS (#6) |
 | 3 | Dashboard shell and sign-in (admin and partner areas) | ✅ | |
-| 4 | Catalog: verticals, stores, categories, products | ⬜ | |
+| 4 | Catalog: verticals, stores, categories, products | ✅ | |
 | 5 | Customer home | ⬜ | |
 | 6 | Store lists, filters and search | ⬜ | |
 | 7 | Store page and product sheet | ⬜ | |
@@ -104,6 +104,32 @@ Contract §8.3–§8.5, §11 (الموردين, المنتجات والكتال�
 - **Partner accounts:** creating a store generates its partner account; the password is shown once with a copy button; reset password and disable (contract §2, §11). The same actions in the mobile app for admins (contract §11.2, M2).
 - Seed from the demo's data.
 
+**Built:**
+
+- **Database:** `stores` (one daily opening range in Cairo time plus "closed now"), `cuisines`, `store_cuisines`, `store_categories`, `products`, `home_tiles`; `users.store_id` puts a partner on a store.
+- **API:**
+  - `/v1/admin/stores`: list, by type, open now; a new store comes with its partner account, and the password is shown once.
+  - `/v1/admin/stores/:id/categories`, `/v1/admin/categories/:id` (delete only when empty), `/v1/admin/stores/:id/products`, `/v1/admin/products/:id`, `/v1/admin/products/inactive`.
+  - `/v1/admin/cuisines`, `/v1/admin/home-tiles`: a tile opens one vertical or one store. Every short list has a `PUT …/order`.
+  - `/v1/admin/uploads`: sharp, at most 1600 px, JPEG.
+  - `/v1/admin/partners`: list and search, add one to a store, reset, disable.
+  - `/v1/catalog/*` for the apps: home tiles, cuisines, active stores by type and cuisine, a store page with its active products.
+  - `/v1/partner/store` behind the **partner store guard**: the store always comes from the partner's own account.
+- **Dashboard:**
+  - الموردين: table with type tabs; add or edit a store, with its partner accounts.
+  - منتجات الموردين: store picker, categories in order, products with photo and the متاح switch.
+  - منتجات غير فعالة with تفعيل.
+  - أنواع الأكل and مربعات الرئيسية (both new under المنتجات والكتالوج).
+- **Mobile:** the admin's الحسابات tab: partner accounts with search; add one for a store, reset, disable. The password is shown once with نسخ and مشاركة.
+- **Seed:**
+  - The demo's 16 stores with their menus and photos, plus the 1 ج.م "اطلب دليفري" store.
+  - 10 cuisines and 9 home tiles.
+  - The seeded partner runs the first store.
+- **Moved:**
+  - `zones` go to Phase 8, with the map and the delivery-zone check.
+  - Product option groups and ingredients (§8.5) go to Phase 7, with the product sheet.
+  - Product discounts (old price) go to Phase 19.
+
 ## Phase 5: Customer home
 
 Contract §8.2: header with the address, rotating search, vertical tiles, invite card. (Banners and the wheel arrive in Phases 19–20.)
@@ -114,11 +140,11 @@ Contract §8.3 and §8.13: per-vertical lists, cuisine circles, chips, sort and 
 
 ## Phase 7: Store page and product sheet
 
-Contract §8.4–§8.5: cover, info row, category grid, category pages, product sheet, minimum-order bar, favourites, layout per store type.
+Contract §8.4–§8.5: cover, info row, category grid, category pages, product sheet, minimum-order bar, favourites, layout per store type. Adds product option groups and base ingredients (moved from Phase 4), with their admin editing.
 
 ## Phase 8: Addresses, zones and the map picker
 
-Contract §8.9: saved addresses sheet, map picker with zoom gate and location banner, address form with validation, delivery zone check.
+Contract §8.9: saved addresses sheet, map picker with zoom gate and location banner, address form with validation, delivery zone check. Adds the `zones` table (moved from Phase 4) and each store's zone and location.
 
 ## Phase 9: Cart
 

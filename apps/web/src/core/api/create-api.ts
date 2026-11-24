@@ -49,13 +49,15 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock = (fn) 
 
   async function send(path: string, opts: RequestOptions, token: string | undefined): Promise<Response> {
     const headers = new Headers({ accept: 'application/json' });
-    if (opts.body !== undefined) headers.set('content-type', 'application/json');
+    // A form (an image upload) goes as multipart; fetch sets its content type and boundary.
+    const form = opts.body instanceof FormData;
+    if (opts.body !== undefined && !form) headers.set('content-type', 'application/json');
     if (token) headers.set('authorization', `Bearer ${token}`);
     try {
       return await fetch(base + path, {
         method: opts.method ?? 'GET',
         headers,
-        body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+        body: opts.body === undefined ? undefined : form ? (opts.body as FormData) : JSON.stringify(opts.body),
       });
     } catch (e) {
       throw new ApiRequestError(0, e instanceof Error ? e.message : 'Network request failed');

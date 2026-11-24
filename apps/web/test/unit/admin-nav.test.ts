@@ -19,6 +19,15 @@ describe('ADMIN_NAV (Tawsilty admin sidebar, contract §11)', () => {
     ]);
   });
 
+  it('keeps Tawsilty\'s two catalog pages first, then cuisines and home tiles (A12, Phase 4)', () => {
+    expect(ADMIN_NAV.find((g) => g.label === 'المنتجات والكتالوج')?.items.map((i) => i.href)).toEqual([
+      '/products',
+      '/products/inactive',
+      '/catalog/cuisines',
+      '/catalog/home-tiles',
+    ]);
+  });
+
   it('puts the admin accounts (A23) under الإعدادات', () => {
     expect(ADMIN_NAV.at(-1)?.items).toEqual([{ label: 'حسابات الإدارة', href: '/settings/admins' }]);
   });

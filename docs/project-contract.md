@@ -554,6 +554,24 @@ The full list of dashboard modules, with sources and phases, is in §1.1.
 - **Sidebar:** exactly the sections and pages in the Tawsilty photo, plus الإعدادات › حسابات الإدارة (A23) [Needed]. The other §11 pages join the sidebar with their phases. The account's name and "تسجيل الخروج" sit at its foot.
 - **حسابات الإدارة:** a table in the orders-table look (orange header row, actions in العمليات). Admins are added with a name and phone; the password is generated and shown once, like partner and driver accounts. Reset password and disable/enable ask first, using the address-delete confirm look (§6.3). An admin cannot reset or disable their own account.
 
+**Built in Phase 4:**
+
+- **الموردين:** a table in the orders-table look with type tabs (الكل · المطاعم · ماركت · صيدليات · اطلب دليفري), the partner's phone, fee, minimum order and مفتوح / مغلق / مخفي. "إضافة متجر" is one page:
+  - type and product layout (the layout follows the type until changed);
+  - cuisines (restaurants only), logo and cover;
+  - delivery minutes, fee, minimum order, delivered by, pickup allowed;
+  - hours and "مغلق الآن", shown to customers;
+  - the partner's name and phone.
+  Saving shows the partner's password once, then opens the store. The edit page adds the store's partner accounts (add, reset, disable).
+- **Store hours** [Open]: one daily range in Cairo time (a closing time earlier than the opening time runs past midnight; the same time means all day) plus a "مغلق الآن" switch. Tawsilty's hours screen is not captured; per-day hours replace this if it shows them.
+- **A store can have more than one partner account** [Derived from §11.2]: making a store makes the first; the store page and the admin's mobile app add more ("and for a partner the store it belongs to").
+- **منتجات الموردين:** pick a store; its categories in menu order (add, rename, image for the market grid, move up/down, delete only when empty) and its products (photo, name, category, price, unit, description, the متاح switch). **منتجات غير فعالة:** every store's switched-off products with "تفعيل".
+- **أنواع الأكل** and **مربعات الرئيسية** (A12) [Open: names and layout ours]: under المنتجات والكتالوج, after Tawsilty's two pages. Ordered lists with image, edit, delete. A home tile has a row (fixed or sideways), an optional badge and opens one vertical or one pinned store.
+- [Open] Tawsilty's stores and products admin pages are not captured: they use its orders-table look (orange header row, actions in العمليات) and the address-delete confirm look.
+- **Images** are uploaded once from the form (JPEG, PNG, WebP or HEIC, up to 8 MB), stored as JPEG at most 1600 px.
+- **حلويات** has no vertical of its own (§1 lists it as a home tile): the seed pins it to a dessert store. [Open] whether it becomes a vertical with its own list (Phase 6).
+- **Send anything** is seeded as §8.12 says; its product's terms after the first line are not captured [Open] and are written by the admin.
+
 **Account creation** (الموردين and المندوبين): "إضافة" creates the partner or driver account with name and phone; the generated password is shown once with a copy button; "إعادة تعيين كلمة المرور" generates a new one; an account can be disabled (§2).
 
 ### 11.1 Partner area (`/partner`) [Client]
@@ -578,17 +596,19 @@ The restaurant's own part of the web dashboard. Same look as the admin area, its
 
 An admin who signs in to the mobile app gets one area only: **accounts**. It lists partner and driver accounts with search, and offers the same actions as the dashboard: create a partner or driver account (name, phone, and for a partner the store it belongs to), show the generated password once with copy and share, reset the password, disable or enable. Everything else stays on the web dashboard.
 
+Built in Phase 4 (partners; drivers join in Phase 12): "الحسابات" with a search by name, phone or store; cards with the name, store, phone, "موقوف", and the reset and disable/enable icons (both confirm first in the address-delete look). "إضافة حساب" opens a sheet: pick the store (searchable radio list), name, phone. The password sheet has "نسخ" and "مشاركة" (the phone and password as a message). [Open] Tawsilty has no such screen; it uses the account screen's cards and sheets.
+
 ---
 
 ## 12. Data model
 
 First draft; each phase finalises its tables.
 
-- `users` (phone, password hash, name, email, gender, region, role, locale, invite code, invited_by), `otp_codes`, `refresh_tokens`
+- `users` (phone, password hash, name, email, gender, region, role, locale, invite code, invited_by, store_id for partners), `otp_codes`, `refresh_tokens`
 - `addresses` (label, type, building, apartment, floor, street, landmark, phone, lat/lng, is_default)
-- `zones` (delivery areas)
-- `verticals` (home tiles: label, image, badge, order, target)
-- `stores` (vertical, name, logo, cover, rating, delivery time, fee, minimum order, delivered_by, layout, pickup_allowed, hours, zone, status), `store_categories`, `products` (price, image, unit, is_active), `cuisines`
+- `zones` (delivery areas; Phase 8, with each store's zone and location)
+- `home_tiles` (label, image, badge, row fixed/scroll, order, target vertical or store) (built in Phase 4)
+- `stores` (vertical, name, logo, cover, delivery minutes, fee, minimum order, delivered_by, layout, pickup_allowed, opens_at, closes_at, closed_now, active), `store_categories` (name, image, order), `products` (category, name, description, price, unit, image, active, order), `cuisines` (name, image, order), `store_cuisines` (built in Phase 4; ratings come from `ratings`, Phase 14; option groups Phase 7)
 - `carts`, `cart_lines`
 - `orders` (customer, store, driver, address, mode delivery/pickup, scheduled time, status, items total, delivery fee, service fee, payment-method fee, discount and its source (coupon or invite credit), customer total, payment method, store commission and the amount the store collects from the captain, note), `order_lines`, `order_events` (status history)
 - `ratings` (stars, tags, text)
@@ -670,3 +690,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-23 | Phase 0 done: §6.1 ink, ink-2 and danger measured (`#1F1F1F`, `#8A8A8A`, `#F44336`); §6.3 the two confirm-dialog looks and the double-circle empty state, from the screenshots. |
 | 2026-11-23 | Phase 1 done (§8.1): the app opens on sign-in [Derived]; the uncaptured sign-in, sign-up step 1, forgot and new-password screens follow Tawsilty's sign-up pattern [Open]; errors are codes the app translates; admins also get the حسابي tab to sign out; profile phone change and avatar photo [Open]. |
 | 2026-11-23 | Phase 3 done (§11): one `/sign-in` for admins and partners [Open look]; the admin sidebar as in the Tawsilty photo plus حسابات الإدارة (A23); the partner sidebar (§11.1); admin accounts with a generated password shown once. The partner store guard moves to Phase 4, with the stores. |
+| 2026-11-24 | Phase 4 done (§11, §11.2, §12): stores with their partner accounts (a store may have several), categories, products, inactive products, cuisines and home tiles in the dashboard; the admin's الحسابات tab in the app. Stand-ins marked [Open]: one daily hours range, the stores and products admin pages, the أنواع الأكل and مربعات الرئيسية names, the accounts tab, حلويات as a pinned store, the send-anything terms. `verticals` became `home_tiles`; zones move to Phase 8, product options to Phase 7. |
