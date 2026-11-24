@@ -1,8 +1,8 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { CatalogStore, Cuisine, HomeScreen, StorePage } from '@tawsela/shared';
+import type { CatalogStore, Cuisine, HomeScreen, SearchResult, SearchSuggestion, StorePage } from '@tawsela/shared';
 import { CatalogService } from './catalog.service.js';
-import { CatalogStoresQuery } from './dto/catalog.dto.js';
+import { CatalogStoresQuery, SearchQuery } from './dto/catalog.dto.js';
 
 /** Router for `/v1/catalog`: what the apps read. Any signed-in account (the app opens on sign-in, §8.1). */
 @ApiTags('catalog')
@@ -24,6 +24,16 @@ export class CatalogController {
   @Get('stores')
   stores(@Query() query: CatalogStoresQuery): Promise<CatalogStore[]> {
     return this.catalog.stores(query);
+  }
+
+  @Get('search')
+  search(@Query() query: SearchQuery): Promise<SearchResult[]> {
+    return this.catalog.search(query.q, query.scope);
+  }
+
+  @Get('search/suggestions')
+  suggestions(@Query() query: SearchQuery): Promise<SearchSuggestion[]> {
+    return this.catalog.suggestions(query.q, query.scope);
   }
 
   @Get('stores/:id')

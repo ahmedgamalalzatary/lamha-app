@@ -3,19 +3,21 @@ import { sql } from './db.js';
 
 /** A store row, as the seed or the admin would make it. Open all day unless told otherwise. */
 export async function insertStore(
-  values: Partial<{ name: string; vertical: string; active: boolean; opensAt: string; closesAt: string; closedNow: boolean; layout: string }> = {},
+  values: Partial<{ name: string; vertical: string; active: boolean; opensAt: string; closesAt: string; closedNow: boolean; layout: string; deliveryMinutes: number; pickupAllowed: boolean }> = {},
 ): Promise<number> {
   const res = await sql<ResultSetHeader>(
-    `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at, closed_now, active)
-     VALUES (?, ?, 25, 15, 60, ?, ?, ?, ?, ?)`,
+    `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at, closed_now, active, pickup_allowed)
+     VALUES (?, ?, ?, 15, 60, ?, ?, ?, ?, ?, ?)`,
     [
       values.vertical ?? 'restaurant',
       values.name ?? 'شاورما الساقية',
+      values.deliveryMinutes ?? 25,
       values.layout ?? 'list',
       values.opensAt ?? '00:00',
       values.closesAt ?? '00:00',
       values.closedNow ?? false,
       values.active ?? true,
+      values.pickupAllowed ?? false,
     ],
   );
   return res.insertId;

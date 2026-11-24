@@ -1,13 +1,36 @@
 import type { ResultSetHeader } from 'mysql2/promise';
 import { sql } from './db';
 
-/** A store row, as the seed or the admin's dashboard would make it. */
-export async function insertStore(name: string, vertical = 'restaurant'): Promise<number> {
+/** A store row, as the seed or the admin's dashboard would make it. Open all day unless closedNow. */
+export async function insertStore(
+  name: string,
+  vertical = 'restaurant',
+  over: { deliveryMinutes?: number; closedNow?: boolean; pickupAllowed?: boolean } = {},
+): Promise<number> {
   const res = await sql<ResultSetHeader>(
-    `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at)
-     VALUES (?, ?, 25, 15, 60, 'list', '00:00', '00:00')`,
-    [vertical, name],
+    `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at, closed_now, pickup_allowed)
+     VALUES (?, ?, ?, 15, 60, 'list', '00:00', '00:00', ?, ?)`,
+    [vertical, name, over.deliveryMinutes ?? 25, over.closedNow ?? false, over.pickupAllowed ?? false],
   );
+  return res.insertId;
+}
+
+/** A cuisine circle (§8.3), optionally on some stores. */
+export async function insertCuisine(name: string, storeIds: number[] = [], sortOrder = 0): Promise<number> {
+  const res = await sql<ResultSetHeader>('INSERT INTO cuisines (name, sort_order) VALUES (?, ?)', [name, sortOrder]);
+  for (const storeId of storeIds) await sql('INSERT INTO store_cuisines (store_id, cuisine_id) VALUES (?, ?)', [storeId, res.insertId]);
+  return res.insertId;
+}
+
+/** A product in a new category of the store. */
+export async function insertProduct(storeId: number, name: string, price = 85): Promise<number> {
+  const cat = await sql<ResultSetHeader>("INSERT INTO store_categories (store_id, name) VALUES (?, 'الكل')", [storeId]);
+  const res = await sql<ResultSetHeader>('INSERT INTO products (store_id, category_id, name, price) VALUES (?, ?, ?, ?)', [
+    storeId,
+    cat.insertId,
+    name,
+    price,
+  ]);
   return res.insertId;
 }
 

@@ -5,6 +5,11 @@ import {
   DELIVERED_BY,
   type DeliveredBy,
   HOME_TILE_ROWS,
+  RATING_FLOORS,
+  SEARCH_SCOPES,
+  type SearchScope,
+  STORE_SORTS,
+  type StoreSort,
   type TileRow,
   STORE_LAYOUTS,
   type StoreLayout,
@@ -39,6 +44,7 @@ const IMAGE_PATH = /^\/uploads\/[A-Za-z0-9/_.-]+$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MONEY = { maxDecimalPlaces: 2 } as const;
 const MAX_MONEY = 100_000;
+const SEARCH_MAX_LENGTH = 100;
 
 const Name = () =>
   applyDecorators(
@@ -143,12 +149,60 @@ export class StoreListQuery {
   vertical?: Vertical;
 }
 
+/** "true"/"false" in a query string; anything else stays as it is and fails IsBoolean. */
+const queryBool = ({ value }: { value: unknown }) => (value === 'true' ? true : value === 'false' ? false : value);
+
+const SearchText = () =>
+  applyDecorators(ApiProperty({ maxLength: SEARCH_MAX_LENGTH }), Transform(trim), IsString(), IsNotEmpty(), MaxLength(SEARCH_MAX_LENGTH));
+
+/** GET /v1/catalog/stores: a store list with its search box, sort sheet, rating sheet and chips (§8.3). */
 export class CatalogStoresQuery extends StoreListQuery {
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   cuisineId?: number;
+
+  @ApiPropertyOptional({ maxLength: SEARCH_MAX_LENGTH })
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(SEARCH_MAX_LENGTH)
+  q?: string;
+
+  @ApiPropertyOptional({ enum: STORE_SORTS })
+  @IsOptional()
+  @IsIn(STORE_SORTS)
+  sort?: StoreSort;
+
+  @ApiPropertyOptional({ enum: RATING_FLOORS })
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn(RATING_FLOORS)
+  minRating?: number;
+
+  @ApiPropertyOptional({ description: 'توصيل سريع' })
+  @IsOptional()
+  @Transform(queryBool)
+  @IsBoolean()
+  fast?: boolean;
+
+  @ApiPropertyOptional({ description: 'الاستلام' })
+  @IsOptional()
+  @Transform(queryBool)
+  @IsBoolean()
+  pickup?: boolean;
+}
+
+/** GET /v1/catalog/search and …/suggestions (§8.13). */
+export class SearchQuery {
+  @SearchText()
+  q: string;
+
+  @ApiPropertyOptional({ enum: SEARCH_SCOPES, default: 'all' })
+  @IsOptional()
+  @IsIn(SEARCH_SCOPES)
+  scope: SearchScope = 'all';
 }
 
 /** A store category, a cuisine: a name and an optional image. */

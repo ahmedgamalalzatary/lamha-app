@@ -20,7 +20,7 @@ function Root() {
 
 /** Stand-ins for the routes the tiles open (Phases 6 and 7 build them). */
 const Opened = () => <Text>opened</Text>;
-const ROUTES = { _layout: Root, 'customer/index': HomeScreen, 'stores/[vertical]': Opened, 'store/[id]': Opened };
+const ROUTES = { _layout: Root, 'customer/index': HomeScreen, 'stores/[vertical]': Opened, 'store/[id]': Opened, search: Opened };
 
 let maky: number;
 
@@ -51,10 +51,12 @@ describe('customer home (contract §8.2; real API)', () => {
     expect(within(scroll).getByText('الماكيز')).toBeTruthy();
   });
 
-  it("shows the delivery header and the search box", async () => {
+  it('shows the delivery header; the search box opens search', async () => {
     await renderApp(ROUTES, { initialUrl: '/customer' });
     expect(await screen.findByText('التوصيل إلى')).toBeTruthy();
     expect(screen.getByText(/ابحث عن/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'بحث' }));
+    await waitFor(() => expect(screen).toHavePathname('/search'));
   });
 
   it("opens a type's store list from its tile", async () => {

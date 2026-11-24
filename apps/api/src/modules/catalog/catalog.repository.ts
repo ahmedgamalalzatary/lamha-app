@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import type { Vertical } from '@tawsela/shared';
-import { and, asc, count, eq, inArray, isNull, max, or, type SQL } from 'drizzle-orm';
+import type { SearchScope, Vertical } from '@tawsela/shared';
+import { and, asc, count, eq, inArray, isNull, like, max, min, ne, or, type SQL } from 'drizzle-orm';
 import type { MySqlTable } from 'drizzle-orm/mysql-core';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type NewUser, users } from '../users/users.schema.js';
@@ -19,6 +19,16 @@ import {
 
 type Sortable = typeof storeCategories | typeof cuisines | typeof homeTiles;
 
+/** Most products one search returns. */
+const SEARCH_LIMIT = 200;
+
+/** LIKE pattern for "contains": % and _ in the text are matched as themselves. */
+const contains = (text: string) => `%${text.replace(/[\\%_]/g, '\\$&')}%`;
+
+/** مطاعم are restaurants, متاجر أخرى everything else (shared `inSearchScope`). */
+const scopeWhere = (scope: SearchScope): SQL | undefined =>
+  scope === 'restaurants' ? eq(stores.vertical, 'restaurant') : scope === 'others' ? ne(stores.vertical, 'restaurant') : undefined;
+
 /** Database access for stores, categories, products, cuisines and home tiles. */
 @Injectable()
 export class CatalogRepository {
@@ -26,9 +36,14 @@ export class CatalogRepository {
 
   // Stores
 
-  async listStores(filter: { vertical?: Vertical; cuisineId?: number; activeOnly?: boolean } = {}): Promise<StoreRow[]> {
+  async listStores(filter: { vertical?: Vertical; cuisineId?: number; activeOnly?: boolean; q?: string; ids?: number[] } = {}): Promise<StoreRow[]> {
     const where: SQL[] = [];
+    if (filter.ids) {
+      if (!filter.ids.length) return [];
+      where.push(inArray(stores.id, filter.ids));
+    }
     if (filter.vertical) where.push(eq(stores.vertical, filter.vertical));
+    if (filter.q) where.push(like(stores.name, contains(filter.q)));
     if (filter.activeOnly) where.push(eq(stores.active, true));
     if (filter.cuisineId !== undefined) {
       const linked = this.db.select({ id: storeCuisines.storeId }).from(storeCuisines).where(eq(storeCuisines.cuisineId, filter.cuisineId));
@@ -142,6 +157,31 @@ export class CatalogRepository {
       .where(where)
       .orderBy(asc(storeCategories.sortOrder), asc(storeCategories.id), asc(products.sortOrder), asc(products.id));
     return rows.map((r) => r.product);
+  }
+
+  /** Search (§8.13): products customers may see whose name contains the text, in active stores. */
+  async searchProducts(q: string, scope: SearchScope): Promise<ProductRow[]> {
+    const rows = await this.db
+      .select({ product: products })
+      .from(products)
+      .innerJoin(stores, eq(stores.id, products.storeId))
+      .innerJoin(storeCategories, eq(storeCategories.id, products.categoryId))
+      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope)))
+      .orderBy(asc(products.storeId), asc(storeCategories.sortOrder), asc(products.sortOrder), asc(products.id))
+      .limit(SEARCH_LIMIT);
+    return rows.map((r) => r.product);
+  }
+
+  /** Suggestions while typing (§8.13): distinct product names with their store's type. */
+  async suggestProducts(q: string, scope: SearchScope, limit: number): Promise<{ name: string; vertical: Vertical }[]> {
+    return this.db
+      .select({ name: products.name, vertical: stores.vertical })
+      .from(products)
+      .innerJoin(stores, eq(stores.id, products.storeId))
+      .where(and(eq(products.active, true), eq(stores.active, true), like(products.name, contains(q)), scopeWhere(scope)))
+      .groupBy(products.name, stores.vertical)
+      .orderBy(min(products.id))
+      .limit(limit);
   }
 
   async findProduct(id: number): Promise<ProductRow | undefined> {

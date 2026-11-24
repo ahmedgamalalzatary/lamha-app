@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/AppText';
+import { PressableScale } from '@/components/PressableScale';
 import { useReduceMotion } from '@/core/hooks/useReduceMotion';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
@@ -11,9 +12,9 @@ const EVERY_MS = 3000;
 
 /**
  * The home search box (contract §8.2): "ابحث عن <word>", the word changing every few seconds.
- * The search screen it opens arrives in Phase 6.
+ * It opens the search screen (§8.13).
  */
-export function RotatingSearch({ words }: { words: string[] }) {
+export function RotatingSearch({ words, onPress }: { words: string[]; onPress?: () => void }) {
   const t = useT();
   const reduced = useReduceMotion();
   const [index, setIndex] = useState(0);
@@ -26,7 +27,7 @@ export function RotatingSearch({ words }: { words: string[] }) {
 
   const word = words[index % words.length] ?? '';
   return (
-    <View style={styles.box}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={t('search.label')} onPress={onPress} style={styles.box}>
       <View style={styles.icon}>
         <Search size={20} color={colors.primary} />
       </View>
@@ -40,7 +41,7 @@ export function RotatingSearch({ words }: { words: string[] }) {
           </AppText>
         </Animated.View>
       </View>
-    </View>
+    </PressableScale>
   );
 }
 

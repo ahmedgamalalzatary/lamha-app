@@ -51,6 +51,53 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
     expect(pharmacies.body.map((s: { id: number }) => s.id)).toEqual([pharmacy]);
   });
 
+  it('searches a list by name, sorts it and keeps fast or pickup stores (§8.3)', async () => {
+    const shawarma = await insertStore({ name: 'شاورما الساقية', deliveryMinutes: 45 });
+    const fast = await insertStore({ name: 'بيتزا سريعة', deliveryMinutes: 20, pickupAllowed: true });
+    const pizza = await insertStore({ name: 'Pizza Hut', deliveryMinutes: 40 });
+    const list = async (query: string) => (await get(`/v1/catalog/stores?vertical=restaurant&${query}`).expect(200)).body.map((s: { id: number }) => s.id);
+
+    expect(await list('q=%D8%A8%D9%8A%D8%AA%D8%B2%D8%A7')).toEqual([fast]); // بيتزا
+    expect(await list('q=pizza')).toEqual([pizza]); // case does not matter
+    expect(await list('q=%25')).toEqual([]); // "%" is a character, not a wildcard
+    expect(await list('sort=newest')).toEqual([pizza, fast, shawarma]);
+    expect(await list('fast=true')).toEqual([fast]);
+    expect(await list('pickup=true')).toEqual([fast]);
+    expect(await list('minRating=4')).toEqual([]); // new stores have no rating yet
+    for (const bad of ['sort=cheapest', 'minRating=2', 'fast=yes']) await get(`/v1/catalog/stores?${bad}`).expect(400);
+  });
+
+  it('searches stores and products: each store with its matching products, by tab (§8.13)', async () => {
+    const crinkle = await insertStore({ name: 'Crinkle' });
+    const pizzaPlace = await insertStore({ name: 'بيتزا كينج' });
+    const market = await insertStore({ name: 'ماركت', vertical: 'market', layout: 'grid' });
+    const hidden = await insertStore({ name: 'بيتزا مخفي', active: false });
+    const crinkleCat = await insertCategory(crinkle);
+    await insertProduct(crinkle, crinkleCat, 'مايو بيتزا فرايز', 110);
+    await insertProduct(crinkle, crinkleCat, 'برجر', 90);
+    await insertProduct(crinkle, crinkleCat, 'بيتزا قديمة', 50, false);
+    const marketCat = await insertCategory(market);
+    await insertProduct(market, marketCat, 'صوص بيتزا', 30);
+    await insertProduct(hidden, await insertCategory(hidden), 'بيتزا', 10);
+    const search = (query: string) => get(`/v1/catalog/search?q=${encodeURIComponent('بيتزا')}${query}`).expect(200);
+
+    const all = (await search('')).body as { store: { id: number }; products: { name: string }[] }[];
+    expect(all.map((r) => [r.store.id, r.products.map((p) => p.name)])).toEqual([
+      [crinkle, ['مايو بيتزا فرايز']],
+      [pizzaPlace, []],
+      [market, ['صوص بيتزا']],
+    ]);
+    expect((await search('&scope=restaurants')).body.map((r: { store: { id: number } }) => r.store.id)).toEqual([crinkle, pizzaPlace]);
+    expect((await search('&scope=others')).body.map((r: { store: { id: number } }) => r.store.id)).toEqual([market]);
+
+    const suggestions = await get(`/v1/catalog/search/suggestions?q=${encodeURIComponent('بيتزا')}&scope=all`).expect(200);
+    expect(suggestions.body).toEqual([
+      { name: 'مايو بيتزا فرايز', vertical: 'restaurant' },
+      { name: 'صوص بيتزا', vertical: 'market' },
+    ]);
+    await get('/v1/catalog/search?q=%20').expect(400);
+  });
+
   it("opens a store page with its categories in order and only the products customers may see", async () => {
     const store = await insertStore();
     const meals = await insertCategory(store, 'وجبات', 1);

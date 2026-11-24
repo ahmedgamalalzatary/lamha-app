@@ -360,6 +360,16 @@ Built in Phase 5: the header, the rotating search (every 3 seconds), the two til
 - Empty: "لا توجد متاجر متاحة — لم نجد متاجر قريبة منك حالياً، جرّب تغيير الموقع أو البحث مرة أخرى".
 - [Client] "اطلب من جديد" (order again) row on the restaurants list only; not on the home screen.
 
+Built in Phase 6: the list, opened from a home tile, with the tile's label as its title ("ابحث عن حلويات و desserts"). The search box narrows this list by name.
+
+- [Open] **توصيل سريع** means delivery in 30 minutes or less (`FAST_DELIVERY_MINUTES`). Tawsilty does not say.
+- **الأقرب إليك** keeps the admin's order until stores have a location (Phase 8).
+- New stores show "جديد", so every rating floor leaves them out until ratings exist (Phase 14).
+- The "خصومات" and "عروض التوصيل" chips, and the voucher and free-delivery badges on the rows, arrive with the offers (Phase 19).
+- "اطلب من جديد" arrives once customers have past orders.
+- The pharmacy list's "سهلنا الطلب عليك" card arrives in Phase 21.
+- [Open] A closed store's picture is darkened with "مغلق" on it, not turned grey: the app has no greyscale image filter.
+
 ### 8.4 Store page [Tawsilty]
 
 - Cover image with back, search and favourite buttons; status pill ("مغلق"); logo, name, rating.
@@ -444,6 +454,13 @@ Not a special form: it is an ordinary store ("اطلب دليفري", delivered 
 ### 8.13 Search [Tawsilty]
 
 Tabs الكل · مطاعم · متاجر أخرى. Empty "ابحث عن الأكلات والأماكن المفضلة 🍔 — اكتب اسم الأكلة أو البائع للعثور على ما تريده بسرعة". While typing: "ابحث عن «…»" row plus suggestions (product name with "في المطاعم" and an ↖ arrow to fill the box). Results: each matching store (logo, name, rating, fee, voucher) followed by its matching products (image, name, price).
+
+Built in Phase 6, from the home search box. A store matches by its name or by one of its products. The ↖ arrow puts the name in the box, and the row searches for it.
+
+- [Open] Searching with no match shows "لا توجد نتائج — جرّب اسم أكلة أو متجر آخر". Tawsilty's capture only shows typing with no suggestions.
+- [Open] A suggestion from a store that is not a restaurant reads "في <type>" ("في ماركت", "في صيدليات"). Tawsilty's capture only shows "في المطاعم".
+- Product prices use two decimals ("110.00 ج.م", §7), where Tawsilty's search shows "110.0".
+- A product opens its store until the product sheet arrives (Phase 7). The voucher on results arrives in Phase 19.
 
 ### 8.14 Account (حسابي) [Tawsilty]
 
@@ -699,3 +716,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-23 | Phase 3 done (§11): one `/sign-in` for admins and partners [Open look]; the admin sidebar as in the Tawsilty photo plus حسابات الإدارة (A23); the partner sidebar (§11.1); admin accounts with a generated password shown once. The partner store guard moves to Phase 4, with the stores. |
 | 2026-11-24 | Phase 4 done (§11, §11.2, §12): stores with their partner accounts (a store may have several), categories, products, inactive products, cuisines and home tiles in the dashboard; the admin's الحسابات tab in the app. Stand-ins marked [Open]: one daily hours range, the stores and products admin pages, the أنواع الأكل and مربعات الرئيسية names, the accounts tab, حلويات as a pinned store, the send-anything terms. `verticals` became `home_tiles`; zones move to Phase 8, product options to Phase 7. |
 | 2026-11-24 | Phase 5 done (§8.2): the customer home with the header, rotating search, tiles and invite card. Stand-ins marked [Open]: the address line until Phase 8, and the closed invite card staying hidden. |
+| 2026-11-24 | Phase 6 done (§8.3, §8.13): store lists with the cuisine circles, chips, sort and rating sheets, closed look and empty state; search with tabs, suggestions and results. Stand-ins marked [Open]: توصيل سريع as 30 minutes or less, the darkened closed picture, the no-results screen, "في <type>" suggestions. Offer chips and badges wait for Phase 19. |

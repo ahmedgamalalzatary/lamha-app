@@ -1,11 +1,11 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
 import { Gate } from '@/core/navigation/area-gate';
+import { StoresScreen } from '@/features/stores/screens/StoresScreen';
 
-/** A vertical's store list, opened from a home tile. Phase 6 builds it (contract §8.3). */
-export default function StoresScreen() {
+/** A store type's list, opened from a home tile (contract §8.3). */
+export default function Stores() {
   return (
     <Gate area="customer">
-      <PlaceholderScreen title="tabs.home" back />
+      <StoresScreen />
     </Gate>
   );
 }

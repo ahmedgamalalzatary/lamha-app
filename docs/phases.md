@@ -30,7 +30,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 3 | Dashboard shell and sign-in (admin and partner areas) | ✅ | |
 | 4 | Catalog: verticals, stores, categories, products | ✅ | |
 | 5 | Customer home | ✅ | |
-| 6 | Store lists, filters and search | ⬜ | |
+| 6 | Store lists, filters and search | ✅ | |
 | 7 | Store page and product sheet | ⬜ | |
 | 8 | Addresses, zones and the map picker | ⬜ | |
 | 9 | Cart | ⬜ | |
@@ -148,6 +148,18 @@ Contract §8.2: header with the address, rotating search, vertical tiles, invite
 ## Phase 6: Store lists, filters and search
 
 Contract §8.3 and §8.13: per-vertical lists, cuisine circles, chips, sort and rating sheets, closed state, empty state, search tabs.
+
+**Built:**
+
+- **Shared:** `applyStoreFilter` (sort sheet, rating floor, توصيل سريع, الاستلام), `STORE_SORTS`, `RATING_FLOORS`, `FAST_DELIVERY_MINUTES`, the search tabs (`SEARCH_SCOPES`, `inSearchScope`), with unit tests that use real rating values.
+- **API:**
+  - `GET /v1/catalog/stores` adds `q` (name contains; `%` and `_` are matched as text), `sort`, `minRating`, `fast` and `pickup`.
+  - `GET /v1/catalog/search?q=&scope=` returns each matching store with its matching products (a store matches by its name or by a product).
+  - `GET /v1/catalog/search/suggestions` returns up to 8 product names with their store type.
+- **Mobile:**
+  - **Store list** (`/stores/<type>?title=`, opened from a home tile): the top bar (back, التوصيل إلى, cart), a search box "ابحث عن <tile label>", the cuisine circles (restaurants; tap again to clear), "<n> المتاجر", the chips رتب حسب ▾ · التقييم ▾ · توصيل سريع · الاستلام, the radio sheets, the store rows (picture with the logo, "مغلق" while closed, جديد or the rating, time, fee), and the empty state.
+  - **Search** (`/search`, opened from the home search box): tabs الكل · مطاعم · متاجر أخرى, the empty prompt, "ابحث عن «…»" with suggestions ("في المطاعم", and ↖ to put the name in the box), and results as each store followed by its products.
+- **Stand-ins and later work:** see contract §8.3 and §8.13.
 
 ## Phase 7: Store page and product sheet
 

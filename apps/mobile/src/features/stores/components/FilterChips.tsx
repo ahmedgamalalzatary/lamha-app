@@ -1,0 +1,68 @@
+import type { StoreFilter } from '@tawsela/shared';
+import { ChevronDown, Footprints, ListFilter, type LucideIcon, Star, Zap } from 'lucide-react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { AppText } from '@/components/AppText';
+import { PressableScale } from '@/components/PressableScale';
+import { useT } from '@/core/i18n';
+import { colors, fontSizes, radius, spacing } from '@/core/theme';
+
+function Chip({ icon: Icon, label, on, menu, onPress }: { icon: LucideIcon; label: string; on: boolean; menu?: boolean; onPress: () => void }) {
+  const tint = on ? colors.primary : colors.ink;
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: on }}
+      onPress={onPress}
+      style={[styles.chip, on && styles.chipOn]}
+    >
+      <Icon size={16} color={tint} fill={Icon === Star || Icon === Zap ? tint : 'transparent'} />
+      <AppText weight="medium" color={tint} size={fontSizes.body}>
+        {label}
+      </AppText>
+      {menu ? <ChevronDown size={14} color={tint} /> : null}
+    </PressableScale>
+  );
+}
+
+/**
+ * The filter chips (contract §6.3): رتب حسب ▾ · التقييم ▾ · توصيل سريع · الاستلام.
+ * خصومات and عروض التوصيل join them with the offers (Phase 19).
+ */
+export function FilterChips({
+  filter,
+  onChange,
+  onSort,
+  onRating,
+}: {
+  filter: StoreFilter;
+  onChange: (filter: StoreFilter) => void;
+  onSort: () => void;
+  onRating: () => void;
+}) {
+  const t = useT();
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <Chip icon={ListFilter} label={t('stores.sort')} menu on={!!filter.sort && filter.sort !== 'default'} onPress={onSort} />
+      <Chip icon={Star} label={t('stores.rating')} menu on={filter.minRating !== undefined} onPress={onRating} />
+      <Chip icon={Zap} label={t('stores.fast')} on={!!filter.fast} onPress={() => onChange({ ...filter, fast: !filter.fast })} />
+      <Chip icon={Footprints} label={t('stores.pickup')} on={!!filter.pickup} onPress={() => onChange({ ...filter, pickup: !filter.pickup })} />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    height: 44,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.bg,
+  },
+  chipOn: { borderColor: colors.primary, backgroundColor: colors.primary50 },
+});

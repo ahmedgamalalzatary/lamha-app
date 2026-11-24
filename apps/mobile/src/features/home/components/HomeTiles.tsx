@@ -14,7 +14,11 @@ const GAP = spacing.md;
 
 /** Where a tile goes: its vertical's store list (Phase 6) or its pinned store's page (Phase 7). */
 const hrefOf = (tile: HomeTile): Href | null =>
-  tile.targetStoreId !== null ? (`/store/${tile.targetStoreId}` as Href) : tile.targetVertical ? (`/stores/${tile.targetVertical}` as Href) : null;
+  tile.targetStoreId !== null
+    ? (`/store/${tile.targetStoreId}` as Href)
+    : tile.targetVertical
+      ? (`/stores/${tile.targetVertical}?title=${encodeURIComponent(tile.label)}` as Href)
+      : null;
 
 /** A tile's width: four across the screen, as in Tawsilty's first row. */
 function useTileSize() {

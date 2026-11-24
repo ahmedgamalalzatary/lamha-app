@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { ChevronDown, MapPin } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -35,7 +36,7 @@ export function HomeHeader() {
         </AppText>
         <ChevronDown size={18} color={colors.bg} />
       </View>
-      <RotatingSearch words={words} />
+      <RotatingSearch words={words} onPress={() => router.push('/search')} />
     </LinearGradient>
   );
 }
