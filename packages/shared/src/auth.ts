@@ -108,6 +108,16 @@ export type ApiErrorCode =
   | 'CART_PICKUP_UNAVAILABLE'
   | 'CART_MINIMUM_ORDER'
   | 'CART_QUANTITY_LIMIT'
+  /** The cart changed since the checkout screen loaded (another device, or an edit). */
+  | 'CHECKOUT_CART_CHANGED'
+  /** The bill on the server differs from the one the customer saw; the app shows the new one. */
+  | 'CHECKOUT_TOTAL_CHANGED'
+  /** The delivery address is not the customer's, or is outside the store's zone. */
+  | 'CHECKOUT_ADDRESS'
+  /** The store has no location on the map, so a delivery cannot be priced. */
+  | 'CHECKOUT_NO_STORE_LOCATION'
+  /** The later-delivery slot is no longer offered. */
+  | 'CHECKOUT_SLOT'
   /** A category that still holds products or sub-categories cannot be deleted. */
   | 'CATEGORY_NOT_EMPTY'
   /** A product's category, or a sub-category's main category, belongs to another store. */

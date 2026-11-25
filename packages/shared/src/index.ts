@@ -9,3 +9,4 @@ export * from './product.js';
 export * from './cart.js';
 export * from './address.js';
 export * from './audit.js';
+export * from './order.js';

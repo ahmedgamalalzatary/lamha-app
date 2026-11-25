@@ -6,8 +6,8 @@ export async function insertStore(
   values: Partial<{ name: string; vertical: string; active: boolean; opensAt: string; closesAt: string; closedNow: boolean; layout: string; deliveryMinutes: number; pickupAllowed: boolean }> = {},
 ): Promise<number> {
   const res = await sql<ResultSetHeader>(
-    `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at, closed_now, active, pickup_allowed)
-     VALUES (?, ?, ?, 15, 60, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO stores (vertical, name, delivery_minutes, minimum_order, layout, opens_at, closes_at, closed_now, active, pickup_allowed)
+     VALUES (?, ?, ?, 60, ?, ?, ?, ?, ?, ?)`,
     [
       values.vertical ?? 'restaurant',
       values.name ?? 'شاورما الساقية',

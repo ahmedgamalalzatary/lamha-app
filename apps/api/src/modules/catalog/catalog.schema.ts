@@ -1,4 +1,4 @@
-import { DELIVERED_BY, HOME_TILE_ROWS, STORE_LAYOUTS, VERTICALS } from '@tawsela/shared';
+import { DELIVERED_BY, HOME_TILE_ROWS, PAYOUT_OPTIONS, STORE_LAYOUTS, VERTICALS } from '@tawsela/shared';
 import {
   type AnyMySqlColumn,
   boolean,
@@ -29,11 +29,13 @@ export const stores = mysqlTable('stores', {
   logo: varchar('logo', { length: 255 }),
   cover: varchar('cover', { length: 255 }),
   deliveryMinutes: smallint('delivery_minutes', { unsigned: true }).notNull(),
-  deliveryFee: money('delivery_fee').notNull(),
   minimumOrder: money('minimum_order').notNull().default(0),
   deliveredBy: mysqlEnum('delivered_by', DELIVERED_BY).notNull().default('platform'),
   layout: mysqlEnum('layout', STORE_LAYOUTS).notNull(),
   pickupAllowed: boolean('pickup_allowed').notNull().default(false),
+  // Who pays whom (§8.7) and the app's percentage; null follows الإعدادات › رسوم التوصيل والدفع.
+  payoutOption: mysqlEnum('payout_option', PAYOUT_OPTIONS),
+  appPercent: decimal('app_percent', { precision: 5, scale: 2, mode: 'number' }),
   opensAt: time('opens_at').notNull(),
   closesAt: time('closes_at').notNull(),
   closedNow: boolean('closed_now').notNull().default(false),

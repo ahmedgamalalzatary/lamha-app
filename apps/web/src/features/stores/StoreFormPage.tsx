@@ -7,6 +7,8 @@ import {
   isEgyptianMobile,
   isTimeOfDay,
   normalizePhone,
+  PAYOUT_OPTIONS,
+  type PayoutOption,
   STORE_LAYOUTS,
   type StoreInput,
   VERTICALS,
@@ -22,6 +24,7 @@ import { ImageField, useUploading } from '@/components/ImageField';
 import { PasswordShown } from '@/components/PasswordShown';
 import { Button, ErrorLine, LoadState, SelectField, Switch, TextField } from '@/components/ui';
 import { useCreateStore, useCuisines, useStore, useUpdateStore } from '../catalog/api';
+import { isMoney, isPercent, PAYOUT_LABELS } from '../settings/payout';
 import { useZones } from '../zones/api';
 import { PartnerAccounts } from './PartnerAccounts';
 
@@ -30,11 +33,11 @@ const MapView = dynamic(() => import('@/components/MapView').then((m) => m.MapVi
 const LAYOUT_LABELS = { list: 'قائمة (مطاعم)', grid: 'شبكة (ماركت وصيدليات)' } as const;
 const DELIVERED_BY_LABELS = { platform: 'توصيلة', store: 'المتجر نفسه' } as const;
 
-/** The form's text boxes hold strings; numbers are read on save. */
-interface Draft extends Omit<StoreInput, 'deliveryMinutes' | 'deliveryFee' | 'minimumOrder'> {
+/** The form's text boxes hold strings; numbers are read on save. An empty percentage follows الإعدادات. */
+interface Draft extends Omit<StoreInput, 'deliveryMinutes' | 'minimumOrder' | 'appPercent'> {
   deliveryMinutes: string;
-  deliveryFee: string;
   minimumOrder: string;
+  appPercent: string;
 }
 
 const EMPTY: Draft = {
@@ -43,8 +46,9 @@ const EMPTY: Draft = {
   logo: null,
   cover: null,
   deliveryMinutes: '30',
-  deliveryFee: '0',
   minimumOrder: '0',
+  payoutOption: null,
+  appPercent: '',
   deliveredBy: 'platform',
   layout: 'list',
   pickupAllowed: false,
@@ -74,11 +78,13 @@ const toDraft = (s: AdminStore): Draft => ({
   zoneId: s.zoneId,
   location: s.location,
   deliveryMinutes: String(s.deliveryMinutes),
-  deliveryFee: String(s.deliveryFee),
   minimumOrder: String(s.minimumOrder),
+  payoutOption: s.payoutOption,
+  appPercent: s.appPercent === null ? '' : String(s.appPercent),
 });
 
-const money = (v: string) => v.trim() !== '' && Number.isFinite(Number(v)) && Number(v) >= 0 && /^\d+(\.\d{1,2})?$/.test(v.trim());
+/** The select's value for "حسب الإعدادات العامة". */
+const GLOBAL = '';
 
 /** الموردين › إضافة متجر / تعديل متجر (contract §11, §1.1 A6). */
 export function StoreFormPage({ storeId }: { storeId?: number }) {
@@ -114,8 +120,8 @@ function StoreForm({ store }: { store?: AdminStore }) {
     draft.name.trim() !== '' &&
     Number.isInteger(minutes) &&
     minutes >= 1 &&
-    money(draft.deliveryFee) &&
-    money(draft.minimumOrder) &&
+    isMoney(draft.minimumOrder) &&
+    (draft.appPercent.trim() === '' || isPercent(draft.appPercent)) &&
     isTimeOfDay(draft.opensAt) &&
     isTimeOfDay(draft.closesAt) &&
     // Every store delivers in a zone (review F21, owner).
@@ -126,8 +132,8 @@ function StoreForm({ store }: { store?: AdminStore }) {
     ...draft,
     name: draft.name.trim(),
     deliveryMinutes: minutes,
-    deliveryFee: Number(draft.deliveryFee),
     minimumOrder: Number(draft.minimumOrder),
+    appPercent: draft.appPercent.trim() === '' ? null : Number(draft.appPercent),
     cuisineIds: draft.vertical === 'restaurant' ? draft.cuisineIds : [],
   });
 
@@ -196,11 +202,17 @@ function StoreForm({ store }: { store?: AdminStore }) {
       </Section>
 
       <Section title="التوصيل">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="مدة التوصيل (دقيقة)" type="number" min={1} value={draft.deliveryMinutes} onChange={(e) => set('deliveryMinutes', e.target.value)} />
-          <TextField label="رسوم التوصيل (ج.م)" type="number" min={0} step="0.01" value={draft.deliveryFee} onChange={(e) => set('deliveryFee', e.target.value)} />
           <TextField label="الحد الأدنى للطلب (ج.م)" type="number" min={0} step="0.01" value={draft.minimumOrder} onChange={(e) => set('minimumOrder', e.target.value)} />
         </div>
+        <p className="text-xs text-tw-ink-2">
+          رسوم التوصيل تُحسب بالمسافة من موقع المتجر إلى العميل حسب{' '}
+          <Link href="/settings/delivery" className="font-semibold text-tw underline">
+            إعدادات رسوم التوصيل والدفع
+          </Link>
+          .
+        </p>
         <SelectField
           label="التوصيل بواسطة"
           value={draft.deliveredBy}
@@ -210,8 +222,28 @@ function StoreForm({ store }: { store?: AdminStore }) {
         <Switch label="الاستلام من المحل" checked={draft.pickupAllowed} onChange={(v) => set('pickupAllowed', v)} />
       </Section>
 
-      <Section title="المنطقة والموقع" note="كل متجر له منطقة توصيل، ويظهر للعملاء الذين عنوانهم داخلها فقط. الموقع يرتّب «الأقرب إليك».">
+      <Section title="الدفع للمتجر" note="الطلبات كاش. اتركها «حسب الإعدادات العامة» ليتبع المتجر إعدادات رسوم التوصيل والدفع.">
+        <SelectField
+          label="ما يدفعه المندوب للمتجر"
+          value={draft.payoutOption ?? GLOBAL}
+          options={[{ value: GLOBAL, label: 'حسب الإعدادات العامة' }, ...PAYOUT_OPTIONS.map((v) => ({ value: v, label: PAYOUT_LABELS[v] }))]}
+          onChange={(v) => set('payoutOption', v === GLOBAL ? null : (v as PayoutOption))}
+        />
+        <TextField
+          label="نسبة التطبيق من المنتجات (%)"
+          type="number"
+          min={0}
+          max={100}
+          step="0.01"
+          placeholder="حسب الإعدادات العامة"
+          value={draft.appPercent}
+          onChange={(e) => set('appPercent', e.target.value)}
+        />
+      </Section>
+
+      <Section title="المنطقة والموقع" note="كل متجر له منطقة توصيل، ويظهر للعملاء الذين عنوانهم داخلها فقط. الموقع يرتّب «الأقرب إليك» وتُحسب منه رسوم التوصيل.">
         {zones.isError ? <LoadState error={errorMessage(zones.error)} onRetry={() => void zones.refetch()} /> : null}
+        {draft.location ? null : <p className="text-sm font-semibold text-tw-danger">بدون موقع لا يستطيع العملاء طلب التوصيل من هذا المتجر.</p>}
         <SelectField
           label="منطقة التوصيل"
           value={draft.zoneId === null ? '' : String(draft.zoneId)}

@@ -54,7 +54,6 @@ describe('/v1/admin/audit (e2e)', () => {
           logo: null,
           cover: null,
           deliveryMinutes: 25,
-          deliveryFee: 15,
           minimumOrder: 60,
           deliveredBy: 'platform',
           layout: 'list',
@@ -69,7 +68,7 @@ describe('/v1/admin/audit (e2e)', () => {
         })
         .expect(201)
     ).body;
-    await http().patch(`/v1/admin/stores/${created.store.id}`).set(admin).send({ active: false, deliveryFee: 20 }).expect(200);
+    await http().patch(`/v1/admin/stores/${created.store.id}`).set(admin).send({ active: false, minimumOrder: 70 }).expect(200);
     const partnerId = created.partner.account.id as number;
     await http().post(`/v1/admin/partners/${partnerId}/password`).set(admin).expect(201);
     await http().patch(`/v1/admin/partners/${partnerId}`).set(admin).send({ disabled: true }).expect(200);
@@ -89,7 +88,7 @@ describe('/v1/admin/audit (e2e)', () => {
       ['admin.create', 'account', 'سارة حسن'],
     ]);
     expect(page.entries[0]).toMatchObject({ actor: { name: 'أحمد علي' }, at: expect.stringMatching(/^\d{4}-\d\d-\d\dT/) });
-    expect(page.entries[2]!.details).toEqual({ active: false, deliveryFee: 20 });
+    expect(page.entries[2]!.details).toEqual({ active: false, minimumOrder: 70 });
     expect(page.entries[5]!.details).toEqual({ active: false });
     expect(page.entries[6]!.details).toMatchObject({ corners: 4, active: true });
     expect(page.next).toBeNull();

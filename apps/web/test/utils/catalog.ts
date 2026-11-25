@@ -9,16 +9,16 @@ export async function anyZone(): Promise<number> {
 
 /** A store row as the seed or the admin would make it, in the first zone; open all day unless told otherwise. */
 export async function insertStore(
-  values: Partial<{ name: string; vertical: string; closedNow: boolean; active: boolean; deliveryFee: number }> = {},
+  values: Partial<{ name: string; vertical: string; closedNow: boolean; active: boolean; payoutOption: 'fee_only' | 'app_share' | 'nothing' }> = {},
 ): Promise<number> {
   const vertical = values.vertical ?? 'restaurant';
   const res = await sql<ResultSetHeader>(
-    `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at, closed_now, active, zone_id)
+    `INSERT INTO stores (vertical, name, delivery_minutes, payout_option, minimum_order, layout, opens_at, closes_at, closed_now, active, zone_id)
      VALUES (?, ?, 25, ?, 60, ?, '00:00', '00:00', ?, ?, ?)`,
     [
       vertical,
       values.name ?? 'شاورما الساقية',
-      values.deliveryFee ?? 15,
+      values.payoutOption ?? null,
       vertical === 'restaurant' ? 'list' : 'grid',
       values.closedNow ?? false,
       values.active ?? true,

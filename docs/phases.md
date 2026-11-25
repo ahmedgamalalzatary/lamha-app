@@ -35,7 +35,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 8 | Addresses, zones and the map picker | 🔍 in-verify | Google Maps key |
 | 9 | English LTR and the language switch (project review F47) | 🔍 in-verify | none |
 | 10 | Cart | 🔍 in-verify | none |
-| 11 | Checkout and placing an order (cash only) | ⬜ | none (#3, #11 decided) |
+| 11 | Checkout and placing an order (cash only) | 🔍 in-verify | none (#3, #11 decided) |
 | 12 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens) |
 | 13 | Driver: shifts, offers and skips | ⬜ | 9 (driver home and current orders) |
 | 14 | Order status and the delivered view (live tracking out of scope) | ⬜ | none |
@@ -238,6 +238,40 @@ Contract §8.6: one store per cart, steppers, delete confirm, upsell row, note s
 ## Phase 11: Checkout and placing an order
 
 Contract §8.6–§8.7: confirm the location on a map, the distance-based delivery fee and the store's payment option (§8.7), points as payment once Phase 18 exists, payment method (cash on delivery only; card and e-wallet excluded for now), coupon, place order; server-side totals; order created for the store.
+
+- **Migrations:**
+  - `0010_orders` adds `delivery_settings` (one row: base fee 20 for 2 km, 10 per km, option 2 at 10%), `orders`, `order_lines`, `order_events`, and each store's own `payout_option` and `app_percent`.
+  - `0011_store-fee-and-audit` removes the per-store `delivery_fee` and lets the audit log name the settings.
+- **Shared (TDD):** `deliveryFeeFor` (a started km counts whole), `payout` (the 3 options), `deliverySlots` (today's half-hour slots, at least 30 minutes ahead, while the store is open), `slotLabel`.
+- **API:**
+  - `GET`/`PATCH /v1/admin/settings/delivery`, recorded in سجل التغييرات.
+  - `POST /v1/me/checkout/quote` and `POST /v1/me/orders` (customers). The order rechecks the cart, the address (the customer's own, in the store's zone), a spot moved on the map (in the same zone), the store's location, the slot and the total the customer saw.
+  - A repeated request id gives back the same order; racing taps place one.
+  - Every amount and who pays whom is copied into the order; lines keep the product's name, choices and price. The cart empties.
+  - `GET /v1/me/orders`, `GET /v1/admin/orders?status=`.
+  - Store lists, search and the store page give the fee to the chosen address (`addressId`), or the base fee without one.
+- **Dashboard:**
+  - الإعدادات › رسوم التوصيل والدفع, with a worked example.
+  - The store form drops the fee and adds who pays the store and the app's percentage (empty follows الإعدادات). It warns when the store has no location.
+  - الطلبات: status tabs, "#code", "بدون كابتن" and "ملاحظات" flags with the red bar, store, customer, total, payment method.
+- **App:**
+  - "تابع للدفع" opens **إتمام الدفع** (`/checkout`).
+  - "تنفيذ الطلب" opens the map on the address's spot; "تأكيد الموقع" prices that spot and places the order. A changed bill is shown first, and the next tap places it.
+  - A pickup skips the address, the map and the fee.
+  - Then طلباتي lists the orders.
+- **[Open] not captured:**
+  - the pickup wording ("الاستلام من <store>", "جاهز خلال …")
+  - "لا توجد أوقات متاحة اليوم"
+  - "تم إرسال طلبك"
+  - the طلباتي cards
+  - the changed-bill and checkout error wording
+  - the order code as 100000 + id.
+- **[Derived]** In option 3, the store is owed the items total minus the app's percentage. The app pays it later.
+- **Changed from the plan:** a store's location stays optional in the form. Without it, the store cannot take delivery orders (`CHECKOUT_NO_STORE_LOCATION`), and the form says so.
+- **Phone verification:**
+  - Place a delivery order (the map confirm, then طلباتي) and a pickup for later today.
+  - Change the fee in the dashboard while checkout is open.
+  - Check the orders table.
 
 ## Phase 12: Partner: orders and products
 

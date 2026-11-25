@@ -2,7 +2,11 @@ import {
   type CatalogStore,
   type Category,
   type Cuisine,
+  type DeliveryFeeRule,
+  deliveryFeeFor,
+  distanceKm,
   type HomeTile,
+  type LatLng,
   type Ingredient,
   isOpenAt,
   type OptionGroup,
@@ -34,11 +38,12 @@ export function toStoreInput(row: StoreRow, cuisineIds: number[]): StoreInput {
     logo: row.logo,
     cover: row.cover,
     deliveryMinutes: row.deliveryMinutes,
-    deliveryFee: row.deliveryFee,
     minimumOrder: row.minimumOrder,
     deliveredBy: row.deliveredBy,
     layout: row.layout,
     pickupAllowed: row.pickupAllowed,
+    payoutOption: row.payoutOption,
+    appPercent: row.appPercent,
     opensAt: hhmm(row.opensAt),
     closesAt: hhmm(row.closesAt),
     closedNow: row.closedNow,
@@ -49,10 +54,20 @@ export function toStoreInput(row: StoreRow, cuisineIds: number[]): StoreInput {
   };
 }
 
-const locationOf = (row: StoreRow) => (row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng });
+export const locationOf = (row: Pick<StoreRow, 'lat' | 'lng'>): LatLng | null =>
+  row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng };
+
+/**
+ * The delivery fee to a spot (§8.7): straight line from the store. Without a spot, or without the
+ * store's location, the lists show the base fee.
+ */
+export function feeFrom(row: Pick<StoreRow, 'lat' | 'lng'>, to: LatLng | undefined, rule: DeliveryFeeRule): number {
+  const at = locationOf(row);
+  return at && to ? deliveryFeeFor(distanceKm(at, to), rule) : rule.baseFee;
+}
 
 /** A store as the apps list it. Ratings arrive in Phase 15; until then every store is "جديد". */
-export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date): CatalogStore {
+export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date, deliveryFee: number): CatalogStore {
   return {
     id: row.id,
     vertical: row.vertical,
@@ -60,7 +75,7 @@ export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date): 
     logo: row.logo,
     cover: row.cover,
     deliveryMinutes: row.deliveryMinutes,
-    deliveryFee: row.deliveryFee,
+    deliveryFee,
     minimumOrder: row.minimumOrder,
     deliveredBy: row.deliveredBy,
     layout: row.layout,

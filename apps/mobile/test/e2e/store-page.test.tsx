@@ -214,7 +214,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
 
     expect(await screen.findByRole('header', { name: 'سارة سوشي - Sara sushi' })).toBeTruthy();
     expect(screen.getByText('25 دقيقة')).toBeTruthy();
-    expect(screen.getByText('15 ج.م')).toBeTruthy();
+    expect(screen.getByText('20 ج.م')).toBeTruthy();
     expect(screen.getByText('توصيلة')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'السوشي', selected: true })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'صوصات' })).toBeTruthy();
@@ -329,7 +329,9 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
   });
 
   it('a store with no products says so; a free delivery fee reads "مجاني"', async () => {
-    const kebab = await insertStore('كبابجي السنى', 'restaurant', { deliveryFee: 0 });
+    const kebab = await insertStore('كبابجي السنى');
+    // The fee is the admin's distance rule (§8.7): a base fee of 0 delivers for free.
+    await sql('INSERT INTO delivery_settings (id, base_fee, per_km) VALUES (1, 0, 0) ON DUPLICATE KEY UPDATE base_fee = 0, per_km = 0');
     await renderApp(ROUTES, { initialUrl: `/store/${kebab}` });
     expect(await screen.findByText('لا توجد منتجات حاليا')).toBeTruthy();
     expect(screen.getByText('مجاني')).toBeTruthy();

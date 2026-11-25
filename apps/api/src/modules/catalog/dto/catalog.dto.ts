@@ -5,6 +5,8 @@ import {
   DELIVERED_BY,
   type DeliveredBy,
   HOME_TILE_ROWS,
+  PAYOUT_OPTIONS,
+  type PayoutOption,
   PRODUCT_OPTIONS,
   RATING_FLOORS,
   SEARCH_MAX_LENGTH,
@@ -91,12 +93,6 @@ export class StoreFieldsDto {
   @IsNumber(MONEY)
   @Min(0)
   @Max(MAX_MONEY)
-  deliveryFee: number;
-
-  @ApiProperty({ minimum: 0 })
-  @IsNumber(MONEY)
-  @Min(0)
-  @Max(MAX_MONEY)
   minimumOrder: number;
 
   @ApiProperty({ enum: DELIVERED_BY })
@@ -110,6 +106,18 @@ export class StoreFieldsDto {
   @ApiProperty()
   @IsBoolean()
   pickupAllowed: boolean;
+
+  @ApiPropertyOptional({ enum: PAYOUT_OPTIONS, nullable: true, description: 'Who pays whom (§8.7); null follows the global setting' })
+  @IsOptional()
+  @IsIn(PAYOUT_OPTIONS)
+  payoutOption?: PayoutOption | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 100, nullable: true, description: "The app's percentage; null follows the global setting" })
+  @IsOptional()
+  @IsNumber(MONEY)
+  @Min(0)
+  @Max(100)
+  appPercent?: number | null;
 
   @ApiProperty({ example: '10:00', description: 'Cairo time, HH:MM' })
   @Matches(TIME, { message: 'opensAt must be HH:MM' })
@@ -138,7 +146,7 @@ export class StoreFieldsDto {
   @IsInt()
   zoneId: number;
 
-  @ApiPropertyOptional({ type: LatLngDto, nullable: true, description: 'Where the store is, for "الأقرب إليك"' })
+  @ApiPropertyOptional({ type: LatLngDto, nullable: true, description: 'Where the store is: "الأقرب إليك" and the delivery distance' })
   @IsOptional()
   @ValidateNested()
   @Type(() => LatLngDto)
@@ -173,6 +181,12 @@ const SearchText = () =>
 /** The customer's chosen address (§8.9): only stores of its zone are listed, "الأقرب إليك" measures from it. */
 const AddressId = () =>
   applyDecorators(ApiPropertyOptional({ description: "The customer's chosen address" }), IsOptional(), Type(() => Number), IsInt());
+
+/** GET /v1/catalog/stores/:id: the store page, with the fee to the chosen address. */
+export class StorePageQuery {
+  @AddressId()
+  addressId?: number;
+}
 
 /** GET /v1/catalog/stores: a store list with its search box, sort sheet, rating sheet and chips (§8.3). */
 export class CatalogStoresQuery extends StoreListQuery {

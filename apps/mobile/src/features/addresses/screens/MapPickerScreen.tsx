@@ -37,14 +37,15 @@ const keyOf = (p: LatLng) => `${p.lat},${p.lng}`;
  * Tawsilty's map picker (contract §8.9): the layers button, ✕ ("تخطي" before the first address), the
  * banner while location is off with "تفعيل", the centre pin with "قرّب الخريطة لتحديد الموقع بدقة", the
  * locate button, and the "موقع التوصيل" card: the plus code, the zoom hint and "تأكيد الموقع", off until
- * zoomed in enough. `from=form` hands the spot back to the address form; otherwise it opens a new one.
+ * zoomed in enough. `from=form` hands the spot back to the address form, `from=checkout` confirms the
+ * order's spot (§8.6 [Client]); otherwise it opens a new address form.
  */
 export function MapPickerScreen() {
   const t = useT();
   const insets = useSafeAreaInsets();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const addresses = useAddresses();
-  const start = from === 'form' ? usePickedSpot.getState().spot : null;
+  const start = from === 'form' || from === 'checkout' ? usePickedSpot.getState().spot : null;
   const map = useRef<MapView>(null);
   const [region, setRegion] = useState<Region>(start ? near(start) : EGYPT);
   /** The area named for a spot; it arrives later than the spot, so it is kept with the spot it names. */
@@ -127,8 +128,8 @@ export function MapPickerScreen() {
   };
 
   const confirm = () => {
-    usePickedSpot.setState({ spot: { ...spot, label } });
-    if (from === 'form') router.back();
+    usePickedSpot.setState({ spot: { ...spot, label }, confirmed: from === 'checkout' });
+    if (from === 'form' || from === 'checkout') router.back();
     else router.replace('/address/new');
   };
 

@@ -6,3 +6,5 @@ export * from '../../modules/cart/cart.schema.js';
 export * from '../../modules/favorites/favorites.schema.js';
 export * from '../../modules/addresses/addresses.schema.js';
 export * from '../../modules/audit/audit.schema.js';
+export * from '../../modules/settings/settings.schema.js';
+export * from '../../modules/orders/orders.schema.js';

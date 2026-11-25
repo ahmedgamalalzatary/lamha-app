@@ -13,7 +13,8 @@ const NEW_STORE = {
   logo: null,
   cover: '/uploads/catalog/cover.jpg',
   deliveryMinutes: 25,
-  deliveryFee: 15,
+  payoutOption: 'fee_only',
+  appPercent: 7.5,
   minimumOrder: 60,
   deliveredBy: 'platform',
   layout: 'list',
@@ -63,7 +64,8 @@ describe('/v1/admin/stores (e2e, contract §11 الموردين, §2 partner acc
     expect(res.body.store).toMatchObject({
       name: 'شاورما الساقية',
       vertical: 'restaurant',
-      deliveryFee: 15,
+      payoutOption: 'fee_only',
+      appPercent: 7.5,
       minimumOrder: 60,
       opensAt: '10:00',
       closesAt: '02:00',
@@ -90,7 +92,8 @@ describe('/v1/admin/stores (e2e, contract §11 الموردين, §2 partner acc
   it('refuses bad input: hours, money, vertical and unknown fields', async () => {
     for (const bad of [
       { opensAt: '25:00' },
-      { deliveryFee: -1 },
+      { appPercent: 101 },
+      { payoutOption: 'cash' },
       { minimumOrder: 'ten' },
       { vertical: 'bakery' },
       { layout: 'cards' },
@@ -124,15 +127,18 @@ describe('/v1/admin/stores (e2e, contract §11 الموردين, §2 partner acc
     const res = await http()
       .patch(`/v1/admin/stores/${id}`)
       .set(auth())
-      .send({ deliveryFee: 20.5, layout: 'grid', active: false, cuisineIds: [] })
+      .send({ payoutOption: 'nothing', appPercent: 12.5, layout: 'grid', active: false, cuisineIds: [] })
       .expect(200);
-    expect(res.body).toMatchObject({ id, deliveryFee: 20.5, layout: 'grid', active: false });
+    expect(res.body).toMatchObject({ id, payoutOption: 'nothing', appPercent: 12.5, layout: 'grid', active: false });
+    // Empty follows the global setting again.
+    const global = await http().patch(`/v1/admin/stores/${id}`).set(auth()).send({ payoutOption: null, appPercent: null }).expect(200);
+    expect(global.body).toMatchObject({ payoutOption: null, appPercent: null });
     await http().patch('/v1/admin/stores/9999').set(auth()).send({ active: true }).expect(404);
   });
 
   it('refuses null for a field that must have a value, while a field that may be empty still takes null (review F35)', async () => {
     const id = await insertStore();
-    for (const field of ['name', 'deliveryFee', 'layout', 'active']) {
+    for (const field of ['name', 'minimumOrder', 'layout', 'active']) {
       await http().patch(`/v1/admin/stores/${id}`).set(auth()).send({ [field]: null }).expect(400);
     }
     await http().patch(`/v1/admin/stores/${id}`).set(auth()).send({ logo: null }).expect(200);

@@ -31,8 +31,8 @@ beforeEach(async () => {
 });
 
 describe('الموردين: the stores table (contract §11; real API)', () => {
-  it('lists the stores with type, partner phone, fee and open or closed, and filters by type', async () => {
-    const sakia = await insertStore({ name: 'شاورما الساقية', deliveryFee: 15 });
+  it('lists the stores with type, partner phone, who pays the store and open or closed, and filters by type', async () => {
+    const sakia = await insertStore({ name: 'شاورما الساقية', payoutOption: 'app_share' });
     await insertStore({ name: 'جرين بول', closedNow: true });
     await insertStore({ name: 'صيدلية الشفاء', vertical: 'pharmacy', active: false });
     await linkPartner(await insertUser('partner', '01000000002'), sakia);
@@ -41,7 +41,8 @@ describe('الموردين: the stores table (contract §11; real API)', () => {
     const row = await rowOf('شاورما الساقية');
     expect(within(row).getByText('المطاعم')).toBeInTheDocument();
     expect(within(row).getByText('01000000002')).toBeInTheDocument();
-    expect(within(row).getByText('15.00 ج.م')).toBeInTheDocument();
+    expect(within(row).getByText('بعد نسبة التطبيق')).toBeInTheDocument();
+    expect(within(await rowOf('جرين بول')).getByText('حسب الإعدادات')).toBeInTheDocument();
     expect(within(row).getByText('مفتوح')).toBeInTheDocument();
     expect(within(await rowOf('جرين بول')).getByText('مغلق')).toBeInTheDocument();
     expect(within(await rowOf('صيدلية الشفاء')).getByText('مخفي')).toBeInTheDocument();
@@ -70,8 +71,10 @@ describe('إضافة متجر: a store and its partner account (contract §2, §
     await user.selectOptions(screen.getByLabelText('النوع'), 'restaurant');
     await user.clear(screen.getByLabelText('مدة التوصيل (دقيقة)'));
     await user.type(screen.getByLabelText('مدة التوصيل (دقيقة)'), '20');
-    await user.clear(screen.getByLabelText('رسوم التوصيل (ج.م)'));
-    await user.type(screen.getByLabelText('رسوم التوصيل (ج.م)'), '10');
+    // The fee is the global distance rule (§8.7); the store only chooses who pays whom.
+    expect(screen.queryByLabelText('رسوم التوصيل (ج.م)')).toBeNull();
+    await user.selectOptions(screen.getByLabelText('ما يدفعه المندوب للمتجر'), 'nothing');
+    await user.type(screen.getByLabelText('نسبة التطبيق من المنتجات (%)'), '101');
     await user.clear(screen.getByLabelText('الحد الأدنى للطلب (ج.م)'));
     await user.type(screen.getByLabelText('الحد الأدنى للطلب (ج.م)'), '35');
     await user.click(screen.getByRole('switch', { name: 'الاستلام من المحل' }));
@@ -82,16 +85,20 @@ describe('إضافة متجر: a store and its partner account (contract §2, §
     expect(screen.queryByRole('option', { name: 'بدون منطقة' })).toBeNull();
     await screen.findByRole('option', { name: 'الفيوم' });
     await user.selectOptions(screen.getByLabelText('منطقة التوصيل'), String(zone));
+    // A percentage over 100 cannot be saved.
+    expect(save).toBeDisabled();
+    await user.clear(screen.getByLabelText('نسبة التطبيق من المنتجات (%)'));
+    await user.type(screen.getByLabelText('نسبة التطبيق من المنتجات (%)'), '12.5');
     expect(save).toBeEnabled();
     await user.click(save);
 
     const shown = await screen.findByRole('dialog', { name: 'كلمة المرور الجديدة' });
     const password = within(shown).getByTestId('generated-password').textContent!;
     expect(await signsIn('01554459196', password)).toBe(true);
-    const [store] = await sql<{ id: number; name: string; delivery_fee: string; pickup_allowed: number; layout: string; zone_id: number }[]>(
-      'SELECT id, name, delivery_fee, pickup_allowed, layout, zone_id FROM stores',
+    const [store] = await sql<{ id: number; name: string; payout_option: string; app_percent: string; pickup_allowed: number; layout: string; zone_id: number }[]>(
+      'SELECT id, name, payout_option, app_percent, pickup_allowed, layout, zone_id FROM stores',
     );
-    expect(store).toMatchObject({ name: 'كشري الحادقة', delivery_fee: '10.00', pickup_allowed: 1, layout: 'list', zone_id: zone });
+    expect(store).toMatchObject({ name: 'كشري الحادقة', payout_option: 'nothing', app_percent: '12.50', pickup_allowed: 1, layout: 'list', zone_id: zone });
 
     await user.click(within(shown).getByRole('button', { name: 'تم' }));
     expect(router.push).toHaveBeenCalledWith(`/stores/${store!.id}`);
@@ -139,16 +146,19 @@ describe('تعديل متجر (real API)', () => {
     const id = await insertStore({ name: 'شاورما الساقية' });
     renderWith(<StoreFormPage storeId={id} />);
     const user = userEvent.setup();
-    const fee = await screen.findByLabelText('رسوم التوصيل (ج.م)');
-    expect(fee).toHaveValue(15);
-    await user.clear(fee);
-    await user.type(fee, '22.5');
+    const payout = await screen.findByLabelText('ما يدفعه المندوب للمتجر');
+    expect(payout).toHaveValue('');
+    expect(screen.getByText('بدون موقع لا يستطيع العملاء طلب التوصيل من هذا المتجر.')).toBeInTheDocument();
+    await user.selectOptions(payout, 'fee_only');
     await user.click(screen.getByRole('switch', { name: 'مغلق الآن' }));
     await user.click(screen.getByRole('button', { name: 'حفظ' }));
 
     expect(await screen.findByText('تم حفظ التغييرات')).toBeInTheDocument();
-    const [row] = await sql<{ delivery_fee: string; closed_now: number }[]>('SELECT delivery_fee, closed_now FROM stores WHERE id = ?', [id]);
-    expect(row).toEqual({ delivery_fee: '22.50', closed_now: 1 });
+    const [row] = await sql<{ payout_option: string; app_percent: string | null; closed_now: number }[]>(
+      'SELECT payout_option, app_percent, closed_now FROM stores WHERE id = ?',
+      [id],
+    );
+    expect(row).toEqual({ payout_option: 'fee_only', app_percent: null, closed_now: 1 });
   });
 
   it('does not say "saved" for an edit typed while the save was on its way', async () => {

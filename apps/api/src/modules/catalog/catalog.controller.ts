@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { CatalogStore, Cuisine, HomeScreen, SearchResult, SearchSuggestion, StorePage } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { CatalogService } from './catalog.service.js';
-import { CatalogStoresQuery, SearchQuery } from './dto/catalog.dto.js';
+import { CatalogStoresQuery, SearchQuery, StorePageQuery } from './dto/catalog.dto.js';
 
 /** Router for `/v1/catalog`: what the apps read. Any signed-in account (the app opens on sign-in, §8.1). */
 @ApiTags('catalog')
@@ -38,8 +38,9 @@ export class CatalogController {
     return this.catalog.suggestions(me.id, query.q, query.scope, query.addressId);
   }
 
+  /** With `addressId`, the delivery fee is the one to that address (404 when it is not the customer's). */
   @Get('stores/:id')
-  store(@Param('id', ParseIntPipe) id: number): Promise<StorePage> {
-    return this.catalog.store(id);
+  store(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Query() query: StorePageQuery): Promise<StorePage> {
+    return this.catalog.store(id, me.id, query.addressId);
   }
 }

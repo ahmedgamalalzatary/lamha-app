@@ -5,12 +5,12 @@ import { sql } from './db';
 export async function insertStore(
   name: string,
   vertical = 'restaurant',
-  over: { deliveryMinutes?: number; deliveryFee?: number; closedNow?: boolean; pickupAllowed?: boolean; layout?: 'list' | 'grid' } = {},
+  over: { deliveryMinutes?: number; closedNow?: boolean; pickupAllowed?: boolean; layout?: 'list' | 'grid' } = {},
 ): Promise<number> {
   const res = await sql<ResultSetHeader>(
-    `INSERT INTO stores (vertical, name, delivery_minutes, delivery_fee, minimum_order, layout, opens_at, closes_at, closed_now, pickup_allowed)
-     VALUES (?, ?, ?, ?, 60, ?, '00:00', '00:00', ?, ?)`,
-    [vertical, name, over.deliveryMinutes ?? 25, over.deliveryFee ?? 15, over.layout ?? 'list', over.closedNow ?? false, over.pickupAllowed ?? false],
+    `INSERT INTO stores (vertical, name, delivery_minutes, minimum_order, layout, opens_at, closes_at, closed_now, pickup_allowed)
+     VALUES (?, ?, ?, 60, ?, '00:00', '00:00', ?, ?)`,
+    [vertical, name, over.deliveryMinutes ?? 25, over.layout ?? 'list', over.closedNow ?? false, over.pickupAllowed ?? false],
   );
   return res.insertId;
 }

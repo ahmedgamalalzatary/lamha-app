@@ -12,7 +12,6 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
-import { toast } from '@/components/Toast';
 import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useLocale, useT, useTextStart } from '@/core/i18n';
@@ -89,7 +88,7 @@ function CartContents({ cart, run, refresh, refreshing }: {
   });
   const validate = useSubmit(async () => {
     await run(cartApi.validate);
-    toast.show(t('cart.checkoutPending'));
+    router.push('/checkout');
   });
   const busy = edit.busy || saveNote.busy || validate.busy;
 

@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
 import { EmptyState, LoadState, Pill, Table } from '@/components/ui';
 import { useStores } from '../catalog/api';
+import { PAYOUT_SHORT } from '../settings/payout';
 
 type Tab = 'all' | Vertical;
 
@@ -49,7 +50,7 @@ export function StoresPage() {
       ) : rows.length === 0 ? (
         <EmptyState icon={Store} title="لا توجد متاجر" message="أضف متجراً وسيُنشأ حساب المورد معه" />
       ) : (
-        <Table headers={['المتجر', 'النوع', 'حساب المورد', 'رسوم التوصيل', 'الحد الأدنى', 'الحالة', 'العمليات']}>
+        <Table headers={['المتجر', 'النوع', 'حساب المورد', 'الدفع للمتجر', 'الحد الأدنى', 'الحالة', 'العمليات']}>
           {rows.map((s) => (
             <tr key={s.id} className="border-t border-tw-line">
               <td className="px-4 py-3 font-semibold">{s.name}</td>
@@ -57,7 +58,7 @@ export function StoresPage() {
               <td className="px-4 py-3" dir="ltr">
                 <span className="block text-end">{s.partners[0]?.phone ?? '—'}</span>
               </td>
-              <td className="px-4 py-3 whitespace-nowrap">{formatMoney(s.deliveryFee)}</td>
+              <td className="px-4 py-3 whitespace-nowrap">{s.payoutOption ? PAYOUT_SHORT[s.payoutOption] : 'حسب الإعدادات'}</td>
               <td className="px-4 py-3 whitespace-nowrap">{formatMoney(s.minimumOrder)}</td>
               <td className="px-4 py-3">
                 <div className="flex gap-1">

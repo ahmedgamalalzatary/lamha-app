@@ -10,7 +10,7 @@ export const auditLog = mysqlTable('audit_log', {
   actorId: int('actor_id', { unsigned: true }).notNull(),
   actorName: varchar('actor_name', { length: 210 }).notNull(),
   action: varchar('action', { length: 40 }).notNull(),
-  targetType: mysqlEnum('target_type', ['account', 'store', 'zone']).notNull(),
+  targetType: mysqlEnum('target_type', ['account', 'store', 'zone', 'settings']).notNull(),
   targetId: int('target_id', { unsigned: true }).notNull(),
   targetName: varchar('target_name', { length: 255 }).notNull(),
   details: json('details').$type<Record<string, unknown>>().notNull(),

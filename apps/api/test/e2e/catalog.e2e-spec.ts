@@ -42,7 +42,7 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
       [shawarma, true],
       [closed, false],
     ]);
-    expect(restaurants.body[0]).toMatchObject({ rating: null, ratingCount: 0, cuisineIds: [cuisine], deliveryFee: 15 });
+    expect(restaurants.body[0]).toMatchObject({ rating: null, ratingCount: 0, cuisineIds: [cuisine], deliveryFee: 20 });
     expect(restaurants.body[0]).not.toHaveProperty('partners');
 
     const byCuisine = await get(`/v1/catalog/stores?cuisineId=${cuisine}`).expect(200);

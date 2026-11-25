@@ -14,10 +14,11 @@ export const AUDIT_ACTIONS = [
   'store.update',
   'zone.create',
   'zone.update',
+  'settings.delivery',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditTargetType = 'account' | 'store' | 'zone';
+export type AuditTargetType = 'account' | 'store' | 'zone' | 'settings';
 
 export interface AuditEntry {
   id: number;

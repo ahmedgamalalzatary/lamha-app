@@ -20,6 +20,7 @@ const ACTIONS: Record<AuditAction, string> = {
   'store.update': 'تعديل متجر',
   'zone.create': 'إضافة منطقة',
   'zone.update': 'تعديل منطقة',
+  'settings.delivery': 'تعديل رسوم التوصيل والدفع',
 };
 
 /** The fields' names as the forms show them; any other field keeps its own name. */

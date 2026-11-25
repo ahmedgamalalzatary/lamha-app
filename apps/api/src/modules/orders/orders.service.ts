@@ -1,0 +1,241 @@
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  type AdminOrder,
+  type CheckoutQuote,
+  type CheckoutQuoteInput,
+  type CustomerCart,
+  type CustomerOrder,
+  deliveryFeeFor,
+  deliverySlots,
+  distanceKm,
+  type LatLng,
+  type OrderStatus,
+  payout,
+  type PlacedOrder,
+  type PlaceOrderInput,
+} from '@tawsela/shared';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { ApiException } from '../../common/api-exception.js';
+import { type Db, InjectDb } from '../../core/db/db.module.js';
+import type { AddressRow } from '../addresses/addresses.schema.js';
+import { AddressesService } from '../addresses/addresses.service.js';
+import { CartService } from '../cart/cart.service.js';
+import type { Tx } from '../catalog/catalog.repository.js';
+import { type StoreRow, stores } from '../catalog/catalog.schema.js';
+import { cairoMinuteOfDay, locationOf } from '../catalog/store-view.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { users } from '../users/users.schema.js';
+import { orderEvents, orderLines, type OrderRow, orders } from './orders.schema.js';
+
+const cents = (n: number) => Math.round(n * 100) / 100;
+const hhmm = (time: string) => time.slice(0, 5);
+const badAddress = () => new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'CHECKOUT_ADDRESS', 'Delivery to this spot is not available from this store');
+
+/** "#506898": six digits, like Tawsilty's order numbers. */
+const codeOf = (id: number) => String(100000 + id);
+
+/** Everything the bill depends on, worked out in one place for the quote and the order. */
+interface Bill extends CheckoutQuote {
+  cart: CustomerCart;
+  store: StoreRow;
+  address: AddressRow | null;
+  spot: LatLng | null;
+}
+
+/** Checkout and orders (contract §8.7, §11 الطلبات). Cash on delivery only (§15.1 #2). */
+@Injectable()
+export class OrdersService {
+  constructor(
+    @InjectDb() private readonly db: Db,
+    private readonly carts: CartService,
+    private readonly addresses: AddressesService,
+    private readonly settings: SettingsService,
+  ) {}
+
+  quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
+    return this.db.transaction(async (tx) => {
+      const { cart: _cart, store: _store, address: _address, spot: _spot, ...quote } = await this.bill(tx, userId, input);
+      return quote;
+    });
+  }
+
+  /**
+   * Places the order at the bill the customer saw, then empties the cart. The customer's row is
+   * locked first, so racing taps and cart edits run one after another; a repeated request id gives
+   * back the order it already placed.
+   */
+  place(userId: number, input: PlaceOrderInput): Promise<PlacedOrder> {
+    return this.db.transaction(async (tx) => {
+      const [user] = await tx.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).for('update');
+      if (!user) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
+      const [placed] = await tx.select({ id: orders.id }).from(orders).where(and(eq(orders.customerId, userId), eq(orders.requestId, input.requestId)));
+      if (placed) return { order: await this.customerOrder(tx, placed.id) };
+
+      const bill = await this.bill(tx, userId, input);
+      if (bill.cartId !== input.cartId) {
+        throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_CART_CHANGED', 'The cart changed since the checkout screen loaded');
+      }
+      if (bill.total !== input.expectedTotal) {
+        throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_TOTAL_CHANGED', 'The bill changed; check it again');
+      }
+      if (input.slot !== null && !bill.slots.includes(input.slot)) {
+        throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'CHECKOUT_SLOT', 'This delivery time is no longer offered');
+      }
+
+      const now = new Date();
+      now.setSeconds(0, 0);
+      const scheduledFor = input.slot === null ? null : new Date(now.getTime() + (input.slot - cairoMinuteOfDay(now)) * 60_000);
+      const rule = await this.settings.delivery(tx);
+      const payoutOption = bill.store.payoutOption ?? rule.payoutOption;
+      const appPercent = bill.store.appPercent ?? rule.appPercent;
+      const { address, spot } = bill;
+      const [created] = await tx
+        .insert(orders)
+        .values({
+          customerId: userId,
+          storeId: bill.store.id,
+          requestId: input.requestId,
+          mode: bill.mode,
+          addressId: address?.id ?? null,
+          addressText: address ? addressText(address) : null,
+          phone: address?.phone ?? null,
+          lat: spot?.lat ?? null,
+          lng: spot?.lng ?? null,
+          distanceKm: bill.distanceKm === null ? null : Math.round(bill.distanceKm * 1000) / 1000,
+          scheduledFor,
+          note: bill.cart.note,
+          itemsTotal: bill.itemsTotal,
+          deliveryFee: bill.deliveryFee,
+          total: bill.total,
+          payoutOption,
+          appPercent,
+          ...payout(bill.itemsTotal, payoutOption, appPercent),
+        })
+        .$returningId();
+      const orderId = created!.id;
+      await tx.insert(orderLines).values(
+        bill.cart.lines.map((line) => {
+          const options = line.product.optionGroups.flatMap((g) => g.options.filter((o) => line.optionIds.includes(o.id)).map((o) => o.name));
+          const removed = line.product.ingredients.filter((i) => line.removedIngredientIds.includes(i.id)).map((i) => i.name);
+          return {
+            orderId,
+            productId: line.product.id,
+            name: line.product.name,
+            options,
+            removedIngredients: removed,
+            image: line.product.image,
+            unitPrice: line.unitPrice,
+            quantity: line.quantity,
+          };
+        }),
+      );
+      await tx.insert(orderEvents).values({ orderId, status: 'pending_review', byUserId: userId });
+      await this.carts.clear(tx, bill.cartId);
+      return { order: await this.customerOrder(tx, orderId) };
+    });
+  }
+
+  /** طلباتي: the customer's orders, newest first. */
+  async mine(userId: number): Promise<CustomerOrder[]> {
+    const rows = await this.db
+      .select({ order: orders, store: { id: stores.id, name: stores.name, logo: stores.logo } })
+      .from(orders)
+      .innerJoin(stores, eq(stores.id, orders.storeId))
+      .where(eq(orders.customerId, userId))
+      .orderBy(desc(orders.id))
+      .limit(100);
+    const counts = await this.counts(this.db, rows.map((r) => r.order.id));
+    return rows.map(({ order, store }) => toCustomerOrder(order, store, counts.get(order.id) ?? 0));
+  }
+
+  /** The dashboard's الطلبات table: newest first, optionally one status tab. */
+  async adminList(status?: OrderStatus): Promise<AdminOrder[]> {
+    const rows = await this.db
+      .select({
+        order: orders,
+        store: { id: stores.id, name: stores.name, logo: stores.logo },
+        customer: { id: users.id, firstName: users.firstName, lastName: users.lastName, phone: users.phone },
+      })
+      .from(orders)
+      .innerJoin(stores, eq(stores.id, orders.storeId))
+      .innerJoin(users, eq(users.id, orders.customerId))
+      .where(status ? eq(orders.status, status) : undefined)
+      .orderBy(desc(orders.id))
+      .limit(200);
+    const counts = await this.counts(this.db, rows.map((r) => r.order.id));
+    return rows.map(({ order, store, customer }) => ({
+      ...toCustomerOrder(order, store, counts.get(order.id) ?? 0),
+      customer: { id: customer.id, name: `${customer.firstName} ${customer.lastName}`.trim(), phone: order.phone ?? customer.phone },
+      note: order.note,
+      hasDriver: false,
+      paymentMethod: 'cash',
+      payoutOption: order.payoutOption,
+      appShare: order.appShare,
+      storeFromDriver: order.storeFromDriver,
+    }));
+  }
+
+  /** The bill for the customer's ready cart: the distance fee for a delivery, none for a pickup. */
+  private async bill(tx: Tx, userId: number, input: CheckoutQuoteInput): Promise<Bill> {
+    const cart = await this.carts.ready(tx, userId);
+    const [store] = await tx.select().from(stores).where(eq(stores.id, cart.store.id));
+    if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
+    const slots = deliverySlots(cairoMinuteOfDay(new Date()), { opensAt: hhmm(store.opensAt), closesAt: hhmm(store.closesAt), closedNow: store.closedNow });
+    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, cart, store };
+    if (cart.mode === 'pickup') {
+      return { ...base, deliveryFee: 0, total: cart.total, distanceKm: null, address: null, spot: null };
+    }
+    if (input.addressId === undefined) throw new BadRequestException('addressId is required for a delivery');
+    const address = await this.addresses.findOf(userId, input.addressId);
+    if (store.zoneId !== null && store.zoneId !== address.zoneId) throw badAddress();
+    const spot = input.location ? { lat: input.location.lat, lng: input.location.lng } : { lat: address.lat, lng: address.lng };
+    if (input.location) {
+      const { zone } = await this.addresses.check(spot);
+      if (!zone || zone.id !== address.zoneId) throw badAddress();
+    }
+    const from = locationOf(store);
+    if (!from) throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_NO_STORE_LOCATION', 'The store has no location on the map');
+    const km = distanceKm(from, spot);
+    const deliveryFee = deliveryFeeFor(km, await this.settings.delivery(tx));
+    return { ...base, deliveryFee, total: cents(cart.total + deliveryFee), distanceKm: km, address, spot };
+  }
+
+  private async customerOrder(tx: Db | Tx, id: number): Promise<CustomerOrder> {
+    const [row] = await tx
+      .select({ order: orders, store: { id: stores.id, name: stores.name, logo: stores.logo } })
+      .from(orders)
+      .innerJoin(stores, eq(stores.id, orders.storeId))
+      .where(eq(orders.id, id));
+    const counts = await this.counts(tx, [id]);
+    return toCustomerOrder(row!.order, row!.store, counts.get(id) ?? 0);
+  }
+
+  /** How many items each order holds. */
+  private async counts(tx: Db | Tx, ids: number[]): Promise<Map<number, number>> {
+    if (!ids.length) return new Map();
+    const lines = await tx.select({ orderId: orderLines.orderId, quantity: orderLines.quantity }).from(orderLines).where(inArray(orderLines.orderId, ids));
+    const counts = new Map<number, number>();
+    for (const { orderId, quantity } of lines) counts.set(orderId, (counts.get(orderId) ?? 0) + quantity);
+    return counts;
+  }
+}
+
+/** The address as the store and the delivery man read it: "شارع 2، مبنى 2، الدور 3، شقه 2، temp". */
+const addressText = (a: AddressRow) =>
+  [a.street, a.building, a.floor && `الدور ${a.floor}`, a.apartment, a.landmark].filter((part) => part?.trim()).join('، ');
+
+function toCustomerOrder(row: OrderRow, store: CustomerOrder['store'], count: number): CustomerOrder {
+  return {
+    id: row.id,
+    code: codeOf(row.id),
+    status: row.status,
+    store,
+    mode: row.mode,
+    scheduledFor: row.scheduledFor?.toISOString() ?? null,
+    count,
+    itemsTotal: row.itemsTotal,
+    deliveryFee: row.deliveryFee,
+    total: row.total,
+    createdAt: row.createdAt.toISOString(),
+  };
+}

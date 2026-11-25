@@ -18,7 +18,8 @@ import { ApiException } from '../../common/api-exception.js';
 import { AddressesService } from '../addresses/addresses.service.js';
 import { CatalogRepository } from './catalog.repository.js';
 import type { StoreRow } from './catalog.schema.js';
-import { toCatalogStore, toCategory, toCuisine, toHomeTile } from './store-view.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { feeFrom, toCatalogStore, toCategory, toCuisine, toHomeTile } from './store-view.js';
 
 /** Suggestions shown while typing. */
 const SUGGESTIONS = 8;
@@ -32,6 +33,7 @@ export class CatalogService {
   constructor(
     private readonly catalog: CatalogRepository,
     private readonly addresses: AddressesService,
+    private readonly settings: SettingsService,
   ) {}
 
   /** The chosen address's zone and spot; none chosen lists every store (§8.9). */
@@ -46,12 +48,12 @@ export class CatalogService {
     const { sort, minRating, fast, pickup, addressId, ...where } = query;
     const { zoneId, from } = await this.deliverTo(userId, addressId);
     const rows = await this.catalog.listStores({ ...where, zoneId, activeOnly: true });
-    return applyStoreFilter(await this.toStores(rows), { sort, minRating, fast, pickup }, from);
+    return applyStoreFilter(await this.toStores(rows, from), { sort, minRating, fast, pickup }, from);
   }
 
   /** Search (§8.13): stores whose name matches, and stores with matching products, each with those products. */
   async search(userId: number, q: string, scope: SearchScope, addressId?: number): Promise<SearchResult[]> {
-    const { zoneId } = await this.deliverTo(userId, addressId);
+    const { zoneId, from } = await this.deliverTo(userId, addressId);
     // The zone limits every query before its own limit (review F31).
     const [byName, byProduct, rows] = await Promise.all([
       this.catalog.listStores({ q, zoneId, activeOnly: true }),
@@ -60,7 +62,7 @@ export class CatalogService {
     ]);
     const products = await this.catalog.withChoices(rows);
     const ids = new Set([...byName.map((s) => s.id), ...byProduct]);
-    const stores = (await this.toStores(await this.catalog.listStores({ ids: [...ids], zoneId, activeOnly: true }))).filter((s) =>
+    const stores = (await this.toStores(await this.catalog.listStores({ ids: [...ids], zoneId, activeOnly: true }), from)).filter((s) =>
       inSearchScope(s.vertical, scope),
     );
     return stores.map((store) => ({ store, products: products.filter((p) => p.storeId === store.id) }));
@@ -84,24 +86,28 @@ export class CatalogService {
     return (await this.catalog.findStore(id))?.active === true;
   }
 
-  private async toStores(rows: StoreRow[]): Promise<CatalogStore[]> {
-    const cuisineIds = await this.catalog.cuisineIdsOf(rows.map((r) => r.id));
+  /** With `from` (the chosen address's spot), each store's delivery fee to it (§8.7). */
+  private async toStores(rows: StoreRow[], from?: LatLng): Promise<CatalogStore[]> {
+    const [cuisineIds, rule] = await Promise.all([this.catalog.cuisineIdsOf(rows.map((r) => r.id)), this.settings.delivery()]);
     const now = new Date();
-    return rows.map((row) => toCatalogStore(row, cuisineIds.get(row.id) ?? [], now));
+    return rows.map((row) => toCatalogStore(row, cuisineIds.get(row.id) ?? [], now, feeFrom(row, from, rule)));
   }
 
   /**
    * A store page: categories in order, each with its products (switched-off ones marked) and choices. Empty categories
-   * are left out; a main category stays while one of its sub-categories has products.
+   * are left out; a main category stays while one of its sub-categories has products. With `addressId`, the fee is
+   * the one to that address.
    */
-  async store(id: number): Promise<StorePage> {
+  async store(id: number, userId?: number, addressId?: number): Promise<StorePage> {
     const row = await this.catalog.findStore(id);
     if (!row?.active) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'No store has this id');
-    const [cuisineIds, categories, rows] = await Promise.all([
+    const { from } = userId === undefined ? {} : await this.deliverTo(userId, addressId);
+    const [cuisineIds, categories, rows, rule] = await Promise.all([
       this.catalog.cuisineIdsOf([id]),
       this.catalog.listCategories(id),
       // Switched-off products come too: the app greys them with "غير متوفر", as Tawsilty does.
       this.catalog.listProducts(id),
+      this.settings.delivery(),
     ]);
     const products = await this.catalog.withChoices(rows);
     const all = categories.map((c) => {
@@ -109,7 +115,7 @@ export class CatalogService {
       return { ...toCategory(c, items.length), products: items };
     });
     const filled = new Set(all.filter((c) => c.products.length).flatMap((c) => (c.parentId ? [c.id, c.parentId] : [c.id])));
-    return { ...toCatalogStore(row, cuisineIds.get(id) ?? [], new Date()), categories: all.filter((c) => filled.has(c.id)) };
+    return { ...toCatalogStore(row, cuisineIds.get(id) ?? [], new Date(), feeFrom(row, from, rule)), categories: all.filter((c) => filled.has(c.id)) };
   }
 
   /** The customer home (§8.2): the tiles customers may open and the invite card's rewards. */

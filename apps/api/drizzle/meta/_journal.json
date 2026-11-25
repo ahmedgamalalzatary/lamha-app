@@ -71,6 +71,20 @@
       "when": 1795599661771,
       "tag": "0009_customer-cart",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1795629227283,
+      "tag": "0010_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1795629333733,
+      "tag": "0011_store-fee-and-audit",
+      "breakpoints": true
     }
   ]
 }

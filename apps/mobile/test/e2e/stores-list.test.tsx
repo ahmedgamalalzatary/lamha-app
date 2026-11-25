@@ -50,7 +50,7 @@ describe('a store list (contract §8.3; real API)', () => {
     const row = await screen.findByRole('button', { name: 'شاورما الساقية' });
     expect(screen.getByPlaceholderText('Search Restaurants')).toBeTruthy();
     expect(within(row).getByText('50 min')).toBeTruthy();
-    expect(within(row).getByText('15 EGP')).toBeTruthy();
+    expect(within(row).getByText('20 EGP')).toBeTruthy();
   });
 
   it("lists the type's stores with their count, time, fee and the closed look; a row opens the store", async () => {
@@ -62,7 +62,7 @@ describe('a store list (contract §8.3; real API)', () => {
     const row = screen.getByRole('button', { name: 'شاورما الساقية' });
     expect(within(row).getByText('جديد')).toBeTruthy();
     expect(within(row).getByText('50 دقيقة')).toBeTruthy();
-    expect(within(row).getByText('15 ج.م')).toBeTruthy();
+    expect(within(row).getByText('20 ج.م')).toBeTruthy();
     expect(within(screen.getByRole('button', { name: 'أسماك الزعيم' })).getByText('مغلق')).toBeTruthy();
     expect(within(row).queryByText('مغلق')).toBeNull();
 

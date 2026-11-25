@@ -62,7 +62,7 @@ Every feature module of the product. Each one is detailed in the section shown a
 | C5 | Store page and products | Cover, info row, categories, product grid or list, product sheet, minimum-order bar, favourite | 8.4, 8.5 | Tawsilty, Client | 7 |
 | C6 | Addresses and map | Saved addresses, map picker, address form, delivery-zone check | 8.9 | Tawsilty | 8 |
 | C7 | Cart | Lines, upsell, note, payment summary, pickup where allowed | 8.6 | Tawsilty, Client | 10 |
-| C8 | Checkout and payment | Address, now or scheduled slot, wallet toggle, cash on delivery only (e-wallet and card excluded for now), coupon code, service fee, place order; location confirm on the map | 8.7 | Tawsilty, Client | 11 |
+| C8 | Checkout and payment | Address, now or scheduled slot, wallet toggle, cash on delivery only (e-wallet and card excluded for now), coupon code, place order (no service fee, owner 2026-11-25); location confirm on the map | 8.7 | Tawsilty, Client | 11 |
 | C9 | Orders | Orders list, order status (live tracking out of scope), delivered details view, reorder | 8.8 | Tawsilty, Client | 14 |
 | C10 | Ratings | Stars, good/bad suggestion chips, written reason | 8.8 | Client | 15 |
 | C11 | Support | Order problem → ticket, suggestion, complaint (general or past order), contact us | 8.8, 8.14 | Tawsilty, Client | 15 |
@@ -439,7 +439,12 @@ Built in Phase 7: the admin sets each product's option groups (title, required, 
 3. **رصيدك**: "رصيد المحفظة" toggle to pay with the wallet; "لا يوجد رصيد متاح" in red when empty, and "شحن المحفظة".
 4. **طريقة الدفع**: Tawsilty shows الدفع عند الاستلام (cash, default) · محفظة الكترونية · بطاقة الإئتمان; "جميع عمليات الدفع آمنة ومشفّرة". [Owner, 2026-11-23] Tawsela shows **cash only** for now; e-wallet and card are excluded, so the payment-method fee is always 0. The money fields stay in the data model so they can return later.
 5. **وفر على طلبك**: discount code field with "تطبيق" (empty → "من فضلك أدخل الكوبون أولا").
-6. **ملخّص الدفع**: مجموع المنتجات, رسوم التوصيل, **رسوم الخدمة** (service fee, e.g. 10 ج.م), **رسوم طريقة الدفع** (payment-method fee, only for e-wallet/card, e.g. 5.60 ج.م), الإجمالي.
+6. **ملخّص الدفع**: مجموع المنتجات, رسوم التوصيل, **رسوم الخدمة** (service fee, e.g. 10 ج.م), **رسوم طريقة الدفع** (payment-method fee, only for e-wallet/card, e.g. 5.60 ج.م), الإجمالي. [Owner, 2026-11-25] Tawsela has **no service fee**: the "رسوم الخدمة" line is removed, so the summary is مجموع المنتجات, رسوم التوصيل (§8.7 "Delivery fee") and الإجمالي.
+
+[Owner, 2026-11-25] Also for Phase 11:
+- **Later delivery:** today only. The slots run every half hour, starting at least 30 minutes from now, until the store closes.
+- **Wallet and coupon:** "رصيدك" and "وفر على طلبك" stay hidden until the wallet (Phase 17) and coupons (Phase 20) are built.
+- **Stores delivering with their own people:** "delivered by: store" pays the same delivery fee rule.
 7. Bottom button "تنفيذ الطلب <total>".
 
 E-wallet and card providers: excluded for now (§15.1 #2).
@@ -708,7 +713,7 @@ First draft; each phase finalises its tables.
 - `stores` (vertical, name, logo, cover, delivery minutes, fee, minimum order, delivered_by, layout, pickup_allowed, opens_at, closes_at, closed_now, active), `store_categories` (name, image, order, parent for a sub-category), `products` (category, name, description, price, unit, image, active, order), `cuisines` (name, image, order), `store_cuisines` (built in Phase 4; ratings come from `ratings`, Phase 15)
 - `product_option_groups` (title, required, max choices, order), `product_options` (name, price change, order), `product_ingredients` (name, order), `favorite_stores` (customer, store) (built in Phase 7)
 - `carts`, `cart_lines`
-- `orders` (customer, store, driver, address, mode delivery/pickup, scheduled time, status, items total, delivery fee, service fee, payment-method fee, discount and its source (coupon or invite credit), customer total, payment method, store commission and the amount the store collects from the captain, note), `order_lines`, `order_events` (status history)
+- `orders` (customer, store, driver, address, mode delivery/pickup, scheduled time, status, items total, delivery fee (no service fee: owner, 2026-11-25), payment-method fee, discount and its source (coupon or invite credit), customer total, payment method, store commission and the amount the store collects from the captain, note), `order_lines`, `order_events` (status history)
 - `ratings` (stars, tags, text)
 - `tickets` (complaints, suggestions, order problems)
 - `wallet_transactions` (add/deduct, reason), `points_transactions`, `invites`
@@ -807,3 +812,5 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-25 | Phases renumbered [Owner]: "8a" (English LTR and the language switch) is now Phase 9, and every later phase moves up one (Cart 10 … Release 26). Every phase reference here, in `docs/phases.md` and in code comments follows; §15.1 decision numbers and § section numbers are unchanged. |
 | 2026-11-25 | Phase 10 cart (§8.6, §12): migration 0009 stores one cart per customer and persists its lines, note and fulfillment choice. Store changes require confirmation, prices come from the catalog, and checkout readiness checks availability and the minimum order. Pickup is offered only where allowed. Uncaptured details are listed in the phase plan. |
 | 2026-11-25 | Owner's decisions (§15.1 #3, #4, #5, #11): the delivery fee by straight-line distance, with a per-driver override for his earnings only (§8.7); three per-store options for who pays whom (§8.7); customer points rules and the delivery man's speed points (§8.16, §10); the weekly shift schedule, start window, extend limit, offer timeout and skip rules (§10). Live tracking is out of scope (§8.8, §15.2). |
+| 2026-11-25 | Owner, before Phase 11 (§8.7): no service fee ("رسوم الخدمة" line removed); later delivery is today only, in half-hour slots until the store closes; the wallet and coupon sections stay hidden until Phases 17 and 20; stores delivering with their own people use the same fee rule. |
+| 2026-11-25 | Phase 11 built (§8.6, §8.7, §8.8, §11): checkout with the distance fee, the map confirm, today's later slots and cash on delivery; orders with their amounts and who pays whom fixed when placed; الإعدادات › رسوم التوصيل والدفع; the store's own payment option; الطلبات table; طلباتي list. Uncaptured wording marked [Open] in the phase plan. [Derived] option 3 still takes the app's percentage before the app pays the store. |

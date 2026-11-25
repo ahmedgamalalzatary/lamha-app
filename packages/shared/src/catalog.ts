@@ -2,6 +2,7 @@
 import type { LatLng } from './address.js';
 import type { CreatedAccount, StaffAccount } from './auth.js';
 import type { Vertical } from './enums.js';
+import type { PayoutOption } from './order.js';
 import type { Ingredient, OptionGroup } from './product.js';
 
 /** How a store page shows its products (contract §8.4, set by the admin per store). */
@@ -76,17 +77,20 @@ export interface StoreInput extends StoreHours {
   cover: string | null;
   /** "مدة التوصيل" on the store page. */
   deliveryMinutes: number;
-  deliveryFee: number;
   minimumOrder: number;
   deliveredBy: DeliveredBy;
   layout: StoreLayout;
   pickupAllowed: boolean;
+  /** Who pays whom (§8.7); null follows the global setting. */
+  payoutOption: PayoutOption | null;
+  /** The app's percentage for this store; null follows the global setting. */
+  appPercent: number | null;
   /** Hidden from customers when false. */
   active: boolean;
   cuisineIds: number[];
   /** The delivery zone it serves (§8.9): customers see it only when their address is in this zone. */
   zoneId: number | null;
-  /** Where the store is, for "الأقرب إليك". */
+  /** Where the store is: "الأقرب إليك" and the delivery distance. Required for delivery orders. */
   location: LatLng | null;
 }
 
@@ -123,6 +127,7 @@ export interface CatalogStore {
   logo: string | null;
   cover: string | null;
   deliveryMinutes: number;
+  /** For the chosen address (§8.7), or the base fee without one or without the store's location. */
   deliveryFee: number;
   minimumOrder: number;
   deliveredBy: DeliveredBy;

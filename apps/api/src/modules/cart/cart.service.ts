@@ -131,15 +131,28 @@ export class CartService {
     });
   }
 
-  async validate(userId: number): Promise<CartResponse> {
-    const { cart } = await this.get(userId);
+  validate(userId: number): Promise<CartResponse> {
+    return this.db.transaction(async (tx) => ({ cart: await this.ready(tx, userId) }));
+  }
+
+  /**
+   * The cart, ready to order: the store is open, every item can be ordered and the minimum is reached.
+   * Checkout calls it inside its own transaction, after locking the customer's row.
+   */
+  async ready(tx: Tx, userId: number): Promise<CustomerCart> {
+    const cart = await this.snapshot(tx, await this.find(tx, userId));
     if (!cart) throw missing();
     if (!cart.store.isOpen) throw closed();
     if (cart.lines.some((line) => !line.available)) throw unavailable();
     if (minimumOrderLeft(cart.total, cart.store.minimumOrder) > 0) {
       throw new ApiException(HttpStatus.CONFLICT, 'CART_MINIMUM_ORDER', 'The minimum order has not been reached');
     }
-    return { cart };
+    return cart;
+  }
+
+  /** Empties the customer's cart once its order is placed. */
+  async clear(tx: Tx, cartId: number): Promise<void> {
+    await tx.delete(carts).where(eq(carts.id, cartId));
   }
 
   private async write(userId: number, change: (tx: Tx, cart: CartRow | undefined) => Promise<void>): Promise<CartResponse> {

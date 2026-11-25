@@ -53,7 +53,6 @@ interface SeedCatalog {
     name: string;
     cover: string | null;
     deliveryMinutes: number;
-    deliveryFee: number;
     minimumOrder: number;
     deliveredBy: 'platform' | 'store';
     open: boolean;
@@ -144,7 +143,6 @@ if (anyStore) {
           name: s.name,
           cover: await image(s.cover),
           deliveryMinutes: s.deliveryMinutes,
-          deliveryFee: s.deliveryFee,
           minimumOrder: s.minimumOrder,
           deliveredBy: s.deliveredBy,
           layout: defaultLayout(s.vertical),
@@ -172,7 +170,6 @@ if (anyStore) {
         vertical: 'courier',
         name: 'اطلب دليفري',
         deliveryMinutes: 30,
-        deliveryFee: 25,
         minimumOrder: 0,
         layout: 'list',
         opensAt: '00:00',
