@@ -42,9 +42,9 @@ export default function Reports() {
         <p className="text-[12.5px] text-ink-3">{d.label} • دوس على أي عمود</p>
         <p className="mt-3 text-[26px] font-bold tabular-nums">{egp(d.bars[shown][1])}</p>
         <p className="text-[13px] text-ink-2">{d.bars[shown][0]}</p>
-        <div className="mt-4 flex h-40 items-end gap-2 border-b border-rule" role="list">
+        <div className="mt-4 flex h-40 items-end gap-2 border-b border-rule" role="group" aria-labelledby="sales-h">
           {d.bars.map(([k, v], i) => (
-            <button key={k} role="listitem" aria-label={`${k}: ${egp(v)}`} aria-pressed={shown === i} onClick={() => setSel(i)} className="group flex h-full flex-1 flex-col justify-end">
+            <button key={k} type="button" aria-label={`${k}: ${egp(v)}`} aria-pressed={shown === i} onClick={() => setSel(i)} className="group flex h-full flex-1 flex-col justify-end">
               <span className={cx("block w-full rounded-t-[4px] transition-colors", shown === i ? "bg-pen" : "bg-pen/30 group-hover:bg-pen/50")} style={{ height: `${(v / max) * 100}%` }} />
             </button>
           ))}
