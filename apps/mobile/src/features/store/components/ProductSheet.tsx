@@ -12,7 +12,7 @@ import {
 } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { Check, Minus, Plus, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
@@ -33,7 +33,8 @@ interface Props {
   /** The store's products in menu order, for "تُطلب معًا". */
   menu: Product[];
   countOf: (productId: number) => number;
-  onAdd: (item: { product: Product; optionIds: number[]; removedIngredientIds: number[]; quantity: number }) => Promise<boolean>;
+  /** closeOnSuccess: false for a "تُطلب معًا" add, which leaves the sheet open (also after a cart replacement). */
+  onAdd: (item: { product: Product; optionIds: number[]; removedIngredientIds: number[]; quantity: number }, closeOnSuccess?: boolean) => Promise<boolean>;
   /** Another product from "تُطلب معًا" that has choices: the sheet shows it instead. */
   onOpen: (product: Product) => void;
   onClose: () => void;
@@ -49,6 +50,12 @@ export function ProductSheet({ product, conflict, ...rest }: Props) {
   const reduceMotion = useReduceMotion();
   const [replaceError, setReplaceError] = useState<string | null>(null);
   const replacing = conflict.storeName !== undefined;
+  /** Whether the add that ran into another store's cart closes the sheet once it goes through. */
+  const closeAfterReplace = useRef(true);
+  const onAdd: Props['onAdd'] = (item, closeOnSuccess = true) => {
+    closeAfterReplace.current = closeOnSuccess;
+    return rest.onAdd(item);
+  };
   const closeConflict = () => {
     setReplaceError(null);
     conflict.cancel();
@@ -56,7 +63,7 @@ export function ProductSheet({ product, conflict, ...rest }: Props) {
   const replacement = useSubmit(async () => {
     setReplaceError(null);
     try {
-      if (await conflict.replace()) rest.onClose();
+      if ((await conflict.replace()) && closeAfterReplace.current) rest.onClose();
     } catch (e) {
       setReplaceError(errorMessage(e));
     }
@@ -71,7 +78,7 @@ export function ProductSheet({ product, conflict, ...rest }: Props) {
       <View style={styles.fill}>
         {product ? (
           <View style={styles.fill} accessibilityElementsHidden={replacing} importantForAccessibility={replacing ? 'no-hide-descendants' : 'auto'}>
-            <SheetBody key={product.id} product={product} {...rest} />
+            <SheetBody key={product.id} product={product} {...rest} onAdd={onAdd} />
           </View>
         ) : null}
         <CartConflictDialog
@@ -103,7 +110,7 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Omit<Prop
   const submit = useSubmit(async (item: Parameters<Props['onAdd']>[0], closeOnSuccess: boolean) => {
     setAddError(null);
     try {
-      if (await onAdd(item) && closeOnSuccess) onClose();
+      if (await onAdd(item, closeOnSuccess) && closeOnSuccess) onClose();
     } catch (e) {
       setAddError(errorMessage(e));
     }

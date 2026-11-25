@@ -33,6 +33,14 @@ it('bounds automatic native reloads until the device reports the requested direc
   await prepareDirectionReload('ar', true);
 });
 
+it('a check that overlaps an abandoned one still clears its reload marker', async () => {
+  // The locale changed while the first check was still reading storage.
+  await Promise.all([prepareDirectionReload('en', false), prepareDirectionReload('ar', true)]);
+  // A later switch to English still gets its one reload.
+  expect(await prepareDirectionReload('en', false)).toBe(true);
+  await prepareDirectionReload('en', true);
+});
+
 it('keeps the last device language when a write finishes after its session changed', async () => {
   await localePreference.save('ar');
   const write = jest.mocked(AsyncStorage.setItem).getMockImplementation()!;

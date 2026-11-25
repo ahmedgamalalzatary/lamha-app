@@ -24,7 +24,7 @@ jest.mock('react-native-maps', () => {
   const { forwardRef, useImperativeHandle } = jest.requireActual<typeof import('react')>('react');
   const { Pressable, Text, View } = jest.requireActual<typeof import('react-native')>('react-native');
   const MapView = forwardRef(
-    ({ onRegionChangeComplete, children }: { onRegionChangeComplete?: (r: MockRegion, details?: { isGesture: boolean }) => void; children?: MockNode }, ref) => {
+    ({ onRegionChangeComplete, onPanDrag, children }: { onRegionChangeComplete?: (r: MockRegion, details?: { isGesture: boolean }) => void; onPanDrag?: () => void; children?: MockNode }, ref) => {
       useImperativeHandle(ref, () => ({ animateToRegion: (r: MockRegion) => onRegionChangeComplete?.(r) }));
       // A finger on the map: the real map reports it as a gesture.
       const go = (latitude: number, longitude: number) =>
@@ -36,7 +36,15 @@ jest.mock('react-native-maps', () => {
           <Pressable accessibilityRole="button" accessibilityLabel="test: zoom in" onPress={() => go(29.3205, 30.8364)}>
             <Text>zoom</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="test: pan to Alexandria" onPress={() => go(31.2, 29.9)}>
+          {/* A pan as Apple Maps (iOS) reports it: a drag, then a region change with no isGesture. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="test: pan to Alexandria"
+            onPress={() => {
+              onPanDrag?.();
+              onRegionChangeComplete?.({ latitude: 31.2, longitude: 29.9, latitudeDelta: 0.002, longitudeDelta: 0.002 });
+            }}
+          >
             <Text>pan</Text>
           </Pressable>
           {children}

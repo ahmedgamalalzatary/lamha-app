@@ -170,4 +170,21 @@ describe('session (real API)', () => {
     await session.signOutLocally();
     expect(queryClient.getQueryData(['favorites'])).toBeUndefined();
   });
+
+  it("drops the old account's answers cached while the new sign-in was still being saved", async () => {
+    await insertUser('customer', '01554459196');
+    await insertUser('customer', '01100000001');
+    await session.signIn(await signInAs('01554459196'));
+    const b = await signInAs('01100000001');
+    let saved: () => void = () => undefined;
+    jest.mocked(SecureStore.setItemAsync).mockImplementationOnce(() => new Promise((resolve) => (saved = () => resolve())));
+    const switching = session.signIn(b); // still writing B's token to storage
+    // A screen still showing A asks for A's data, with A's token, and caches it.
+    await queryClient.fetchQuery({ queryKey: ['me'], queryFn: () => api<{ phone: string }>('/me') });
+    expect(queryClient.getQueryData<{ phone: string }>(['me'])?.phone).toBe('01554459196');
+    saved();
+    await switching;
+    expect(useSession.getState().user?.phone).toBe('01100000001');
+    expect(queryClient.getQueryData(['me'])).toBeUndefined();
+  });
 });

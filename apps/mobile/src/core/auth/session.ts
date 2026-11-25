@@ -49,7 +49,11 @@ async function keep(res: AuthResponse, gen: number, newSession = false): Promise
   }
   // Publish the request credentials together with the account that owns them.
   // Requests started while SecureStore was writing belonged to the previous account.
-  if (newSession) generation++;
+  // Their answers may already be cached, so the cache is emptied again here.
+  if (newSession) {
+    generation++;
+    queryClient.clear();
+  }
   accessToken = res.accessToken;
   useSession.setState({ status: 'signedIn', user: res.user });
   return generation;

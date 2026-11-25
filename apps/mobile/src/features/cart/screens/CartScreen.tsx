@@ -1,7 +1,7 @@
 import { CART_MODES, CART_NOTE_LIMIT, type CartResponse, type CustomerCart, formatMoney, ORDERED_TOGETHER } from '@tawsela/shared';
 import { router } from 'expo-router';
 import { Check, MessageSquare, ShoppingCart } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
@@ -74,14 +74,17 @@ function CartContents({ cart, run, refresh, refreshing }: {
   const [removing, setRemoving] = useState<number | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [noteError, setNoteError] = useState<string | null>(null);
+  /** Moves on each time the note editor opens: a save only closes the editor it came from. */
+  const noteEditor = useRef(0);
   const edit = useSubmit(async (operation: () => Promise<CartResponse>) => { await run(operation); });
   const saveNote = useSubmit(async (value: string) => {
+    const editor = noteEditor.current;
     setNoteError(null);
     try {
       await run(() => cartApi.edit({ cartId: cart.id, note: value.trim() }));
-      setNote(null);
+      if (editor === noteEditor.current) setNote(null);
     } catch (e) {
-      setNoteError(errorMessage(e));
+      if (editor === noteEditor.current) setNoteError(errorMessage(e));
     }
   });
   const validate = useSubmit(async () => {
@@ -137,6 +140,7 @@ function CartContents({ cart, run, refresh, refreshing }: {
             accessibilityRole="button"
             accessibilityLabel={t('cart.note')}
             onPress={() => {
+              noteEditor.current++;
               setNoteError(null);
               setNote(cart.note);
             }}
@@ -200,25 +204,30 @@ function CartSuggestions({ cart }: { cart: CustomerCart }) {
   const menu = page.data?.categories.flatMap((category) => category.products).filter((product) => product.active) ?? [];
   const inCart = new Set(cart.lines.map((line) => line.product.id));
   const suggestions = menu.filter((product) => !inCart.has(product.id)).slice(0, ORDERED_TOGETHER);
-  if (!suggestions.length) return null;
+  // An open product sheet stays when its own add takes the last suggestion; only the rail goes.
+  if (!suggestions.length && !sheet && conflict.storeName === undefined) return null;
 
   return (
-    <View style={styles.upsell}>
-      <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle} style={styles.upsellTitle}>{t('cart.upsell')}</AppText>
-      <ScrollView horizontal contentContainerStyle={styles.upsellRail} showsHorizontalScrollIndicator={false}>
-        {suggestions.map((product) => (
-          <View key={product.id} style={styles.suggestion}>
-            <PressableScale accessibilityRole="button" accessibilityLabel={product.name} onPress={() => actions.open(product)}>
-              <ProductPicture product={product} size={120} />
-            </PressableScale>
-            <View style={styles.upsellAdd}>
-              <AddButton product={product} count={actions.countOf(product.id)} onPress={() => actions.add(product)} />
-            </View>
-            <AppText numberOfLines={2}>{product.name}</AppText>
-            <ProductPrice product={product} />
-          </View>
-        ))}
-      </ScrollView>
+    <View style={suggestions.length ? styles.upsell : null}>
+      {suggestions.length ? (
+        <>
+          <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle} style={styles.upsellTitle}>{t('cart.upsell')}</AppText>
+          <ScrollView horizontal contentContainerStyle={styles.upsellRail} showsHorizontalScrollIndicator={false}>
+            {suggestions.map((product) => (
+              <View key={product.id} style={styles.suggestion}>
+                <PressableScale accessibilityRole="button" accessibilityLabel={product.name} onPress={() => actions.open(product)}>
+                  <ProductPicture product={product} size={120} />
+                </PressableScale>
+                <View style={styles.upsellAdd}>
+                  <AddButton product={product} count={actions.countOf(product.id)} onPress={() => actions.add(product)} />
+                </View>
+                <AppText numberOfLines={2}>{product.name}</AppText>
+                <ProductPrice product={product} />
+              </View>
+            ))}
+          </ScrollView>
+        </>
+      ) : null}
       <ProductSheet product={sheet} conflict={conflict} menu={menu} countOf={actions.countOf} onAdd={actionsCart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
     </View>
   );

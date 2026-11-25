@@ -16,7 +16,8 @@ export default defineConfig({
     environment: './test/utils/environment.ts',
     setupFiles: ['test/setup.ts'],
     globalSetup: ['test/utils/global-setup.ts'],
-    env: { NEXT_PUBLIC_API_URL: testEnv.NEXT_PUBLIC_API_URL ?? 'http://localhost:4001/v1' },
+    // Same order as test/utils/env.ts (the file, then the shell, then 4001), so pages and the test API agree.
+    env: { NEXT_PUBLIC_API_URL: testEnv.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4001/v1' },
     fileParallelism: false,
     testTimeout: 15_000,
   },

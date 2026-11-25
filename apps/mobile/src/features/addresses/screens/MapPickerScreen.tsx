@@ -144,6 +144,8 @@ export function MapPickerScreen() {
           initialRegion={region}
           mapType={satellite ? 'hybrid' : 'standard'}
           onRegionChangeComplete={moveTo}
+          // isGesture is Google-only; a drag is how Apple Maps (iOS) tells a move by hand.
+          onPanDrag={() => (touched.current = true)}
           showsUserLocation={locationOn}
           showsMyLocationButton={false}
           toolbarEnabled={false}
