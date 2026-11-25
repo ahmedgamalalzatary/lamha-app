@@ -176,6 +176,17 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
     expect((await sql<unknown[]>('SELECT id FROM orders')).length).toBe(1);
   });
 
+  it('a pickup retried with an address it never used still gives back the same order', async () => {
+    await addToCart(shawarma);
+    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode: 'pickup' }).expect(200);
+    const bill = (await quote({}).expect(200)).body;
+    const body = { cartId: bill.cartId, addressId: address, expectedTotal: bill.total, slot: null, requestId: '22222222-2222-4222-8222-222222222222' };
+    const first = await http().post('/v1/me/orders').set(customer).send(body).expect(201);
+    const again = await http().post('/v1/me/orders').set(customer).send(body).expect(201);
+    expect(again.body.order.id).toBe(first.body.order.id);
+  });
+
   it('follows the global option when the store has none, and option 3 leaves the store nothing from the delivery man', async () => {
     await http().patch('/v1/admin/settings/delivery').set(admin).send({ payoutOption: 'nothing', appPercent: 10 }).expect(200);
     await addToCart(shawarma);

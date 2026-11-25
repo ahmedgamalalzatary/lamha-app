@@ -137,11 +137,13 @@ export class SupportService {
 
   /** Replaces the whole list, in the order given. */
   async setPhones(phones: SupportPhone[]): Promise<SupportPhone[]> {
+    const saved = phones.map(({ label, phone }) => ({ label, phone }));
     await this.db.transaction(async (tx) => {
       await tx.delete(supportPhones);
-      if (phones.length) await tx.insert(supportPhones).values(phones.map((p, i) => ({ label: p.label, phone: p.phone, sortOrder: i })));
+      if (saved.length) await tx.insert(supportPhones).values(saved.map((p, i) => ({ ...p, sortOrder: i })));
     });
-    return this.phones();
+    // What this call saved, not a later read another admin's save may have replaced (the audit uses it).
+    return saved;
   }
 
   private async ticketRows(where: ReturnType<typeof and>): Promise<AdminTicket[]> {

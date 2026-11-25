@@ -97,7 +97,7 @@ export class OrdersService {
       const [user] = await tx.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).for('update');
       if (!user) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
       const [placed] = await tx
-        .select({ id: orders.id, addressId: orders.addressId, scheduledFor: orders.scheduledFor })
+        .select({ id: orders.id, mode: orders.mode, addressId: orders.addressId, scheduledFor: orders.scheduledFor })
         .from(orders)
         .where(and(eq(orders.customerId, userId), eq(orders.requestId, input.requestId)));
       if (placed) {
@@ -105,7 +105,9 @@ export class OrdersService {
         // would otherwise be told the order went as asked.
         const slot = placed.scheduledFor === null ? null : cairoMinuteOfDay(placed.scheduledFor);
         const sameSlot = input.slot === null ? slot === null : slot !== null && slot === input.slot % 1440;
-        if (!sameSlot || (placed.addressId ?? undefined) !== input.addressId) {
+        // A pickup never used an address, so one sent with it does not count.
+        const sameAddress = placed.mode === 'pickup' || (placed.addressId ?? undefined) === input.addressId;
+        if (!sameSlot || !sameAddress) {
           throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_ALREADY_PLACED', 'This order was already placed with another time or address; see طلباتي');
         }
         return { order: await this.customerOrder(tx, placed.id) };

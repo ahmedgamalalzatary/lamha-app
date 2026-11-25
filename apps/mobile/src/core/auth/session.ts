@@ -2,6 +2,7 @@ import type { AuthResponse, Me } from '@tawsela/shared';
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import { api, ApiRequestError } from '../api/client';
+import { devicePushToken, registrationSettled } from '../push/device-token';
 import { queryClient } from '../query';
 import { localePreference } from '../i18n/locale';
 
@@ -131,10 +132,14 @@ export const session = {
    * device's token (review F10): a slow or unreachable server never holds the customer on the screen.
    */
   async signOut(): Promise<void> {
+    // A push registration on its way lands first; then the sign-out takes this phone's token back
+    // with the session, so the next account on this phone gets none of this one's pushes (§8.14).
+    await registrationSettled();
+    const pushToken = (await devicePushToken()) ?? undefined;
     const refreshToken = await storedToken();
     await session.signOutLocally();
     if (refreshToken) {
-      await api('/auth/logout', { method: 'POST', body: { refreshToken }, auth: false }).catch(() => undefined);
+      await api('/auth/logout', { method: 'POST', body: { refreshToken, pushToken }, auth: false }).catch(() => undefined);
     }
   },
 

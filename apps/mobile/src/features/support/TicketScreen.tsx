@@ -9,6 +9,7 @@ import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
 import { toast } from '@/components/Toast';
 import { errorMessage } from '@/core/api/error-message';
+import { useStillHere } from '@/core/hooks/useStillHere';
 import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, spacing } from '@/core/theme';
 import { supportApi } from './api';
@@ -27,6 +28,7 @@ export function TicketScreen() {
   const orderId = type === 'complaint' && params.orderId ? Number(params.orderId) : undefined;
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const stillHere = useStillHere();
   const Icon = type === 'complaint' ? MessageSquareText : Lightbulb;
 
   async function send() {
@@ -34,11 +36,11 @@ export function TicketScreen() {
     try {
       await supportApi.ticket({ type, orderId, text: text.trim() });
       toast.show(t(type === 'complaint' ? 'support.complaintSent' : 'support.suggestionSent'));
-      router.back();
+      if (stillHere()) router.back();
     } catch (e) {
-      toast.show(errorMessage(e), 'error');
+      if (stillHere()) toast.show(errorMessage(e), 'error');
     } finally {
-      setBusy(false);
+      if (stillHere()) setBusy(false);
     }
   }
 

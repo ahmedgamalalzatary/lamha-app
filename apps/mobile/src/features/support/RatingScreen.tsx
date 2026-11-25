@@ -11,6 +11,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { toast } from '@/components/Toast';
 import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
+import { useStillHere } from '@/core/hooks/useStillHere';
 import { useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { ordersKey, useMyOrder } from '@/features/orders/api';
@@ -35,6 +36,7 @@ export function RatingScreen() {
   const [tags, setTags] = useState<RatingTag[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const stillHere = useStillHere();
 
   const input = { stars, tags, text };
   const ready = stars > 0 && ratingProblem(input) === null;
@@ -59,11 +61,11 @@ export function RatingScreen() {
       await supportApi.rate(orderId, { stars, tags, text: text.trim() });
       void queries.invalidateQueries({ queryKey: ordersKey });
       toast.show(t('rating.thanks'));
-      router.back();
+      if (stillHere()) router.back();
     } catch (e) {
-      toast.show(errorMessage(e), 'error');
+      if (stillHere()) toast.show(errorMessage(e), 'error');
     } finally {
-      setBusy(false);
+      if (stillHere()) setBusy(false);
     }
   }
 

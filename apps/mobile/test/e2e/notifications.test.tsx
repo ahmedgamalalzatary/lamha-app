@@ -24,6 +24,14 @@ function Root() {
     </QueryClientProvider>
   );
 }
+function RootWithoutPush() {
+  return (
+    <QueryClientProvider client={client}>
+      <Stack screenOptions={{ headerShown: false }} />
+      <ToastHost />
+    </QueryClientProvider>
+  );
+}
 const ROUTES = {
   _layout: Root,
   'customer/account': AccountScreen,
@@ -59,6 +67,17 @@ describe('الإشعارات and push (contract §8.14; real API)', () => {
     press('تسجيل الخروج');
     fireEvent.press(await screen.findByRole('button', { name: 'تأكيد' }));
     await waitFor(async () => expect(await sql('SELECT id FROM push_tokens')).toEqual([]));
+  });
+
+  it('after a restart, before the app has asked for its token again, signing out still takes it back', async () => {
+    const restarted = 'ExponentPushToken[restarted]';
+    await sql('INSERT INTO push_tokens (user_id, token) VALUES (?, ?)', [customer, restarted]);
+    await AsyncStorage.setItem('tawsela.pushToken', restarted);
+    // No PushSetup: the token request of this start has not run.
+    await renderApp({ ...ROUTES, _layout: RootWithoutPush }, { initialUrl: '/customer/account' });
+    fireEvent.press(await screen.findByRole('button', { name: 'تسجيل الخروج' }));
+    fireEvent.press(await screen.findByRole('button', { name: 'تأكيد' }));
+    await waitFor(async () => expect(await sql('SELECT token FROM push_tokens')).toEqual([]));
   });
 
   it('the bell shows new notifications; the list opens them and marks them read; a tap opens the order', async () => {

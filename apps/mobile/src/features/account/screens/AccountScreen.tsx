@@ -22,7 +22,6 @@ import { AccountRow } from '../components/AccountRow';
 import { usePartnerOrderCounts } from '@/features/partner/api';
 import { SupportRows } from '@/features/support/SupportRows';
 import { useNotifications } from '@/features/notifications/api';
-import { forgetPushToken } from '@/features/notifications/PushSetup';
 
 /** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
 function OrdersMadeRow() {
@@ -63,8 +62,6 @@ export function AccountScreen() {
   });
 
   const signOut = useSubmit(async () => {
-    // Before the session ends, while the token can still be taken back.
-    await forgetPushToken();
     await session.signOut();
     router.replace('/welcome');
   });

@@ -12,6 +12,7 @@ import {
   LoginDto,
   PasswordCodeDto,
   PhoneDto,
+  LogoutDto,
   RefreshDto,
   ResetPasswordDto,
   SignupCodeDto,
@@ -86,10 +87,10 @@ export class AuthController {
   @SkipThrottle()
   @Post('logout')
   @HttpCode(204)
-  async logout(@Body() body: RefreshDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+  async logout(@Body() body: LogoutDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     const token = this.tokenOf(body, req);
     if (wantsCookie(req)) clearRefreshCookie(res, this.secure);
-    if (token) await this.auth.logout(token);
+    if (token) await this.auth.logout(token, body.pushToken);
   }
 
   /** Over HTTPS only in production (the dev API is plain http). */

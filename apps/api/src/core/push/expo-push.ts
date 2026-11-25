@@ -20,8 +20,10 @@ export interface PushTicket {
 }
 
 const EXPO_URL = 'https://exp.host/--/api/v2/push/send';
-/** Expo takes up to 100 messages per request. */
+/** Expo takes up to 100 messages per request… */
 const CHUNK = 100;
+/** …and 600 a second per project: a pause between requests keeps one campaign under 500. */
+const PAUSE_MS = 200;
 
 /**
  * Sends pushes through Expo's push HTTP API, no SDK (contract §15.1 #7). EXPO_ACCESS_TOKEN is used
@@ -44,6 +46,7 @@ export class ExpoPush {
     if (this.testing || messages.length === 0) return messages.map(() => ({ status: 'ok' }));
     const tickets: PushTicket[] = [];
     for (let i = 0; i < messages.length; i += CHUNK) {
+      if (i > 0) await new Promise((resolve) => setTimeout(resolve, PAUSE_MS));
       const chunk = messages.slice(i, i + CHUNK);
       try {
         const res = await fetch(EXPO_URL, {

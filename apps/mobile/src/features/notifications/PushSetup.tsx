@@ -6,10 +6,8 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { session, useSession } from '@/core/auth/session';
+import { rememberPushToken, trackRegistration } from '@/core/push/device-token';
 import { notificationsApi, notificationsKey } from './api';
-
-/** This phone's token, once sent: signing out takes it back so the next account gets no pushes of ours. */
-let sentToken: string | null = null;
 
 // A push that arrives while the app is open still shows on top.
 Notifications.setNotificationHandler({
@@ -28,13 +26,6 @@ async function phoneToken(): Promise<string | null> {
   return data;
 }
 
-/** Signing out on this phone: no more pushes to it (best effort; the token is dropped by Expo's answer otherwise). */
-export async function forgetPushToken(): Promise<void> {
-  const token = sentToken;
-  sentToken = null;
-  if (token) await notificationsApi.remove(token).catch(() => undefined);
-}
-
 function open(path: unknown) {
   if (typeof path === 'string' && path.startsWith('/')) router.push(path as never);
 }
@@ -51,13 +42,14 @@ export function PushSetup() {
   useEffect(() => {
     if (userId === undefined) return;
     const generation = session.generation();
-    phoneToken()
-      .then(async (token) => {
+    // Tracked, so signing out waits for it; the token is kept on the phone for that sign-out.
+    void trackRegistration(
+      phoneToken().then(async (token) => {
         if (!token || session.generation() !== generation) return;
         await notificationsApi.register(token);
-        sentToken = token;
-      })
-      .catch(() => undefined);
+        await rememberPushToken(token);
+      }),
+    ).catch(() => undefined);
   }, [userId]);
 
   useEffect(() => {

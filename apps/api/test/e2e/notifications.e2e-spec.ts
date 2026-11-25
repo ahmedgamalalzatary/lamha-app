@@ -89,6 +89,20 @@ describe('notifications and push (e2e, contract §8.14, §9, §10, §11)', () =>
     expect(await sql('SELECT id FROM push_tokens')).toHaveLength(0);
   });
 
+  it('signing out with the phone\'s token takes the token back, even if the app forgot it was sent', async () => {
+    const login = (await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(201)).body;
+    await register('ExponentPushToken[shared-phone]', { Authorization: `Bearer ${login.accessToken}` }).expect(204);
+    await register('ExponentPushToken[other-phone]', partner).expect(204);
+    await http().post('/v1/auth/logout').send({ refreshToken: login.refreshToken, pushToken: 'not a token' }).expect(400);
+    // Another account's phone is never touched by this sign-out.
+    await http().post('/v1/auth/logout').send({ refreshToken: login.refreshToken, pushToken: 'ExponentPushToken[other-phone]' }).expect(204);
+    expect(await sql('SELECT token FROM push_tokens ORDER BY token')).toEqual([{ token: 'ExponentPushToken[other-phone]' }, { token: 'ExponentPushToken[shared-phone]' }]);
+
+    const again = (await http().post('/v1/auth/login').send({ phone: '01554459196', password: PASSWORD }).expect(201)).body;
+    await http().post('/v1/auth/logout').send({ refreshToken: again.refreshToken, pushToken: 'ExponentPushToken[shared-phone]' }).expect(204);
+    expect(await sql('SELECT token FROM push_tokens')).toEqual([{ token: 'ExponentPushToken[other-phone]' }]);
+  });
+
   it('the store hears of a new order and the customer of each step they care about, in الإشعارات too', async () => {
     await register('ExponentPushToken[customer]', customer).expect(204);
     await register('ExponentPushToken[store]', partner).expect(204);
@@ -170,6 +184,8 @@ describe('notifications and push (e2e, contract §8.14, §9, §10, §11)', () =>
 
     const zone = await send({ title: 'خصم 20%', body: 'على كل المطاعم النهارده', zoneId: fayoum }).expect(201);
     expect(zone.body).toMatchObject({ recipients: 1, zone: { id: fayoum, name: 'الفيوم' }, title: 'خصم 20%' });
+    // Kept in الإشعارات before the answer, not after it.
+    expect(await sql("SELECT COUNT(*) AS n FROM notifications WHERE kind = 'campaign'")).toEqual([{ n: 1 }]);
     await expect.poll(() => pushedTo('ExponentPushToken[customer]')).toHaveLength(1);
     expect(pushedTo('ExponentPushToken[customer]')[0]).toMatchObject({ title: 'خصم 20%', body: 'على كل المطاعم النهارده', data: { path: null } });
     expect(pushedTo('ExponentPushToken[other]')).toEqual([]);

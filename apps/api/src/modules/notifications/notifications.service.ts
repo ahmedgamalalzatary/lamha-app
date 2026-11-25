@@ -10,6 +10,9 @@ import { drivers, shifts } from '../drivers/drivers.schema.js';
 import { users } from '../users/users.schema.js';
 import { campaigns, notifications, pushTokens } from './notifications.schema.js';
 
+/** Rows per insert when a campaign fills every customer's الإشعارات. */
+const INSERT_CHUNK = 1000;
+
 /** What to tell each account, in its language; null tells that one nothing. */
 export type NoticeFor = (locale: Locale) => Notice | null;
 
@@ -125,12 +128,22 @@ export class NotificationsService {
       .from(users)
       .where(and(eq(users.role, 'customer'), isNull(users.deletedAt), isNull(users.disabledAt), inZone));
     const ids = rows.map((r) => r.id);
-    const [created] = await this.db
-      .insert(campaigns)
-      .values({ title: input.title, body: input.body, zoneId: zone?.id ?? null, recipients: ids.length, sentById: adminId })
-      .$returningId();
-    this.tell(ids, () => ({ kind: 'campaign', title: input.title, body: input.body }), { path: null, keep: true });
-    const [sent] = await this.campaignRows(eq(campaigns.id, created!.id));
+    // The campaign and every customer's الإشعارات entry are saved together before the answer, so
+    // "تم الإرسال" never stands for a campaign half kept; only the pushes go after.
+    const createdId = await this.db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(campaigns)
+        .values({ title: input.title, body: input.body, zoneId: zone?.id ?? null, recipients: ids.length, sentById: adminId })
+        .$returningId();
+      for (let i = 0; i < ids.length; i += INSERT_CHUNK) {
+        await tx
+          .insert(notifications)
+          .values(ids.slice(i, i + INSERT_CHUNK).map((userId) => ({ userId, kind: 'campaign' as const, title: input.title, body: input.body, path: null })));
+      }
+      return created!.id;
+    });
+    this.tell(ids, () => ({ kind: 'campaign', title: input.title, body: input.body }), { path: null, keep: false });
+    const [sent] = await this.campaignRows(eq(campaigns.id, createdId));
     return sent!;
   }
 

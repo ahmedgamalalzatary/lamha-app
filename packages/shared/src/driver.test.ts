@@ -27,7 +27,12 @@ describe('isWeekSchedule', () => {
     expect(isWeekSchedule([{ start: '01:00', end: '09:00' }, null, null, null, null, null, { start: '20:00', end: '03:00' }])).toBe(false);
   });
 
-  it('an all-day shift ends at midnight, so the next day may start at 00:00', () => {
+  it('a same-time shift runs 24 hours, so it may not run into the next day either', () => {
+    expect(isWeekSchedule(week(['18:00', '18:00'], ['09:00', '17:00']))).toBe(false);
+    expect(isWeekSchedule(week(['18:00', '18:00'], ['18:00', '22:00']))).toBe(true);
+  });
+
+  it('00:00 to 00:00 ends at midnight, so the next day may start at 00:00', () => {
     expect(isWeekSchedule(week(['00:00', '00:00'], ['00:00', '08:00']))).toBe(true);
   });
 });

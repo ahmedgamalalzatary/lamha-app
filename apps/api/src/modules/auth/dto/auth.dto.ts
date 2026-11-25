@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AUTH, normalizeEmail, normalizePhone, OTP, type OtpPurpose } from '@tawsela/shared';
+import { AUTH, isExpoPushToken, normalizeEmail, normalizePhone, OTP, type OtpPurpose } from '@tawsela/shared';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, Length, Matches, MaxLength, MinLength, ValidateBy } from 'class-validator';
 
 const toPhone = ({ value }: { value: unknown }) => (typeof value === 'string' ? normalizePhone(value) : value);
 const toEmail = ({ value }: { value: unknown }) => (typeof value === 'string' ? normalizeEmail(value) : value);
@@ -133,4 +133,14 @@ export class RefreshDto {
   @IsString()
   @IsNotEmpty()
   refreshToken?: string;
+}
+
+/** POST /v1/auth/logout: the phone also sends its push token, so this phone gets no more pushes (§8.14). */
+export class LogoutDto extends RefreshDto {
+  @ApiPropertyOptional({ example: 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  @ValidateBy({ name: 'isExpoPushToken', validator: { validate: (v: unknown) => typeof v === 'string' && isExpoPushToken(v), defaultMessage: () => 'pushToken must be an Expo push token' } })
+  pushToken?: string;
 }

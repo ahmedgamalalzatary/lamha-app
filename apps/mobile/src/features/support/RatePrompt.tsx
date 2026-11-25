@@ -23,7 +23,8 @@ export function RatePrompt() {
       .then(({ order }) => {
         if (order && session.generation() === generation) router.push({ pathname: '/rate/[id]', params: { id: String(order.id), from: 'prompt' } });
       })
-      .catch(() => undefined);
+      // Offline: a later mount asks again; only an answer stops it for this sign-in.
+      .catch(() => asked.delete(key));
   }, [customerId]);
   return null;
 }

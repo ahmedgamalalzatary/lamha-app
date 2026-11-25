@@ -23,8 +23,9 @@ const isRange = (d: unknown): d is ShiftRange =>
   typeof d === 'object' && d !== null && isTimeOfDay((d as ShiftRange).start) && isTimeOfDay((d as ShiftRange).end);
 
 /**
- * Seven days of ranges or null. A shift past midnight may not run into the next day's shift (Saturday
- * into Sunday too), or starting the later one would be locked behind the earlier.
+ * Seven days of ranges or null. A shift past midnight (or of the same start and end, 24 hours) may
+ * not run into the next day's shift (Saturday into Sunday too), or starting the later one would be
+ * locked behind the earlier.
  */
 export function isWeekSchedule(v: unknown): v is WeekSchedule {
   if (!Array.isArray(v) || v.length !== WEEK_DAYS || !v.every((d) => d === null || isRange(d))) return false;
@@ -34,8 +35,9 @@ export function isWeekSchedule(v: unknown): v is WeekSchedule {
     if (!day || !next) return true;
     const start = minuteOfDay(day.start);
     const end = minuteOfDay(day.end);
-    // Past midnight: ends `end` minutes into the next day. The same time is all day, ending at midnight.
-    return !(end < start && minuteOfDay(next.start) < end);
+    // Past midnight, or the same time (24 hours, as shiftOn counts it): ends `end` minutes into the
+    // next day, which may start only from then.
+    return !(end <= start && minuteOfDay(next.start) < end);
   });
 }
 

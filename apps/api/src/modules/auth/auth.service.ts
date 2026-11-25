@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AUTH, type AuthResponse, maskEmail, type Me, OTP, type OtpPurpose, type OtpSent, type OtpVerified, type PhoneStatus } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
 import { Mailer, type MailMessage } from '../../core/mail/mailer.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { toMe, UsersService } from '../users/users.service.js';
 import type { LoginDto, ResetPasswordDto, SignupDto } from './dto/auth.dto.js';
@@ -48,6 +49,7 @@ export class AuthService {
     private readonly sessions: SessionsRepository,
     private readonly jwt: JwtService,
     private readonly mailer: Mailer,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Tawsilty's phone step (contract §8.1): a live account on this phone means sign-in. */
@@ -244,9 +246,12 @@ export class AuthService {
     return this.sessions.revoke(next.id);
   }
 
-  async logout(refreshToken: string): Promise<void> {
+  /** Ends this session; with the phone's push token, that phone stops getting this account's pushes. */
+  async logout(refreshToken: string, pushToken?: string): Promise<void> {
     const row = await this.sessions.findByHash(sha256(refreshToken));
-    if (row) await this.sessions.revoke(row.id);
+    if (!row) return;
+    await this.sessions.revoke(row.id);
+    if (pushToken) await this.notifications.removeToken(row.userId, pushToken);
   }
 
   /** `owner`: the account's email, when the code is kept per account (a phone change). */
