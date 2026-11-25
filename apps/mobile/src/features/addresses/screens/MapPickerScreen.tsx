@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Layers, LocateFixed, LocateOff, MapPin, X, ZoomIn } from 'lucide-react-native';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Linking, StyleSheet, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
+import MapView, { type Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -12,7 +12,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useAddresses } from '../api/addresses';
-import { mapAvailable } from '../map-available';
+import { mapAvailable, mapProvider } from '../map-available';
 import { PIN_ZOOM, usePickedSpot, zoomOf } from '../picked-spot';
 
 /** Egypt, as Tawsilty opens before it knows where you are (map-picker-location-off-banner.png). */
@@ -140,7 +140,7 @@ export function MapPickerScreen() {
         <MapView
           ref={map}
           style={StyleSheet.absoluteFill}
-          provider={PROVIDER_GOOGLE}
+          provider={mapProvider()}
           initialRegion={region}
           mapType={satellite ? 'hybrid' : 'standard'}
           onRegionChangeComplete={moveTo}

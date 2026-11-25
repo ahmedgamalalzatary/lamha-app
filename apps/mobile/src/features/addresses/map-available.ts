@@ -9,3 +9,11 @@ import { Platform } from 'react-native';
 export function mapAvailable(): boolean {
   return Platform.OS === 'ios' || Constants.expoConfig?.extra?.googleMaps === true;
 }
+
+/**
+ * The map's provider: Google on Android (react-native-maps' PROVIDER_GOOGLE), none on iOS, so Apple's
+ * map draws there. Asking for Google on iOS throws, since the app sets up Google Maps for Android only.
+ */
+export function mapProvider(): 'google' | undefined {
+  return Platform.OS === 'android' ? 'google' : undefined;
+}

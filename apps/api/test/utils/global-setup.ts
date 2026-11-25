@@ -3,17 +3,21 @@ import { config } from 'dotenv';
 import { createConnection } from 'mysql2/promise';
 import { runMigrations } from '../../src/core/db/migrate.js';
 
-/** Runs once before the e2e suite: rebuild tawsela_test from the migrations. */
+/**
+ * Runs once before the e2e suite: rebuild the root .env.test's database (tawsela_test by default; any
+ * name ending in _test, so two checkouts can test side by side) from the migrations.
+ */
 export default async function setup() {
   config({ path: '../../.env.test', override: true, quiet: true });
   const url = process.env.DATABASE_URL!;
-  if (!/\/tawsela_test(\?|$)/.test(url)) throw new Error('e2e tests must run against the tawsela_test database');
+  const name = url?.match(/\/(\w+_test)(\?|$)/)?.[1];
+  if (!name) throw new Error("e2e tests must run against a database whose name ends in _test (.env.test's DATABASE_URL)");
   const conn = await createConnection({ uri: url });
   // The URL check can be fooled (a #fragment); ask the server which database this really is.
   const [[current]] = await conn.query<any[]>('SELECT DATABASE() AS db');
-  if (current?.db !== 'tawsela_test') {
+  if (current?.db !== name) {
     await conn.end();
-    throw new Error(`e2e tests must run against tawsela_test, not ${String(current?.db)}`);
+    throw new Error(`e2e tests must run against ${name}, not ${String(current?.db)}`);
   }
   const [rows] = await conn.query<any[]>(
     'SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()',

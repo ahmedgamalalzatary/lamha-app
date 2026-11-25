@@ -65,7 +65,7 @@ jest.mock('expo-location', () => ({
   getCurrentPositionAsync: () => mockLocation.getCurrentPositionAsync(),
   reverseGeocodeAsync: () => mockLocation.reverseGeocodeAsync(),
 }));
-jest.mock('@/features/addresses/map-available', () => ({ mapAvailable: () => true }));
+jest.mock('@/features/addresses/map-available', () => ({ mapAvailable: () => true, mapProvider: () => 'google' }));
 
 let client: QueryClient;
 function Root() {

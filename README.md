@@ -40,4 +40,4 @@ Database changes always go through a migration (`npx drizzle-kit generate --name
 
 `pnpm turbo run build lint typecheck test test:e2e --filter=!@tawsela/demo`
 
-The e2e tests need `.env.test` at the repo root (same keys, `NODE_ENV=test`). They run against their own databases, `tawsela_test`, `tawsela_web_test` and `tawsela_mobile_test`, and rebuild them; they never touch the dev data.
+The e2e tests need `.env.test` at the repo root (same keys, `NODE_ENV=test`). They run against their own databases, `tawsela_test`, `tawsela_web_test` and `tawsela_mobile_test`, and rebuild them; they never touch the dev data. The names follow `.env.test`'s `DATABASE_URL` (any name ending in `_test`; the dashboard and app tests add `_web` and `_mobile`), and the test APIs' ports follow `NEXT_PUBLIC_API_URL` (4001) and `MOBILE_TEST_API_URL` (default 4002), so a second checkout can test at the same time on its own names and ports (see `.env.example`).

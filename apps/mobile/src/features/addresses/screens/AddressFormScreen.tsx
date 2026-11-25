@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BadgeCheck, Briefcase, Building2, CircleCheck, CircleX, House, type LucideIcon, MapPin } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, Switch, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { BackButton } from '@/components/BackButton';
@@ -16,7 +16,7 @@ import { type TranslationKey, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useAddresses, useAddressActions, useZoneCheck } from '../api/addresses';
 import { chooseAddress } from '../chosen-address';
-import { mapAvailable } from '../map-available';
+import { mapAvailable, mapProvider } from '../map-available';
 import { usePickedSpot } from '../picked-spot';
 
 const TYPE_ICONS: Record<AddressType, LucideIcon> = { apartment: Building2, office: Briefcase, villa: House };
@@ -132,7 +132,7 @@ function AddressForm({ editId }: { editId: number | undefined }) {
           {spot && mapAvailable() ? (
             <MapView
               style={StyleSheet.absoluteFill}
-              provider={PROVIDER_GOOGLE}
+              provider={mapProvider()}
               liteMode
               scrollEnabled={false}
               zoomEnabled={false}
