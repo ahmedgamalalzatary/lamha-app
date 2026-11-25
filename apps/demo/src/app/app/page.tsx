@@ -5,11 +5,10 @@ import { toast } from "sonner";
 import { ChevronDown, ChevronLeft, Heart, MapPin, Percent, Plus, Sparkles, Ticket, Truck, UserPlus, Wallet, X } from "lucide-react";
 import { useCustomer } from "@/lib/store/customer";
 import { storeById } from "@/lib/data/stores";
-import { HOME_SECTIONS, HOME_TILES, MART_BANNER } from "@/lib/data/admin";
+import { HOME_LAST_SECTION, HOME_SECTIONS, HOME_TILES, MART_BANNER, type HomeSection } from "@/lib/data/admin";
 import { AddressSheet } from "@/components/customer/address-sheet";
 import { LiveOrderStub } from "@/components/customer/live-order-stub";
 import { MiniStoreCard } from "@/components/customer/store-card";
-import { StoresList } from "@/components/customer/stores-list";
 import { RotatingSearch } from "@/components/customer/rotating-search";
 import { BannerCarousel } from "@/components/customer/banner-carousel";
 import { LuckyWheel } from "@/components/customer/lucky-wheel";
@@ -101,17 +100,7 @@ export default function Home() {
         </div>
       </Section>
 
-      {HOME_SECTIONS.map((sec) => (
-        <section key={sec.id} className="mt-7 py-5" style={{ background: sec.bg }}>
-          <div className="mb-3 flex items-center gap-3 px-4">
-            <h2 className="flex-1 text-[19px] font-bold" style={{ color: sec.ink }}>{sec.title}</h2>
-            <Photo src={sec.img} alt="" className="size-14 rounded-full ring-4 ring-white/40" sizes="56px" />
-          </div>
-          <div className="no-scrollbar grid auto-cols-[84%] grid-flow-col grid-rows-3 gap-2.5 overflow-x-auto px-4 pb-1">
-            {sec.storeIds.map((id) => storeById(id)).filter(Boolean).map((s) => <MiniStoreCard key={s!.id} store={s!} />)}
-          </div>
-        </section>
-      ))}
+      {HOME_SECTIONS.map((sec) => <StoresSection key={sec.id} sec={sec} />)}
 
       {/* Banner that opens the mart directly + product row */}
       <section className="mt-7">
@@ -149,11 +138,25 @@ export default function Home() {
 
       <LuckyWheel />
 
-      <Section title="كل المطاعم">
-        <StoresList />
-      </Section>
+      {/* [Client] No full store list on home: a section like Tawsilty's "استمتع باختيارك 😍" closes it. */}
+      <StoresSection sec={HOME_LAST_SECTION} />
 
       <AddressSheet open={addrOpen} onOpenChange={setAddrOpen} />
     </main>
+  );
+}
+
+/** A coloured section of stores, three rows that scroll sideways (Tawsilty style). */
+function StoresSection({ sec }: { sec: HomeSection }) {
+  return (
+    <section className="mt-7 py-5" style={{ background: sec.bg }}>
+      <div className="mb-3 flex items-center gap-3 px-4">
+        <h2 className="flex-1 text-[19px] font-bold" style={{ color: sec.ink }}>{sec.title}</h2>
+        <Photo src={sec.img} alt="" className="size-14 rounded-full ring-4 ring-white/40" sizes="56px" />
+      </div>
+      <div className="no-scrollbar grid auto-cols-[84%] grid-flow-col grid-rows-3 gap-2.5 overflow-x-auto px-4 pb-1">
+        {sec.storeIds.map((id) => storeById(id)).filter(Boolean).map((s) => <MiniStoreCard key={s!.id} store={s!} />)}
+      </div>
+    </section>
   );
 }

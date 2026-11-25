@@ -18,7 +18,8 @@ export type Job = {
   customerPhone: string;
   customerArea: string;
   customerAddress: string;
-  items: { name: string; qty: number; price: number }[];
+  /** img: the product's photo [Client: "صوره المنتجات تبان هنا"]; jobs saved before it have none */
+  items: { name: string; qty: number; price: number; img?: string }[];
   /** paid to the store in cash at pickup (0 when the store is paid online) */
   storePay: number;
   collect: number;
@@ -46,7 +47,9 @@ export function makeJob(): Job {
   const all = s.menu.flatMap((c) => c.items).slice(0, 6);
   n += 1;
   const km = +(1.2 + Math.random() * 3).toFixed(1);
-  const items = [{ name: all[n % all.length].name, qty: 2, price: all[n % all.length].price * 2 }, { name: all[(n + 2) % all.length].name, qty: 1, price: all[(n + 2) % all.length].price }];
+  const a = all[n % all.length];
+  const b = all[(n + 2) % all.length];
+  const items = [{ name: a.name, qty: 2, price: a.price * 2, img: a.img }, { name: b.name, qty: 1, price: b.price, img: b.img }];
   const sub = items.reduce((a, i) => a + i.price, 0);
   const fee = Math.round(18 + km * 6);
   const paid = n % 3 === 0;

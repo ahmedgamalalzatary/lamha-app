@@ -11,7 +11,7 @@ import { useNow } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Stamp } from "@/components/ui/stamp";
-import { StoreLogo } from "@/components/ui/bits";
+import { Photo, StoreLogo } from "@/components/ui/bits";
 import { egp, cx, mmss } from "@/lib/format";
 import { ring } from "@/lib/sound";
 
@@ -299,8 +299,15 @@ function JobDetails({ job, open, onOpenChange, onOut }: { job: Job; open: boolea
             </span>
           </button>
           {showItems && (
-            <ul className="mt-3 space-y-1.5 border-t border-rule pt-3 text-[14.5px]">
-              {job.items.map((i, k) => <li key={k} className="flex justify-between"><span><b className="tabular-nums">{i.qty}×</b> {i.name}</span><span className="tabular-nums text-ink-2">{egp(i.price)}</span></li>)}
+            <ul className="mt-3 space-y-2.5 border-t border-rule pt-3 text-[14.5px]">
+              {job.items.map((i, k) => (
+                <li key={k} className="flex items-center gap-3">
+                  {/* [Client] the product's photo shows on each line */}
+                  {i.img && <Photo src={i.img} alt="" className="size-12 shrink-0 rounded-xl ring-1 ring-rule" sizes="48px" />}
+                  <span className="min-w-0 flex-1"><b className="tabular-nums">{i.qty}×</b> {i.name}</span>
+                  <span className="tabular-nums text-ink-2">{egp(i.price)}</span>
+                </li>
+              ))}
             </ul>
           )}
         </Card>

@@ -40,6 +40,12 @@ export const HOME_SECTIONS: HomeSection[] = [
   { id: "new", title: "الجديد على لمحة", bg: "#4E9A82", ink: "#ffffff", img: img("seafood1"), storeIds: ["qarun-fish", "green-bowl", "crepe-street", "nakhla-juice"] },
 ];
 
+/** The last section on home, in place of a full store list [Client: "مش عايز كل المطاعم", Tawsilty's "استمتع باختيارك 😍"]. */
+export const HOME_LAST_SECTION: HomeSection = {
+  id: "enjoy", title: "استمتع باختيارك 😍", bg: "#DCE8F4", ink: "#262626", img: img("burger1"),
+  storeIds: ["qarun-pizza", "smash-lab", "sakia-shawarma", "am-saber", "waha-grill", "hadaqa-koshari", "qarun-sweets", "masalla-cafe", "crepe-street"],
+};
+
 /** A banner that opens the mart (or any store) directly, with a product row under it. */
 export const MART_BANNER = { title: "كل احتياجات بيتك", sub: "منظفات • بقالة • أدوات منزلية", storeId: "lamha-mart", img: img("cleaning1") };
 

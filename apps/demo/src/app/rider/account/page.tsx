@@ -9,9 +9,12 @@ const hm = (ts: number) => new Date(ts).toLocaleTimeString("en-GB", { hour: "2-d
 const day = (ts: number) => new Date(ts).toLocaleDateString("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long" });
 
 export default function RiderAccount() {
-  const { trips, fines, shifts, notices, reset } = useRider();
+  const { trips, fines, shifts, notices, cashInHand, reset } = useRider();
   const earned = trips.filter((t) => t.status !== "cancelled").reduce((a, t) => a + t.fee + t.tip, 0);
   const fined = fines.reduce((a, f) => a + f.amount, 0);
+  /* [Client] فواتيري is the balance: what he earned, less fines and the cash he still has to hand in.
+     Red when he owes the company, green when it owes him. */
+  const balance = earned - fined - cashInHand;
 
   return (
     <main className="min-h-dvh bg-sheet pb-8">
@@ -34,7 +37,7 @@ export default function RiderAccount() {
       <div className="mx-5 mt-5 grid grid-cols-2 gap-3">
         <Link href="/rider/earnings" className="tap rounded-[18px] border border-rule p-4">
           <span className="flex items-center gap-2 text-[15px] font-semibold"><ReceiptText className="size-5 text-pen" /> فواتيري</span>
-          <span className="mt-2 block text-[22px] font-bold tabular-nums text-stamp">{egp(earned - fined)}</span>
+          <span className={`mt-2 block text-[22px] font-bold tabular-nums ${balance < 0 ? "text-void" : "text-stamp"}`}>{egp(Math.abs(balance))}</span>
         </Link>
         <Link href="/rider/fines" className="tap rounded-[18px] border border-rule p-4">
           <span className="flex items-center gap-2 text-[15px] font-semibold"><TriangleAlert className="size-5 text-void" /> الخصومات</span>
