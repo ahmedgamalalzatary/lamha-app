@@ -44,6 +44,8 @@ export const orders = mysqlTable(
     driverId: id('driver_id').references(() => users.id),
     /** When he tapped وصلت للمتجر. */
     atStoreAt: datetime('at_store_at'),
+    /** The customer closed the rating popup (✕): it is not shown again for this order (§8.8). */
+    ratingSkippedAt: datetime('rating_skipped_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [

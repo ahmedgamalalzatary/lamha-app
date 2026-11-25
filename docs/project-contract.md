@@ -477,6 +477,7 @@ Whatever the customer paid with points (§8.16), the app owes to the party that 
 - [Open] The order while it runs: the same details with a "حالة الطلب" list of steps; it refreshes live over the socket (status only).
 - [Client] **Rating** after delivery: stars, then suggestion chips that change with the star count (good vs. bad), plus "أخبرنا المزيد" text for the reason.
 - [Client] **Problem with an order** opens a support ticket ("تواصل مع الدعم الفني"); money is never refunded automatically from the app.
+- [Owner, 2026-11-25] 1 to 3 stars is a bad rating (problem chips), 4 and 5 good (good chips). The rating screen opens by itself once, the next time the app opens after delivery, and from "قيّم طلبك" in the details. The rating moves the store's stars in the lists.
 
 ### 8.9 Addresses [Tawsilty]
 
@@ -549,6 +550,7 @@ Sub-screens [Tawsilty]:
 - **الإشعارات**: list; empty "لا توجد إشعارات".
 - **عن توصيلتي**: logo, description, "تواصل معنا عبر واتساب", social links (Facebook, Twitter, Instagram, YouTube).
 - **تقديم اقتراح / تقديم شكوى**: illustration, one text field, "ارسال".
+- [Owner, 2026-11-25] The admin reads complaints and suggestions in الشكاوى والاقتراحات, calls or WhatsApps the customer and marks them done; there is no reply screen in the app. The admin keeps the "تواصل معنا" numbers.
 
 ### 8.15 Wallet (حركة المحفظة) [Tawsilty]
 
@@ -818,3 +820,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-25 | Phase 12 built (§9, §11.1, §12 S3): the store's orders in the partner app and `/partner`, live over socket.io (a partner hears only their store); قبول, رفض, تم التجهيز, and تم الاستلام for a pickup [Owner], each step once and kept in the history; the new-order popup (vibration now, ring with Phase 16); the details with "استلم من المندوب"; طلباتى by status; the menu with the متاح switch; hours, مغلق الآن and the cover for the partner; "الطلبات اللي اتعملت" ([Derived] delivered orders). Print on `/partner` only. Uncaptured screens marked [Open] in the phase plan. |
 | 2026-11-25 | Phase 13 built (§9, §10, §11, §11.2, §12 S3), migration 0012: delivery men accounts in المندوبين and the admin's app; the global week and the rules in المندوبين › نوبات العمل والقواعد, and one man's own week; starting a shift (30 min before to 15 min after), extending and ending it, the admin starting it late; offers to every man on shift at once over the live socket, the first to accept takes it, shown again after 60 s, only "تخطي" counts (in a row), warning and block [Owner]; وصلت للمتجر, خارج للتوصيل (once ready) and تم التوصيل; the admin's 🛵 in الطلبات; a store delivering itself sends its orders out and closes them [Owner]. Uncaptured screens marked [Open] in the phase plan. |
 | 2026-11-25 | Phase 14 built (§8.8, §12 S3), migration 0013: تفاصيل الطلب as in the photo (no service fee); the order's steps while it runs [Open], refreshed live for the customer; "اطلب تاني" inside the details once the order is over [Derived], with another store's cart asked first and missing items left out. |
+| 2026-11-25 | Phase 15 built (§8.8, §8.14, §11), migration 0014: the rating screen as in the photo with the owner's split (1-3 bad, 4-5 good), opened once by itself after delivery and from the details; the store's average in the lists; complaints (عامة or a past order, and from the order's details) and suggestions; التواصل معنا from the admin's numbers; الشكاوى والاقتراحات (mark done, no in-app reply) and أرقام التواصل in the dashboard [Owner]. Good chips and star words 2-5 marked [Open]. |

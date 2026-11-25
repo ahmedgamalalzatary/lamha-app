@@ -9,3 +9,4 @@ export * from '../../modules/audit/audit.schema.js';
 export * from '../../modules/settings/settings.schema.js';
 export * from '../../modules/orders/orders.schema.js';
 export * from '../../modules/drivers/drivers.schema.js';
+export * from '../../modules/support/support.schema.js';

@@ -66,7 +66,7 @@ export function feeFrom(row: Pick<StoreRow, 'lat' | 'lng'>, to: LatLng | undefin
   return at && to ? deliveryFeeFor(distanceKm(at, to), rule) : rule.baseFee;
 }
 
-/** A store as the apps list it. Ratings arrive in Phase 15; until then every store is "جديد". */
+/** A store as the apps list it: the average of its ratings (§8.8), or "جديد" (null) with none. */
 export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date, deliveryFee: number): CatalogStore {
   return {
     id: row.id,
@@ -81,8 +81,8 @@ export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date, d
     layout: row.layout,
     pickupAllowed: row.pickupAllowed,
     isOpen: storeIsOpen(row, now),
-    rating: null,
-    ratingCount: 0,
+    rating: row.ratingCount ? Math.round((row.ratingSum / row.ratingCount) * 100) / 100 : null,
+    ratingCount: row.ratingCount,
     cuisineIds,
     location: locationOf(row),
   };

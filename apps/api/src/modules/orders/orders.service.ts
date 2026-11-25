@@ -38,6 +38,7 @@ import type { Tx } from '../catalog/catalog.repository.js';
 import { type StoreRow, stores } from '../catalog/catalog.schema.js';
 import { cairoMinuteOfDay, locationOf } from '../catalog/store-view.js';
 import { SettingsService } from '../settings/settings.service.js';
+import { ratings } from '../support/support.schema.js';
 import { users } from '../users/users.schema.js';
 import { nameOf } from '../audit/audit.service.js';
 import { OrdersGateway } from './orders.gateway.js';
@@ -260,10 +261,12 @@ export class OrdersService {
         order: orders,
         store: { id: stores.id, name: stores.name, logo: stores.logo },
         driver: { firstName: driverUsers.firstName, lastName: driverUsers.lastName },
+        stars: ratings.stars,
       })
       .from(orders)
       .innerJoin(stores, eq(stores.id, orders.storeId))
       .leftJoin(driverUsers, eq(driverUsers.id, orders.driverId))
+      .leftJoin(ratings, eq(ratings.orderId, orders.id))
       .where(and(eq(orders.id, id), eq(orders.customerId, userId)));
     if (!row) throw myOrderNotFound();
     const lines = await this.db.select().from(orderLines).where(eq(orderLines.orderId, id)).orderBy(asc(orderLines.id));
@@ -274,6 +277,7 @@ export class OrdersService {
       driver: order.driverId !== null && driver ? { name: nameOf(driver) } : null,
       lines: lines.map(toOrderLine),
       paymentMethod: 'cash',
+      rating: row.stars === null ? null : { stars: row.stars },
     };
   }
 

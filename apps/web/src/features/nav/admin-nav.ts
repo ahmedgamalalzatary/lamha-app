@@ -52,6 +52,8 @@ export const ADMIN_NAV: NavGroup[] = [
       { label: 'المناطق', href: '/settings/zones' },
       // Phase 11: the delivery fee rule and who pays whom (§8.7) [Open: name and layout ours].
       { label: 'رسوم التوصيل والدفع', href: '/settings/delivery' },
+      // Phase 15: the numbers "تواصل معنا" shows (§8.14) [Open: name and layout ours].
+      { label: 'أرقام التواصل', href: '/settings/support' },
       { label: 'حسابات الإدارة', href: '/settings/admins' },
       // Review F70: who changed accounts, stores and zones [Open: not in Tawsilty's captures].
       { label: 'سجل التغييرات', href: '/settings/audit' },

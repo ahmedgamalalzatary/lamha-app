@@ -44,6 +44,9 @@ export const stores = mysqlTable('stores', {
   zoneId: int('zone_id', { unsigned: true }).references(() => zones.id),
   lat: degrees('lat'),
   lng: degrees('lng'),
+  /** The customers' stars so far (§8.8): the lists show the average, or "جديد" with none. */
+  ratingSum: int('rating_sum', { unsigned: true }).notNull().default(0),
+  ratingCount: int('rating_count', { unsigned: true }).notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
 });

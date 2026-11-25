@@ -1,3 +1,3 @@
-import { ComingSoon } from '@/features/shell/ComingSoon';
+import { ComplaintsPage } from '@/features/support/ComplaintsPage';
 
-export default ComingSoon;
+export default ComplaintsPage;

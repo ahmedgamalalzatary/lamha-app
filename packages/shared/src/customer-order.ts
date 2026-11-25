@@ -44,6 +44,8 @@ export interface CustomerOrderDetails extends CustomerOrder {
   lines: OrderLine[];
   /** طريقة الدفع: cash only for now (§15.1 #2). */
   paymentMethod: 'cash';
+  /** The customer's stars once rated; a delivered order without one offers "قيّم طلبك" (§8.8). */
+  rating: { stars: number } | null;
 }
 
 /** POST /v1/me/orders/:id/reorder */

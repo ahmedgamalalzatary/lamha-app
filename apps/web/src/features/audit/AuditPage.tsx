@@ -29,6 +29,8 @@ const ACTIONS: Record<AuditAction, string> = {
   'driver.shift': 'بدء نوبة عمل لمندوب',
   'order.assign': 'تعيين كابتن لطلب',
   'settings.drivers': 'تعديل نوبات العمل وقواعد المندوبين',
+  'ticket.done': 'تغيير حالة شكوى أو اقتراح',
+  'settings.support': 'تعديل أرقام التواصل',
 };
 
 /** The fields' names as the forms show them; any other field keeps its own name. */

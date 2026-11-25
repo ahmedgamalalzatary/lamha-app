@@ -20,6 +20,7 @@ import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { meApi } from '../api/me';
 import { AccountRow } from '../components/AccountRow';
 import { usePartnerOrderCounts } from '@/features/partner/api';
+import { SupportRows } from '@/features/support/SupportRows';
 
 /** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
 function OrdersMadeRow() {
@@ -95,6 +96,8 @@ export function AccountScreen() {
           </View>
           <DirectionalIcon icon={ChevronLeft} size={22} color={colors.ink2} />
         </PressableScale>
+
+        {user.role === 'customer' ? <SupportRows /> : null}
 
         <AppText weight="semibold" color={colors.ink2} style={styles.group}>
           {t('account.groupAccount')}

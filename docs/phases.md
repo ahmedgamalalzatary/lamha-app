@@ -39,7 +39,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 12 | Partner: orders and products (mobile and `/partner`) | 🔍 in-verify | none (uncaptured screens marked [Open]) |
 | 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (driver home and current orders marked [Open], #9) |
 | 14 | Order status and the delivered view (live tracking out of scope) | 🔍 in-verify | none (the active order view marked [Open]) |
-| 15 | Ratings, complaints and support | ⬜ | |
+| 15 | Ratings, complaints and support | 🔍 in-verify | none (good chips and star words marked [Open]) |
 | 16 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
 | 17 | Wallet (top-up excluded for now) | ⬜ | none |
 | 18 | Points | ⬜ | none (#4 decided) |
@@ -394,6 +394,40 @@ Contract §8.8: the order's status while it is active (no driver location: live 
 ## Phase 15: Ratings, complaints and support
 
 Contract §8.8 and §8.14: star rating with good/bad chips and text; order problems open a support ticket; suggestions and complaints (general or about a past order); contact us; dashboard الشكاوى والاقتراحات.
+
+Owner's answers before the phase (2026-11-25):
+- 1 to 3 stars is a bad rating (the problem chips); 4 and 5 is good (the good chips).
+- The rating screen opens by itself once, the next time the app opens after delivery; "قيّم طلبك" in the order's details too.
+- The admin reads complaints and suggestions, calls or WhatsApps the customer and marks them done. No reply screen in the app.
+- The admin keeps the "تواصل معنا" numbers in the dashboard.
+
+- **Migration 0014:** `ratings` (one per order: stars, chips, text), `tickets` (complaint or suggestion, an optional order, open or done, who closed it), `support_phones`; the store's `rating_sum` and `rating_count`; `orders.rating_skipped_at` (✕ on the popup); the audit log's target may be a ticket.
+- **Shared (TDD):** Tawsilty's 6 problem chips and 6 good chips, the word under each star, `isBadRating`, `ratingProblem` (a bad rating needs a chip; the chips must fit the stars), `ticketProblem`; the API shapes; `ALREADY_RATED`.
+- **API:**
+  - `POST /v1/me/orders/:id/rating` (delivered orders, once; the store's sum and count move in the same transaction), `GET /v1/me/rate-prompt`, `POST /v1/me/orders/:id/rating/skip`; the order's details carry `rating`.
+  - `POST /v1/me/tickets` (a complaint may name the customer's own order; a suggestion may not), `GET /v1/support/phones`.
+  - Admin: `GET /v1/admin/tickets` (by type and status), `PATCH /v1/admin/tickets/:id` (done or open again), `GET /v1/admin/ratings`, `GET|PUT /v1/admin/settings/support-phones`. Changes go in سجل التغييرات.
+  - Store lists and the store page show the average of the ratings (2 decimals) instead of "جديد".
+- **Dashboard:** العملاء › الشكاوى والاقتراحات with الشكاوى, الاقتراحات and التقييمات tabs: the customer with call and WhatsApp, the text, the order and store, مفتوحة / تم الحل; التقييمات with the stars, the chips and the comment. الإعدادات › أرقام التواصل.
+- **App:**
+  - The rating screen as in the photo: ✕ on the beige top, the logo, "كيف كان طلبك من …؟", the stars and their word, the chips, the red "اختر سبب واحد على الأقل", "أخبرنا المزيد" and "أكمل" (grey until complete). It opens by itself once when the app opens; ✕ stops it for that order.
+  - تفاصيل الطلب: "قيّم طلبك" once delivered, "تقييمك" with the stars after; "تواصل مع الدعم الفني" opens a complaint about the order.
+  - حسابي › الدعم والمساعدة: تقديم مقترح, تقديم شكوى (the "نوع الشكوى" menu: طلب سابق → pick the order, عامة), التواصل معنا (the sheet of numbers; a tap calls).
+  - تقديم شكوى / تقديم اقتراح as in the photos: "ما هو شكواك", the underlined field, "ارسال".
+- **[Open] not captured:**
+  - The good chips and the words for 2 to 5 stars (سيئة, مقبولة, جيدة, ممتازة), and "ما الذي أعجبك؟".
+  - The forms' drawings (an icon stands in), the order picker, the thank-you and sent toasts.
+  - الشكاوى والاقتراحات and أرقام التواصل in the dashboard (the orders table's look; names ours).
+- **[Derived]**
+  - The popup asks about delivered orders of the last 3 days only.
+  - The rating is of the store; it moves the store's stars. The delivery man is not rated here (his speed points come with Phase 18).
+  - The complaint-type menu floats in the middle of the screen.
+  - A complaint about an order names it under the question.
+- **Phone verification:**
+  - Deliver an order, close and open the app: the rating screen comes up. Rate 2 stars (needs a chip), and another order 5 stars (no chip needed). The store's stars change in the list.
+  - ✕ on the popup: it does not come back; "قيّم طلبك" in the details still works.
+  - Send a complaint (عامة and طلب سابق) and a suggestion; see them in the dashboard; WhatsApp the customer; mark one done.
+  - Add numbers in أرقام التواصل; open التواصل معنا and call one.
 
 ## Phase 16: Notifications and push
 

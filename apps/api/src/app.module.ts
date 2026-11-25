@@ -17,6 +17,7 @@ import { DriversModule } from './modules/drivers/drivers.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { PartnersModule } from './modules/partners/partners.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
+import { SupportModule } from './modules/support/support.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -55,6 +56,7 @@ import { UsersModule } from './modules/users/users.module.js';
     OrdersModule,
     DriversModule,
     SettingsModule,
+    SupportModule,
     FavoritesModule,
     AddressesModule,
     PartnersModule,

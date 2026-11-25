@@ -1,12 +1,13 @@
 import { canReorder, type CustomerOrderDetails, customerStatusLabel, customerSteps, formatMoney } from '@tawsela/shared';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, CircleCheck, IdCard, MapPin } from 'lucide-react-native';
+import { Check, CircleCheck, Headset, IdCard, MapPin, Star } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
+import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { toast } from '@/components/Toast';
 import { ApiRequestError, mediaUrl } from '@/core/api/client';
@@ -177,7 +178,33 @@ function Details({ order: o }: { order: CustomerOrderDetails }) {
         <Row label={t(o.mode === 'delivery' ? 'orders.deliveryTime' : 'orders.pickupTime')} value={when(o.scheduledFor)} strong />
       </Section>
 
+      {o.rating ? (
+        <View accessible accessibilityLabel={t('rating.yours', { count: o.rating.stars })} style={styles.row}>
+          <AppText weight="bold" size={fontSizes.listTitle + 1} style={styles.grow}>
+            {t('rating.yoursTitle')}
+          </AppText>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star key={n} size={20} color={n <= o.rating!.stars ? colors.primary : colors.line} fill={n <= o.rating!.stars ? colors.primary : 'transparent'} />
+          ))}
+        </View>
+      ) : delivered ? (
+        <Button label={t('rating.rate')} variant="soft" onPress={() => router.push({ pathname: '/rate/[id]', params: { id: String(o.id) } })} />
+      ) : null}
+
       {canReorder(o.status) ? <Reorder order={o} /> : null}
+
+      {/* [Client] A problem with an order opens a complaint about it; nothing is refunded from the app (§8.8). */}
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={t('support.orderHelp')}
+        onPress={() => router.push({ pathname: '/support/[type]', params: { type: 'complaint', orderId: String(o.id), code: o.code } })}
+        style={styles.help}
+      >
+        <Headset size={20} color={colors.primary700} />
+        <AppText weight="semibold" color={colors.primary700}>
+          {t('support.orderHelp')}
+        </AppText>
+      </PressableScale>
     </ScrollView>
   );
 }
@@ -267,4 +294,5 @@ const styles = StyleSheet.create({
   dot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
   dotDone: { backgroundColor: colors.primary, borderColor: colors.primary },
   dotCurrent: { borderColor: colors.primary },
+  help: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md },
 });

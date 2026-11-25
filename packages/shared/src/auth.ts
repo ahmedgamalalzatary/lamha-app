@@ -130,6 +130,8 @@ export type ApiErrorCode =
   | 'DRIVER_BLOCKED'
   /** No extensions left this shift. */
   | 'EXTEND_LIMIT'
+  /** The order already has the customer's rating (one per order). */
+  | 'ALREADY_RATED'
   /** A category that still holds products or sub-categories cannot be deleted. */
   | 'CATEGORY_NOT_EMPTY'
   /** A product's category, or a sub-category's main category, belongs to another store. */
