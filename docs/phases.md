@@ -83,6 +83,11 @@ Docker Compose (API + MySQL), nginx, Let's Encrypt, the dashboard build, backups
 
 **Moved:** everything runs locally until the first real mobile build. This phase runs just before that build, on a VPS the owner provides then (contract §15.1 #6). Later phases don't wait for it.
 
+**Must not be forgotten (found since):**
+- nginx forwards the live socket: `/socket.io/` to the API with `proxy_http_version 1.1` and the `Upgrade` and `Connection` headers. The apps and `/partner` connect over WebSocket only; without them live orders, offers and status stop (CodeRabbit review, 2026-11-25).
+- `EXPO_PROJECT_ID` for push tokens and, if push security is on, `EXPO_ACCESS_TOKEN` (Phase 16).
+- Migrations are not transactional in MySQL: take the database backup before each deploy, and restore it if a migration stops halfway.
+
 ## Phase 3: Dashboard shell and sign-in
 
 Contract §11 and §11.1. One sign-in page; the role decides the area: admins land in the admin area (sidebar from §11, empty pages), partners in `/partner` (its own sidebar, empty pages). A partner can never open an admin page or another store's data (guard on every `/v1/partner/*` route by the account's store). Admin users (A23).

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { api, apiOrigin } from '@/core/api/client';
 import { session, useSession } from '@/core/auth/session';
+import { renewAndReconnect } from '@/core/api/live-reconnect';
 import { ordersKey } from './api';
 
 /**
@@ -23,20 +24,20 @@ export function useCustomerLive(): void {
       auth: (cb) => cb({ token: session.accessToken() ?? '' }),
     });
     const refresh = () => void queries.invalidateQueries({ queryKey: ordersKey });
-    let retry: ReturnType<typeof setTimeout> | undefined;
+    let cancelRetry: (() => void) | undefined;
     // Anything that changed while it was away.
     socket.on('ready', refresh);
     socket.on(ORDER_SOCKET_EVENTS.status, refresh);
     socket.on('disconnect', (reason) => {
       if (reason !== 'io server disconnect') return;
-      retry = setTimeout(() => {
-        api('/me/orders')
-          .then(() => socket.connect())
-          .catch(() => undefined);
-      }, 5_000);
+      cancelRetry?.();
+      cancelRetry = renewAndReconnect(
+        () => socket.connect(),
+        () => api('/me/orders'),
+      );
     });
     return () => {
-      clearTimeout(retry);
+      cancelRetry?.();
       socket.disconnect();
     };
   }, [customerId, queries]);

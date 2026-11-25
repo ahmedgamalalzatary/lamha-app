@@ -1,7 +1,7 @@
 'use client';
 
 import { isTimeOfDay, type PartnerStore, type PartnerStoreInput } from '@tawsela/shared';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
 import { ImageField, useUploading } from '@/components/ImageField';
 import { Button, ErrorLine, LoadState, Switch, TextField } from '@/components/ui';
@@ -24,8 +24,13 @@ function StoreForm({ store }: { store: PartnerStore }) {
   const update = useUpdatePartnerStore();
   const upload = useUploading();
   const [draft, setDraft] = useState<PartnerStoreInput>({ opensAt: store.opensAt, closesAt: store.closesAt, closedNow: store.closedNow, cover: store.cover ?? null });
+  // Editing during a save keeps the save running (one at a time); "تم حفظ التغييرات" shows only
+  // when nothing changed since that save was sent.
+  const edits = useRef(0);
+  const [saved, setSaved] = useState(false);
   const set = <K extends keyof PartnerStoreInput>(field: K, value: PartnerStoreInput[K]) => {
-    update.reset();
+    edits.current++;
+    setSaved(false);
     setDraft((d) => ({ ...d, [field]: value }));
   };
   const ready = isTimeOfDay(draft.opensAt) && isTimeOfDay(draft.closesAt) && !upload.uploading;
@@ -49,10 +54,18 @@ function StoreForm({ store }: { store: PartnerStore }) {
       </section>
       {update.error ? <ErrorLine>{errorMessage(update.error)}</ErrorLine> : null}
       <div className="flex items-center gap-4">
-        <Button disabled={!ready} loading={update.isPending} onClick={() => update.mutate(draft)} className="min-w-40">
+        <Button
+          disabled={!ready}
+          loading={update.isPending}
+          onClick={() => {
+            const sent = edits.current;
+            update.mutate(draft, { onSuccess: () => setSaved(edits.current === sent) });
+          }}
+          className="min-w-40"
+        >
           حفظ
         </Button>
-        {update.isSuccess ? (
+        {saved ? (
           <p role="status" className="text-sm font-semibold text-tw-ok">
             تم حفظ التغييرات
           </p>

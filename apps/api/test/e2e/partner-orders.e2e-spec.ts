@@ -5,6 +5,7 @@ import { ORDER_SOCKET_EVENTS, type PartnerOrder } from '@tawsela/shared';
 import { io, type Socket } from 'socket.io-client';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
+import { OrdersGateway } from '../../src/modules/orders/orders.gateway.js';
 import { createTestApp } from '../utils/app.js';
 import { insertCategory, insertProduct, insertStore, linkPartner } from '../utils/catalog.js';
 import { insertUser, resetDb, sql } from '../utils/db.js';
@@ -106,6 +107,27 @@ describe('the store\'s orders, products and hours (e2e, contract §9, §11.1)', 
   });
   afterAll(async () => {
     await app.close();
+  });
+
+  it('drops a live connection whose account was disabled or moved to another store', async () => {
+    const gone = (socket: Socket) => new Promise<void>((resolve) => socket.once('disconnect', () => resolve()));
+    const stays = await connect(rival);
+    const kept: string[] = [];
+    stays.on('disconnect', (reason) => kept.push(reason));
+
+    const disabled = await connect(partner);
+    const dropped = gone(disabled);
+    await sql("UPDATE users SET disabled_at = NOW() WHERE phone = '01000000002'");
+    await app.get(OrdersGateway).recheck();
+    await dropped;
+
+    await sql("UPDATE users SET disabled_at = NULL WHERE phone = '01000000002'");
+    const moved = await connect(partner);
+    const droppedToo = gone(moved);
+    await sql("UPDATE users SET store_id = ? WHERE phone = '01000000002'", [otherStore]);
+    await app.get(OrdersGateway).recheck();
+    await droppedToo;
+    expect(kept).toEqual([]);
   });
 
   it('a new order reaches only its own store\'s partners, live', async () => {

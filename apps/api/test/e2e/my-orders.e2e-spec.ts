@@ -232,6 +232,23 @@ describe('the customer\'s orders: status, details and "اطلب تاني" (e2e, 
     expect(body.cart.lines).toMatchObject([{ product: { id: shawarma }, quantity: 2 }]);
   });
 
+  it('leaves out a line placed before choices were kept by id, rather than adding it plain', async () => {
+    const id = await deliveredOrder();
+    // As migration 0013 left older lines: names only.
+    await sql("UPDATE order_lines SET option_ids = NULL, removed_ingredient_ids = NULL WHERE order_id = ? AND name = 'بونبوني'", [id]);
+    await sql("UPDATE order_lines SET option_ids = NULL, removed_ingredient_ids = NULL WHERE order_id = ? AND name = 'شاورما فراخ'", [id]);
+    // A plain line had no choices to lose, so it comes back.
+    const { body } = await reorder(id).expect(200);
+    expect(body.skipped).toBe(1);
+    expect(body.cart.lines).toMatchObject([{ product: { id: shawarma }, quantity: 2, optionIds: [] }]);
+
+    // One with a struck-out ingredient by name only would come back with it: left out instead.
+    await sql(`UPDATE order_lines SET removed_ingredients = '["بصل"]' WHERE order_id = ? AND name = 'شاورما فراخ'`, [id]);
+    await reorder(id)
+      .expect(409)
+      .expect(({ body: b }) => expect(b.code).toBe('CART_ITEM_UNAVAILABLE'));
+  });
+
   it("asks before replacing another store's cart, and refuses while the store is closed or the order still runs", async () => {
     const id = await deliveredOrder();
     const kushari = await insertProduct(otherStore, await insertCategory(otherStore), 'كشري', 40);

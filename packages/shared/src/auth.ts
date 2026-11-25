@@ -120,6 +120,8 @@ export type ApiErrorCode =
   | 'CHECKOUT_NO_STORE_LOCATION'
   /** The later-delivery slot is no longer offered. */
   | 'CHECKOUT_SLOT'
+  /** A retried "تنفيذ الطلب" changed the time or the address after the order already went. */
+  | 'CHECKOUT_ALREADY_PLACED'
   /** The order already moved on (another partner, or a second tap): the store sees its status now. */
   | 'ORDER_STATUS'
   /** Another delivery man took the offer first, or the admin assigned it. */

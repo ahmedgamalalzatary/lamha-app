@@ -163,6 +163,17 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
     expect(a.body.order.id).toBe(b.body.order.id);
     expect((await send().expect(201)).body.order.id).toBe(a.body.order.id);
     expect((await sql<unknown[]>('SELECT id FROM orders')).length).toBe(1);
+
+    // A lost answer, then a retry with another time or address: the order already went as it was.
+    const changed = (over: object) => http().post('/v1/me/orders').set(customer).send({ ...body, ...over });
+    await changed({ slot: 1200 })
+      .expect(409)
+      .expect(({ body: b }) => expect(b.code).toBe('CHECKOUT_ALREADY_PLACED'));
+    const other = (await http().post('/v1/me/addresses').set(customer).send({ ...ADDRESS, landmark: 'بيت تاني' }).expect(201)).body.id;
+    await changed({ addressId: other })
+      .expect(409)
+      .expect(({ body: b }) => expect(b.code).toBe('CHECKOUT_ALREADY_PLACED'));
+    expect((await sql<unknown[]>('SELECT id FROM orders')).length).toBe(1);
   });
 
   it('follows the global option when the store has none, and option 3 leaves the store nothing from the delivery man', async () => {

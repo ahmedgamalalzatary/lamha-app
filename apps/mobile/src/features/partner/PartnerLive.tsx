@@ -1,6 +1,7 @@
 import { formatMoney, type PartnerAction } from '@tawsela/shared';
 import { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { X } from 'lucide-react-native';
+import { Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { errorMessage } from '@/core/api/error-message';
@@ -22,6 +23,7 @@ export function PartnerLive() {
  * its round photo, name, orange price and an outlined "1 عناصر" pill, then a green قبول and a red
  * رفض. [Client] It also shows how the customer pays. The print and mute icons wait for a printer
  * and the ring sound (Phase 16). It shows the oldest new order; the back button leaves it for later.
+ * An iPhone has no back button, so there a ✕ does the same [Derived].
  */
 function NewOrderPopup() {
   const t = useT();
@@ -34,11 +36,17 @@ function NewOrderPopup() {
   if (!next || !order.data || order.data.status !== 'pending_review') return null;
   const o = order.data;
   const answer = (action: PartnerAction) => step.mutate({ id: o.id, action }, { onSuccess: () => step.reset() });
+  const leave = () => setLater((s) => new Set(s).add(o.id));
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => setLater((s) => new Set(s).add(o.id))}>
+    <Modal visible transparent animationType="fade" onRequestClose={leave}>
       <View style={styles.backdrop}>
         <View style={styles.card} accessibilityViewIsModal>
+          {Platform.OS === 'ios' ? (
+            <PressableScale accessibilityRole="button" accessibilityLabel={t('partner.later')} onPress={leave} scaleTo={0.9} style={styles.close}>
+              <X size={22} color={colors.ink2} />
+            </PressableScale>
+          ) : null}
           <ScrollView contentContainerStyle={styles.content}>
             <AppText accessibilityRole="header" size={fontSizes.sectionTitle + 1}>
               {t('partner.popupTitle', { code: o.code })}
@@ -120,6 +128,7 @@ function NewOrderPopup() {
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.backdrop, justifyContent: 'center', padding: spacing.lg },
   card: { backgroundColor: colors.bg, borderRadius: 4, maxHeight: '85%', paddingBottom: spacing.xl },
+  close: { position: 'absolute', top: spacing.sm, end: spacing.sm, zIndex: 1, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.xl, gap: spacing.lg },
   note: { gap: spacing.xs },
   line: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

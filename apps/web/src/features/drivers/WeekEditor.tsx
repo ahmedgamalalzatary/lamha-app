@@ -1,12 +1,13 @@
 'use client';
 
-import { isTimeOfDay, type ShiftRange, WEEK_DAY_NAMES, type WeekSchedule } from '@tawsela/shared';
+import { isTimeOfDay, isWeekSchedule, type ShiftRange, WEEK_DAY_NAMES, type WeekSchedule } from '@tawsela/shared';
 
 /** A new working day starts with these hours until changed. */
 const NEW_DAY: ShiftRange = { start: '18:00', end: '02:00' };
 
-/** Every day has times when it has a shift. */
-export const isWeekReady = (week: WeekSchedule) => week.every((d) => d === null || (isTimeOfDay(d.start) && isTimeOfDay(d.end)));
+/** Every day has times when it has a shift, and no shift runs into the next day's. */
+export const isWeekReady = (week: WeekSchedule) => isWeekSchedule(week);
+const timesFilled = (week: WeekSchedule) => week.every((d) => d === null || (isTimeOfDay(d.start) && isTimeOfDay(d.end)));
 
 /**
  * The week from Sunday (§15.1 #5): a day is ticked when it has a shift, with its start and end in
@@ -54,6 +55,11 @@ export function WeekEditor({ week, onChange }: { week: WeekSchedule; onChange: (
           </div>
         );
       })}
+      {timesFilled(week) && !isWeekSchedule(week) ? (
+        <p role="alert" className="text-sm font-medium text-tw-danger">
+          نوبة تمتد بعد منتصف الليل تتداخل مع نوبة اليوم التالي.
+        </p>
+      ) : null}
     </div>
   );
 }

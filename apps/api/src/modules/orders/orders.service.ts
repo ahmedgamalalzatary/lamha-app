@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   type AdminOrder,
   canReorder,
@@ -68,6 +68,8 @@ interface Bill extends CheckoutQuote {
 /** Checkout and orders (contract §8.7, §11 الطلبات). Cash on delivery only (§15.1 #2). */
 @Injectable()
 export class OrdersService {
+  private readonly log = new Logger(OrdersService.name);
+
   constructor(
     @InjectDb() private readonly db: Db,
     private readonly carts: CartService,
@@ -94,8 +96,20 @@ export class OrdersService {
     const placed = await this.db.transaction(async (tx) => {
       const [user] = await tx.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).for('update');
       if (!user) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
-      const [placed] = await tx.select({ id: orders.id }).from(orders).where(and(eq(orders.customerId, userId), eq(orders.requestId, input.requestId)));
-      if (placed) return { order: await this.customerOrder(tx, placed.id) };
+      const [placed] = await tx
+        .select({ id: orders.id, addressId: orders.addressId, scheduledFor: orders.scheduledFor })
+        .from(orders)
+        .where(and(eq(orders.customerId, userId), eq(orders.requestId, input.requestId)));
+      if (placed) {
+        // The same tap again gives the order back; a retry that changed the time or the address
+        // would otherwise be told the order went as asked.
+        const slot = placed.scheduledFor === null ? null : cairoMinuteOfDay(placed.scheduledFor);
+        const sameSlot = input.slot === null ? slot === null : slot !== null && slot === input.slot % 1440;
+        if (!sameSlot || (placed.addressId ?? undefined) !== input.addressId) {
+          throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_ALREADY_PLACED', 'This order was already placed with another time or address; see طلباتي');
+        }
+        return { order: await this.customerOrder(tx, placed.id) };
+      }
 
       const bill = await this.bill(tx, userId, input);
       if (bill.cartId !== input.cartId) {
@@ -162,18 +176,21 @@ export class OrdersService {
       newId = orderId;
       return { order: await this.customerOrder(tx, orderId) };
     });
-    // Only once it is saved, and only the first time: the store's phones ring for it (§9).
+    // Only once it is saved, and only the first time: the store's phones ring for it (§9). The order
+    // stands either way, so a failure here is logged, never answered as a failed order (the store's
+    // lists still show it).
     if (newId !== undefined) {
-      const [card] = await this.partnerCards(eq(orders.id, newId));
-      this.live.toStore(placed.order.store.id, ORDER_SOCKET_EVENTS.placed, { order: card });
-      const code = placed.order.code;
       const id = newId;
-      this.notices.tell(await this.notices.storePartners(placed.order.store.id), (locale) => notice('new_order', locale, { code }), {
-        path: `/partner-order/${id}`,
-        keep: true,
-      });
+      await this.announce(placed.order, id).catch((err: unknown) => this.log.warn(`New order ${id} not announced: ${String(err)}`));
     }
     return placed;
+  }
+
+  private async announce(order: CustomerOrder, id: number): Promise<void> {
+    const [card] = await this.partnerCards(eq(orders.id, id));
+    this.live.toStore(order.store.id, ORDER_SOCKET_EVENTS.placed, { order: card });
+    const code = order.code;
+    this.notices.tell(await this.notices.storePartners(order.store.id), (locale) => notice('new_order', locale, { code }), { path: `/partner-order/${id}`, keep: true });
   }
 
   // The store's side (contract §9, §11.1). Every query is limited to the partner's own store.
@@ -308,11 +325,15 @@ export class OrdersService {
       throw new ApiException(HttpStatus.CONFLICT, 'ORDER_STATUS', `The order is ${order.status}; it can be ordered again once it is over`);
     }
     const lines = await this.db.select().from(orderLines).where(eq(orderLines.orderId, id)).orderBy(asc(orderLines.id));
+    // A line placed before choices were kept by id (migration 0013) that had choices is left out:
+    // added plain, it would come back without them.
+    const lostChoices = (l: (typeof lines)[number]) => (l.optionIds === null || l.removedIngredientIds === null) && (l.options.length > 0 || l.removedIngredients.length > 0);
     const items = lines.flatMap((l) =>
-      l.productId === null
+      l.productId === null || lostChoices(l)
         ? []
         : [{ productId: l.productId, quantity: l.quantity, optionIds: l.optionIds ?? [], removedIngredientIds: l.removedIngredientIds ?? [] }],
     );
+    if (!items.length) throw new ApiException(HttpStatus.CONFLICT, 'CART_ITEM_UNAVAILABLE', 'An item or its choices are unavailable');
     const { cart, skipped } = await this.carts.reorder(userId, order.storeId, items, input.replaceCartId);
     return { cart, skipped: skipped + lines.length - items.length };
   }

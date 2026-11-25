@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 import { create } from 'zustand';
 import { api, apiOrigin } from '@/core/api/client';
 import { session, useSession } from '@/core/auth/session';
+import { renewAndReconnect } from '@/core/api/live-reconnect';
 import { driverKey } from './api';
 
 /** Whether the delivery man's live connection is up. */
@@ -27,7 +28,7 @@ export function useDriverLive(): void {
       auth: (cb) => cb({ token: session.accessToken() ?? '' }),
     });
     const refresh = () => void queries.invalidateQueries({ queryKey: driverKey });
-    let retry: ReturnType<typeof setTimeout> | undefined;
+    let cancelRetry: (() => void) | undefined;
     socket.on('ready', () => {
       useDriverConnected.setState(true, true);
       refresh();
@@ -38,14 +39,14 @@ export function useDriverLive(): void {
     socket.on('disconnect', (reason) => {
       useDriverConnected.setState(false, true);
       if (reason !== 'io server disconnect') return;
-      retry = setTimeout(() => {
-        api('/driver/shift')
-          .then(() => socket.connect())
-          .catch(() => undefined);
-      }, 5_000);
+      cancelRetry?.();
+      cancelRetry = renewAndReconnect(
+        () => socket.connect(),
+        () => api('/driver/shift'),
+      );
     });
     return () => {
-      clearTimeout(retry);
+      cancelRetry?.();
       socket.disconnect();
       useDriverConnected.setState(false, true);
     };

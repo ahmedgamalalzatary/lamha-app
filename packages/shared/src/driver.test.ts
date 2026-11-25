@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canStartShift, DEFAULT_DRIVER_RULES, driverStep, fromCairo, shiftAt, skipOutcome, startWindow, type WeekSchedule } from './driver.js';
+import { canStartShift, DEFAULT_DRIVER_RULES, driverStep, fromCairo, isWeekSchedule, shiftAt, skipOutcome, startWindow, type WeekSchedule } from './driver.js';
 
 const rules = DEFAULT_DRIVER_RULES;
 /** Every day 18:00–02:00 in Cairo, except Friday (5) with no shift. */
@@ -10,6 +10,27 @@ const cairo = (date: string, time: string) => {
   const [h, min] = time.split(':').map(Number) as [number, number];
   return fromCairo(y, m, d, h * 60 + min);
 };
+
+describe('isWeekSchedule', () => {
+  const week = (...days: (null | [string, string])[]) => [...days, ...Array(7 - days.length).fill(null)].map((d) => (d ? { start: d[0], end: d[1] } : null));
+
+  it('takes 7 days of HH:MM ranges or null', () => {
+    expect(isWeekSchedule(week(['18:00', '02:00'], null, ['08:00', '16:00']))).toBe(true);
+    expect(isWeekSchedule(week(['8:00', '16:00']))).toBe(false);
+    expect(isWeekSchedule([null])).toBe(false);
+  });
+
+  it("refuses a shift past midnight that runs into the next day's shift", () => {
+    expect(isWeekSchedule(week(['18:00', '02:00'], ['01:00', '09:00']))).toBe(false);
+    expect(isWeekSchedule(week(['18:00', '02:00'], ['02:00', '09:00']))).toBe(true);
+    // Saturday runs into Sunday.
+    expect(isWeekSchedule([{ start: '01:00', end: '09:00' }, null, null, null, null, null, { start: '20:00', end: '03:00' }])).toBe(false);
+  });
+
+  it('an all-day shift ends at midnight, so the next day may start at 00:00', () => {
+    expect(isWeekSchedule(week(['00:00', '00:00'], ['00:00', '08:00']))).toBe(true);
+  });
+});
 
 describe('fromCairo', () => {
   it('turns a Cairo wall time into the instant, winter and summer', () => {

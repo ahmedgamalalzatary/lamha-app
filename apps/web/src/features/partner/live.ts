@@ -5,6 +5,7 @@ import { ORDER_SOCKET_EVENTS } from '@tawsela/shared';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { api, apiOrigin } from '@/core/api/client';
+import { renewAndReconnect } from '@/core/api/live-reconnect';
 import { partnerOrdersKey } from './api';
 
 /**
@@ -23,7 +24,7 @@ export function usePartnerLive(): boolean {
       auth: (cb) => cb({ token: api.session()?.accessToken ?? '' }),
     });
     const refresh = () => void queries.invalidateQueries({ queryKey: partnerOrdersKey });
-    let retry: ReturnType<typeof setTimeout> | undefined;
+    let cancelRetry: (() => void) | undefined;
     socket.on('ready', () => {
       setConnected(true);
       // Anything that came while it was away.
@@ -35,15 +36,14 @@ export function usePartnerLive(): boolean {
       setConnected(false);
       if (reason !== 'io server disconnect') return;
       // Refused: renew the token through a normal call, then try again.
-      retry = setTimeout(() => {
-        void api
-          .request('/partner/orders/counts')
-          .then(() => socket.connect())
-          .catch(() => undefined);
-      }, 5_000);
+      cancelRetry?.();
+      cancelRetry = renewAndReconnect(
+        () => socket.connect(),
+        () => api.request('/partner/orders/counts'),
+      );
     });
     return () => {
-      clearTimeout(retry);
+      cancelRetry?.();
       socket.disconnect();
     };
   }, [queries]);

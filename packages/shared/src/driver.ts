@@ -19,10 +19,25 @@ export const WEEK_DAYS = 7;
 /** "الأحد" … "السبت", in the schedule's order. */
 export const WEEK_DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] as const;
 
-export const isWeekSchedule = (v: unknown): v is WeekSchedule =>
-  Array.isArray(v) &&
-  v.length === WEEK_DAYS &&
-  v.every((d) => d === null || (typeof d === 'object' && isTimeOfDay((d as ShiftRange).start) && isTimeOfDay((d as ShiftRange).end)));
+const isRange = (d: unknown): d is ShiftRange =>
+  typeof d === 'object' && d !== null && isTimeOfDay((d as ShiftRange).start) && isTimeOfDay((d as ShiftRange).end);
+
+/**
+ * Seven days of ranges or null. A shift past midnight may not run into the next day's shift (Saturday
+ * into Sunday too), or starting the later one would be locked behind the earlier.
+ */
+export function isWeekSchedule(v: unknown): v is WeekSchedule {
+  if (!Array.isArray(v) || v.length !== WEEK_DAYS || !v.every((d) => d === null || isRange(d))) return false;
+  const week = v as WeekSchedule;
+  return week.every((day, i) => {
+    const next = week[(i + 1) % WEEK_DAYS];
+    if (!day || !next) return true;
+    const start = minuteOfDay(day.start);
+    const end = minuteOfDay(day.end);
+    // Past midnight: ends `end` minutes into the next day. The same time is all day, ending at midnight.
+    return !(end < start && minuteOfDay(next.start) < end);
+  });
+}
 
 /** The admin's numbers (§15.1 #5). */
 export interface DriverRules {

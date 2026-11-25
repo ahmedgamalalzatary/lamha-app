@@ -123,6 +123,15 @@ describe('the partner app (contract §9; real API and live socket)', () => {
     expect(screen.queryByText('هل تريد قبول أو رفض الطلب ?')).toBeNull();
   });
 
+  it('on an iPhone, which has no back button, ✕ leaves the popup for later (jest runs as iOS)', async () => {
+    const id = await placePickup();
+    await renderApp(ROUTES, { initialUrl: '/partner' });
+    expect(await screen.findByText(`طلب رقم # ${100000 + id}`)).toBeTruthy();
+    await press('لاحقاً');
+    await waitFor(() => expect(screen.queryByText(`طلب رقم # ${100000 + id}`)).toBeNull());
+    expect(await statusOf(id)).toBe('pending_review');
+  });
+
   it('رفض refuses an order waiting when the app opens', async () => {
     const id = await placePickup();
     await renderApp(ROUTES, { initialUrl: '/partner' });

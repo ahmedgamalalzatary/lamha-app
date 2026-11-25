@@ -6,6 +6,7 @@ import { io } from 'socket.io-client';
 import { create } from 'zustand';
 import { api, apiOrigin } from '@/core/api/client';
 import { session, useSession } from '@/core/auth/session';
+import { renewAndReconnect } from '@/core/api/live-reconnect';
 import { partnerOrdersKey } from './api';
 
 /** Whether the store's live connection is up (shown on الرئيسية). */
@@ -31,7 +32,7 @@ export function usePartnerLive(): void {
       auth: (cb) => cb({ token: session.accessToken() ?? '' }),
     });
     const refresh = () => void queries.invalidateQueries({ queryKey: partnerOrdersKey });
-    let retry: ReturnType<typeof setTimeout> | undefined;
+    let cancelRetry: (() => void) | undefined;
     socket.on('ready', () => {
       useLiveConnected.setState(true, true);
       // Anything that came while it was away.
@@ -46,14 +47,14 @@ export function usePartnerLive(): void {
       useLiveConnected.setState(false, true);
       if (reason !== 'io server disconnect') return;
       // Refused: renew the token through a normal call, then try again.
-      retry = setTimeout(() => {
-        api('/partner/orders/counts')
-          .then(() => socket.connect())
-          .catch(() => undefined);
-      }, 5_000);
+      cancelRetry?.();
+      cancelRetry = renewAndReconnect(
+        () => socket.connect(),
+        () => api('/partner/orders/counts'),
+      );
     });
     return () => {
-      clearTimeout(retry);
+      cancelRetry?.();
       socket.disconnect();
       useLiveConnected.setState(false, true);
     };

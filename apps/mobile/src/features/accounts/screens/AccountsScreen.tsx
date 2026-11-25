@@ -53,8 +53,13 @@ export function AccountsScreen() {
     return () => clearTimeout(id);
   }, [query]);
 
-  // While a new search loads, the last results stay on screen instead of skeletons.
-  const accounts = useQuery<Account[]>({ queryKey: ['admin', `${kind}s`, search], queryFn: () => apiOf(kind).list(search), placeholderData: keepPreviousData });
+  // While a new search loads, the last results stay on screen instead of skeletons, but only within
+  // the same tab: a partner card left showing under المندوبين would send its id to the drivers' API.
+  const accounts = useQuery<Account[]>({
+    queryKey: ['admin', `${kind}s`, search],
+    queryFn: () => apiOf(kind).list(search),
+    placeholderData: (previous, query) => (query?.queryKey[1] === `${kind}s` ? keepPreviousData(previous) : undefined),
+  });
   const refresh = () => client.invalidateQueries({ queryKey: ['admin', `${kind}s`] });
 
   const act = useSubmit(async ({ kind: action, account }: Pending) => {
