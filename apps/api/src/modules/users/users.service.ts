@@ -22,6 +22,7 @@ export function toMe(row: UserRow): Me {
     locale: row.locale,
     avatar: row.avatar,
     inviteCode: row.inviteCode,
+    notificationsEnabled: row.notificationsEnabled,
   };
 }
 

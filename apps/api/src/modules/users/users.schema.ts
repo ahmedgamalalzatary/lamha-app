@@ -1,5 +1,5 @@
 import { GENDERS, ROLES } from '@tawsela/shared';
-import { datetime, int, mysqlEnum, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
+import { boolean, datetime, int, mysqlEnum, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
 import { stores } from '../catalog/catalog.schema.js';
 
 /**
@@ -22,6 +22,8 @@ export const users = mysqlTable('users', {
   /** The profile photo ("اختر صورة"), a path under /uploads/avatars. */
   avatar: varchar('avatar', { length: 255 }),
   locale: mysqlEnum('locale', ['ar', 'en']).notNull().default('ar'),
+  /** "تفعيل الإشعار" (§8.14). */
+  notificationsEnabled: boolean('notifications_enabled').notNull().default(true),
   inviteCode: varchar('invite_code', { length: 12 }).unique(),
   invitedById: int('invited_by_id', { unsigned: true }),
   /** Partners only: the store the account runs (contract §2). */

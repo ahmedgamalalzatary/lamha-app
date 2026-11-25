@@ -31,6 +31,7 @@ const ACTIONS: Record<AuditAction, string> = {
   'settings.drivers': 'تعديل نوبات العمل وقواعد المندوبين',
   'ticket.done': 'تغيير حالة شكوى أو اقتراح',
   'settings.support': 'تعديل أرقام التواصل',
+  'campaign.send': 'إرسال إشعار تفاعلي',
 };
 
 /** The fields' names as the forms show them; any other field keeps its own name. */

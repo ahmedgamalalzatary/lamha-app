@@ -43,6 +43,8 @@ export interface Me {
   avatar: string | null;
   /** Customers only: the code friends type when they sign up. */
   inviteCode: string | null;
+  /** "تفعيل الإشعار" (§8.14): off, no push reaches this account; الإشعارات still fills. */
+  notificationsEnabled: boolean;
 }
 
 export interface AuthResponse {

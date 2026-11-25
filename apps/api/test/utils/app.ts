@@ -4,6 +4,7 @@ import type { App } from 'supertest/types.js';
 import { AppModule } from '../../src/app.module.js';
 import { configureApp } from '../../src/app.setup.js';
 import { Mailer, type MailMessage } from '../../src/core/mail/mailer.js';
+import { ExpoPush, type PushMessage, type PushTicket } from '../../src/core/push/expo-push.js';
 
 /** Every email the app sent during the tests, newest last. Nothing leaves the machine. */
 export const mailbox: MailMessage[] = [];
@@ -11,6 +12,17 @@ export const mailbox: MailMessage[] = [];
 class FakeMailer {
   async send(message: MailMessage) {
     mailbox.push(message);
+  }
+}
+
+/** Every push the app sent during the tests, newest last. Nothing reaches Expo. */
+export const pushOutbox: PushMessage[] = [];
+
+/** A token starting "ExponentPushToken[gone" answers DeviceNotRegistered, as Expo does for a removed app. */
+class FakeExpoPush {
+  async send(messages: PushMessage[]): Promise<PushTicket[]> {
+    pushOutbox.push(...messages);
+    return messages.map((m) => (m.to.startsWith('ExponentPushToken[gone') ? { status: 'error', details: { error: 'DeviceNotRegistered' } } : { status: 'ok' }));
   }
 }
 
@@ -27,6 +39,8 @@ export async function createTestApp(): Promise<INestApplication<App>> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(Mailer)
     .useClass(FakeMailer)
+    .overrideProvider(ExpoPush)
+    .useClass(FakeExpoPush)
     .compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>({ logger: false });
   configureApp(app);

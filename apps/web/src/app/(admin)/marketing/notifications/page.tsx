@@ -1,3 +1,3 @@
-import { ComingSoon } from '@/features/shell/ComingSoon';
+import { CampaignsPage } from '@/features/campaigns/CampaignsPage';
 
-export default ComingSoon;
+export default CampaignsPage;

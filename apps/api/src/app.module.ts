@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { type Env, validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
 import { MailModule } from './core/mail/mailer.js';
+import { PushModule } from './core/push/expo-push.js';
 import { AddressesModule } from './modules/addresses/addresses.module.js';
 import { AdminsModule } from './modules/admins/admins.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
@@ -11,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { CartModule } from './modules/cart/cart.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { DriversModule } from './modules/drivers/drivers.module.js';
@@ -47,6 +49,8 @@ import { UsersModule } from './modules/users/users.module.js';
     }),
     DbModule,
     MailModule,
+    PushModule,
+    NotificationsModule,
     HealthModule,
     AuthModule,
     UsersModule,

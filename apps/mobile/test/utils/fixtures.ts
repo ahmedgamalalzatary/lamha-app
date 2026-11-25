@@ -14,6 +14,7 @@ export function me(over: Partial<Me> = {}): Me {
     locale: 'ar',
     avatar: null,
     inviteCode: '3JXDEB',
+    notificationsEnabled: true,
     ...over,
   };
 }

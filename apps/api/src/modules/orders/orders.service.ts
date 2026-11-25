@@ -3,6 +3,8 @@ import {
   type AdminOrder,
   canReorder,
   type CustomerOrderDetails,
+  customerStatusNotice,
+  notice,
   type OrderLine,
   type ReorderInput,
   type ReorderResult,
@@ -37,6 +39,7 @@ import { CartService } from '../cart/cart.service.js';
 import type { Tx } from '../catalog/catalog.repository.js';
 import { type StoreRow, stores } from '../catalog/catalog.schema.js';
 import { cairoMinuteOfDay, locationOf } from '../catalog/store-view.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { ratings } from '../support/support.schema.js';
 import { users } from '../users/users.schema.js';
@@ -71,6 +74,7 @@ export class OrdersService {
     private readonly addresses: AddressesService,
     private readonly settings: SettingsService,
     private readonly live: OrdersGateway,
+    private readonly notices: NotificationsService,
   ) {}
 
   quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
@@ -162,6 +166,12 @@ export class OrdersService {
     if (newId !== undefined) {
       const [card] = await this.partnerCards(eq(orders.id, newId));
       this.live.toStore(placed.order.store.id, ORDER_SOCKET_EVENTS.placed, { order: card });
+      const code = placed.order.code;
+      const id = newId;
+      this.notices.tell(await this.notices.storePartners(placed.order.store.id), (locale) => notice('new_order', locale, { code }), {
+        path: `/partner-order/${id}`,
+        keep: true,
+      });
     }
     return placed;
   }
@@ -230,8 +240,17 @@ export class OrdersService {
       return { status: next, row };
     });
     this.live.orderChanged(row, { id, status });
-    if (status === 'preparing' && row.mode === 'delivery' && store.deliveredBy === 'platform') this.live.toDrivers(DRIVER_SOCKET_EVENTS.offer, { id });
-    if (row.driverId !== null) this.live.toDriver(row.driverId, DRIVER_SOCKET_EVENTS.order, { id });
+    const code = codeOf(id);
+    this.notices.tell([row.customerId], (locale) => customerStatusNotice(status, row.mode, code, locale), { path: `/order/${id}`, keep: true });
+    if (status === 'preparing' && row.mode === 'delivery' && store.deliveredBy === 'platform') {
+      this.live.toDrivers(DRIVER_SOCKET_EVENTS.offer, { id });
+      const [named] = await this.db.select({ name: stores.name }).from(stores).where(eq(stores.id, store.id));
+      this.notices.tell(await this.notices.workingDrivers(), (locale) => notice('offer', locale, { code, store: named?.name ?? '' }), { path: '/driver', keep: false });
+    }
+    if (row.driverId !== null) {
+      this.live.toDriver(row.driverId, DRIVER_SOCKET_EVENTS.order, { id });
+      if (status === 'ready') this.notices.tell([row.driverId], (locale) => notice('order_ready', locale, { code }), { path: `/driver-order/${id}`, keep: true });
+    }
     return this.partnerDetails(store.id, id);
   }
 

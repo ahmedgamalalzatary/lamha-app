@@ -55,6 +55,18 @@ jest.mock('expo-clipboard', () => {
   };
 });
 
+// expo-notifications has no native module under Jest: permission granted and a fixed test token.
+jest.mock('expo-notifications', () => ({
+  getPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
+  getExpoPushTokenAsync: jest.fn(async () => ({ type: 'expo', data: 'ExponentPushToken[jest-device]' })),
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn(async () => null),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponseAsync: jest.fn(async () => null),
+  AndroidImportance: { HIGH: 4 },
+}));
+
 // expo-secure-store has no native module under Jest: keep values in memory.
 jest.mock('expo-secure-store', () => {
   const store = new Map<string, string>();

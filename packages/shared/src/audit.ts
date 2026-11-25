@@ -25,10 +25,11 @@ export const AUDIT_ACTIONS = [
   'settings.drivers',
   'ticket.done',
   'settings.support',
+  'campaign.send',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditTargetType = 'account' | 'store' | 'zone' | 'settings' | 'order' | 'ticket';
+export type AuditTargetType = 'account' | 'store' | 'zone' | 'settings' | 'order' | 'ticket' | 'campaign';
 
 export interface AuditEntry {
   id: number;

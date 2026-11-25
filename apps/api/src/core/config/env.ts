@@ -65,6 +65,11 @@ export class Env {
   @IsString()
   MAIL_FROM?: string;
 
+  /** Optional: Expo's access token, when push security is turned on in the Expo project. */
+  @IsOptional()
+  @IsString()
+  EXPO_ACCESS_TOKEN?: string;
+
   /**
    * How many proxies (nginx) stand in front of the API. With 1, the client's address comes from
    * X-Forwarded-For, so rate limits count each customer, not the proxy. 0 (the default) trusts none.

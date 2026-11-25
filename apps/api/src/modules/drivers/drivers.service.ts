@@ -10,7 +10,9 @@ import {
   type DriverSettings,
   type DriverShiftState,
   DRIVER_SOCKET_EVENTS,
+  customerStatusNotice,
   driverStep,
+  notice,
   type GeneratedPassword,
   type OrderStatus,
   shiftAt,
@@ -31,6 +33,7 @@ import { SessionsRepository } from '../auth/sessions.repository.js';
 import type { Tx } from '../catalog/catalog.repository.js';
 import { stores } from '../catalog/catalog.schema.js';
 import { locationOf } from '../catalog/store-view.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { OrdersGateway } from '../orders/orders.gateway.js';
 import { orderEvents, orderLines, type OrderRow, orders } from '../orders/orders.schema.js';
 import { generatePassword } from '../users/generated-password.js';
@@ -74,6 +77,7 @@ export class DriversService {
     private readonly users: UsersRepository,
     private readonly sessions: SessionsRepository,
     private readonly live: OrdersGateway,
+    private readonly notices: NotificationsService,
   ) {}
 
   // Shifts.
@@ -235,7 +239,7 @@ export class DriversService {
 
   /** "تخطي": he does not see it again. Skips in a row bring a warning, then a block that starts the count again. */
   async skip(driverId: number, orderId: number): Promise<SkipResult> {
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       const me = await this.driverRow(tx, driverId, true);
       await this.lockOffer(tx, orderId);
       const [already] = await tx
@@ -259,6 +263,16 @@ export class DriversService {
       await tx.update(drivers).set({ skipsInRow }).where(eq(drivers.userId, driverId));
       return { outcome, skipsInRow, blockedUntil: iso(blocked) };
     });
+    // The warning and the block also come by push [Owner, 2026-11-25].
+    if (result.outcome === 'warn') {
+      const count = String(result.skipsInRow);
+      this.notices.tell([driverId], (locale) => notice('skip_warning', locale, { count }), { path: '/driver', keep: true });
+    }
+    if (result.outcome === 'block' && result.blockedUntil) {
+      const time = new Date(result.blockedUntil).toLocaleTimeString('en-US', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' });
+      this.notices.tell([driverId], (locale) => notice('skip_block', locale, { time }), { path: '/driver', keep: true });
+    }
+    return result;
   }
 
   // His orders.
@@ -325,7 +339,7 @@ export class DriversService {
 
   /** وصلت للمتجر, خارج للتوصيل, تم التوصيل on his own order; the row is locked so a double tap moves it once. */
   async step(driverId: number, orderId: number, action: DriverAction): Promise<DriverOrderDetails> {
-    const { row, status } = await this.db.transaction(async (tx) => {
+    const { row, status, moved } = await this.db.transaction(async (tx) => {
       const [row] = await tx
         .select()
         .from(orders)
@@ -339,9 +353,13 @@ export class DriversService {
         .set({ ...(change.status ? { status: change.status } : {}), ...(change.atStore ? { atStoreAt: new Date() } : {}) })
         .where(eq(orders.id, orderId));
       if (change.status) await tx.insert(orderEvents).values({ orderId, status: change.status, byUserId: driverId });
-      return { row, status: change.status ?? row.status };
+      return { row, status: change.status ?? row.status, moved: change.status !== undefined };
     });
     this.live.orderChanged(row, { id: orderId, status });
+    if (moved) {
+      const code = codeOf(orderId);
+      this.notices.tell([row.customerId], (locale) => customerStatusNotice(status, row.mode, code, locale), { path: `/order/${orderId}`, keep: true });
+    }
     return this.details(driverId, orderId);
   }
 

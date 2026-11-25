@@ -96,6 +96,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-sharing',
     ['expo-location', { locationWhenInUsePermission: 'توصيلة تستخدم موقعك لتحديد عنوان التوصيل على الخريطة.' }],
     'expo-asset',
+    // Push (contract §15.1 #7): the small icon tint on Android.
+    ['expo-notifications', { color: IDENTITY.brandColor }],
     './plugins/with-release-signing.js',
   ],
   experiments: {
@@ -106,5 +108,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     nameAr: IDENTITY.nameAr,
     /** The map picker draws Google's map only with a key (src/features/addresses/map-available.ts). */
     googleMaps: Boolean(GOOGLE_MAPS_API_KEY),
+    // [Open] The Expo (EAS) project the push tokens belong to; set EXPO_PROJECT_ID once it exists (Phase 2).
+    ...(process.env.EXPO_PROJECT_ID ? { eas: { projectId: process.env.EXPO_PROJECT_ID } } : {}),
   },
 });

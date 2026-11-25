@@ -1,6 +1,6 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { GENDERS, type Gender, type Locale } from '@tawsela/shared';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 
 /**
  * PATCH /v1/me: what the profile screen may change. Name, phone and region are locked (§8.14); the
@@ -16,6 +16,11 @@ export class UpdateMeDto {
   @IsOptional()
   @IsIn(['ar', 'en'])
   locale?: Locale;
+
+  @ApiPropertyOptional({ description: '"تفعيل الإشعار": off, no push reaches this account' })
+  @IsOptional()
+  @IsBoolean()
+  notificationsEnabled?: boolean;
 }
 
 /** DELETE /v1/me: the password confirms it is really the owner. */

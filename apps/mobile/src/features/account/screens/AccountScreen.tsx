@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User } from 'lucide-react-native';
+import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +21,8 @@ import { meApi } from '../api/me';
 import { AccountRow } from '../components/AccountRow';
 import { usePartnerOrderCounts } from '@/features/partner/api';
 import { SupportRows } from '@/features/support/SupportRows';
+import { useNotifications } from '@/features/notifications/api';
+import { forgetPushToken } from '@/features/notifications/PushSetup';
 
 /** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
 function OrdersMadeRow() {
@@ -50,6 +52,7 @@ export function AccountScreen() {
   const [confirmOut, setConfirmOut] = useState(false);
   const [addressesOpen, setAddressesOpen] = useState(false);
   const [confirmLanguage, setConfirmLanguage] = useState(false);
+  const unread = useNotifications().data?.unread ?? 0;
 
   const changeLanguage = useSubmit(async () => {
     const generation = session.generation();
@@ -60,6 +63,8 @@ export function AccountScreen() {
   });
 
   const signOut = useSubmit(async () => {
+    // Before the session ends, while the token can still be taken back.
+    await forgetPushToken();
     await session.signOut();
     router.replace('/welcome');
   });
@@ -81,9 +86,16 @@ export function AccountScreen() {
           <AppText accessibilityRole="header" weight="bold" size={fontSizes.screenTitle + 4}>
             {t('account.title')}
           </AppText>
-          <View accessible accessibilityLabel={t('account.notifications')} style={styles.bell}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={unread ? t('notifications.bellUnread', { count: unread }) : t('account.notifications')}
+            onPress={() => router.push('/notifications')}
+            scaleTo={0.9}
+            style={styles.bell}
+          >
             <Bell size={22} color={colors.ink} />
-          </View>
+            {unread ? <View style={styles.bellDot} /> : null}
+          </PressableScale>
         </View>
 
         <PressableScale accessibilityRole="button" onPress={() => router.push('/profile')} scaleTo={0.98} style={styles.profile}>
@@ -103,6 +115,7 @@ export function AccountScreen() {
           {t('account.groupAccount')}
         </AppText>
         <AccountRow icon={User} label={t('account.settings')} onPress={() => router.push('/profile')} />
+        <AccountRow icon={BellRing} label={t('notifications.settingsRow')} onPress={() => router.push('/notification-settings')} />
         <AccountRow icon={Languages} label={t('account.language')} disabled={changeLanguage.busy} onPress={() => setConfirmLanguage(true)} />
         {user.role === 'customer' ? (
           <>
@@ -188,6 +201,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
   bell: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F2F2F4', alignItems: 'center', justifyContent: 'center' },
+  bellDot: { position: 'absolute', top: 10, end: 12, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.danger },
   profile: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.lg },
   profileText: { flex: 1, gap: spacing.xs },
   group: { marginTop: spacing.xl, marginBottom: spacing.xs },

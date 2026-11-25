@@ -40,7 +40,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (driver home and current orders marked [Open], #9) |
 | 14 | Order status and the delivered view (live tracking out of scope) | 🔍 in-verify | none (the active order view marked [Open]) |
 | 15 | Ratings, complaints and support | 🔍 in-verify | none (good chips and star words marked [Open]) |
-| 16 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
+| 16 | Notifications and push (Expo push) | 🔍 in-verify | none (needs EXPO_PROJECT_ID for real pushes, [Open]) |
 | 17 | Wallet (top-up excluded for now) | ⬜ | none |
 | 18 | Points | ⬜ | none (#4 decided) |
 | 19 | Invite friends | ⬜ | |
@@ -432,6 +432,38 @@ Owner's answers before the phase (2026-11-25):
 ## Phase 16: Notifications and push
 
 Notification list, notification settings (push only; no SMS), push tokens sent through Expo's push HTTP API with no SDK, order status pushes, dashboard الإشعارات التفاعلية campaigns.
+
+Owner's answers before the phase (2026-11-25):
+- Pushes: the customer's order status; the store's new order; a delivery man's new offer, his order ready, and the skip warning and block.
+- Campaigns go to every customer, or to customers with an address in one zone.
+- Campaigns are sent now only (no scheduling).
+
+- **Migration 0015:** `push_tokens` (one per phone, moving to whoever signed in last), `notifications` (الإشعارات, read or not, where a tap goes), `campaigns`; `users.notifications_enabled`; the audit log's target may be a campaign.
+- **Shared (TDD):** every notice's wording in Arabic and English, `customerStatusNotice` (accepted, rejected, on its way, delivered; a pickup's ready and picked up), `isExpoPushToken`; the API shapes.
+- **API:**
+  - Expo's push HTTP API, no SDK, in chunks of 100, with EXPO_ACCESS_TOKEN when set; a DeviceNotRegistered answer drops the token. Nothing is sent while NODE_ENV is test; the API tests catch the pushes in memory.
+  - `POST|DELETE /v1/me/push-tokens`, `GET /v1/me/notifications` (newest first, `limit`, `before`, the unread count), `POST /v1/me/notifications/read`; `PATCH /v1/me` takes `notificationsEnabled`.
+  - Who is told: the store's partners of a new order; the customer when the store or the delivery man moves the order; every delivery man on shift and not blocked of a new offer (push only, not kept); his order ready; his skip warning and block. Each notice goes in الإشعارات, in the account's language, after the change is saved; disabled and deleted accounts get nothing; "تفعيل الإشعار" off stops the push only.
+  - `POST /v1/admin/campaigns` (title, message, a zone or every customer), `GET /v1/admin/campaigns`; recorded in سجل التغييرات.
+- **Dashboard:** التسويق والعروض › الإشعارات التفاعلية: the title, the message, "إلى" (كل العملاء or a zone), a confirm, "تم الإرسال إلى N عميل", and the sent ones.
+- **App:**
+  - After sign-in the app asks for permission once and sends the phone's token; signing out takes it back. A push shows on top even with the app open; tapping one opens its order (or الرئيسية for an offer).
+  - حسابي: the bell opens الإشعارات and shows a red dot for new ones; "إعدادات الإشعارات" in الحساب, for every account.
+  - الإشعارات as in the photo: the white header with the chevron, the pale page, and "لا توجد إشعارات — ستظهر هنا إشعاراتك عند وصولها" with the violet bell.
+  - إعدادات الإشعارات as in the photo, without the SMS switch: "حسابي  اعدادات الخدمات والإشعارات", the orange bell tile, "تفعيل الإشعار".
+- **[Open]**
+  - Real pushes need the Expo (EAS) project: set EXPO_PROJECT_ID (with the build setup, Phase 2). Until then the app asks for no token.
+  - The notices' wording, the list's rows, the dashboard page (not captured).
+- **[Derived]**
+  - An offer pushes once, when the store accepts; the 60-second rounds do not push again.
+  - Opening الإشعارات marks them read.
+  - A pickup's "ready" pushes the customer.
+- **Changed from the plan:** the store's ring sound for a new order (Phase 12) is the push's sound for now.
+- **Phone verification (needs EXPO_PROJECT_ID and a development build):**
+  - Allow notifications; place an order: the store's phone gets "طلب جديد"; accept it: the customer's gets "تم قبول طلبك"; tap it: the order opens.
+  - Two delivery men on shift get "طلب جديد متاح"; the one who takes it gets "الطلب جاهز" when the store marks it ready; three skips bring the warning and the block.
+  - Turn "تفعيل الإشعار" off: no more pushes, the list still fills.
+  - Send a campaign to a zone from the dashboard; only that zone's customers get it.
 
 ## Phase 17: Wallet
 
