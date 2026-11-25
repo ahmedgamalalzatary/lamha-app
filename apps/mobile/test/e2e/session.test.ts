@@ -2,8 +2,8 @@ import * as SecureStore from 'expo-secure-store';
 import { api } from '@/core/api/client';
 import { session, useSession } from '@/core/auth/session';
 import { queryClient } from '@/core/query';
-import { cartStore } from '@/features/cart/cart-store';
-import type { Product } from '@tawsela/shared';
+import { cartApi } from '@/features/cart/api/cart';
+import { insertCategory, insertMenuItem, insertStore } from '../utils/catalog';
 import { insertUser, pastRefreshGrace, refreshWorks, resetDb, signInAs } from '../utils/db';
 
 beforeEach(async () => {
@@ -122,17 +122,22 @@ describe('session (real API)', () => {
     expect(useSession.getState().user?.phone).toBe('01000000001');
   });
 
-  it("empties the cart on sign-in and sign-out, so no account sees another's (review F30)", async () => {
-    const product: Product = { id: 1, storeId: 7, categoryId: 1, name: 'شاورما', description: null, price: 50, unit: null, image: null, active: true, sortOrder: 0, optionGroups: [], ingredients: [] };
+  it("keeps each account's server cart across sign-out without showing it to another account (review F30)", async () => {
     await insertUser('customer', '01554459196');
+    await insertUser('customer', '01100000001');
+    const store = await insertStore('الساقية');
+    const productId = await insertMenuItem(store, await insertCategory(store, 'الوجبات'), 'شاورما', 50);
     await session.signIn(await signInAs('01554459196'));
-    cartStore.add(7, { product, optionIds: [], removedIngredientIds: [], quantity: 2 });
-    await session.signOutLocally();
-    expect(cartStore.lines(7)).toEqual([]);
-
-    cartStore.add(7, { product, optionIds: [], removedIngredientIds: [], quantity: 1 });
-    await session.signIn(await signInAs('01554459196'));
-    expect(cartStore.lines(7)).toEqual([]);
+    await cartApi.add({ productId, optionIds: [], removedIngredientIds: [], quantity: 2 });
+    await session.signOut();
+    await session.signIn(await signInAs('01100000001'));
+    expect((await cartApi.get()).cart).toBeNull();
+    const first = await signInAs('01554459196');
+    const switching = session.signIn(first);
+    const readBeforeSwitch = cartApi.get();
+    await switching;
+    expect((await readBeforeSwitch).cart).toBeNull();
+    expect((await cartApi.get()).cart).toMatchObject({ count: 2, total: 100 });
   });
 
   it('signs out on the phone first, then tells the server (review F10)', async () => {

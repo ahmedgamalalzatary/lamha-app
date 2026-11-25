@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { addresses } from '../addresses/addresses.schema.js';
 import { otpCodes, refreshTokens } from '../auth/auth.schema.js';
+import { carts } from '../cart/cart.schema.js';
 import { favoriteStores } from '../favorites/favorites.schema.js';
 import { type NewUser, type UserRow, users } from './users.schema.js';
 
@@ -90,6 +91,7 @@ export class UsersRepository {
         .for('update');
       if (!row) return false;
       await tx.delete(favoriteStores).where(eq(favoriteStores.userId, id));
+      await tx.delete(carts).where(eq(carts.userId, id));
       await tx.delete(otpCodes).where(row.email ? or(eq(otpCodes.phone, row.phone), eq(otpCodes.email, row.email)) : eq(otpCodes.phone, row.phone));
       await tx
         .update(users)

@@ -34,7 +34,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 7 | Store page and product sheet | 🔍 in-verify | |
 | 8 | Addresses, zones and the map picker | 🔍 in-verify | Google Maps key |
 | 9 | English LTR and the language switch (project review F47) | 🔍 in-verify | none |
-| 10 | Cart | ⬜ | |
+| 10 | Cart | 🔍 in-verify | none |
 | 11 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
 | 12 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens), 11 |
 | 13 | Driver: shifts, offers and skips | ⬜ | 5, 9 (driver home and current orders), 11 |
@@ -228,6 +228,12 @@ Contract §7, §14 and S2. Phase 0 added both dictionaries. The project review (
 ## Phase 10: Cart
 
 Contract §8.6: one store per cart, steppers, delete confirm, upsell row, note sheet, payment summary, empty cart, service-closed toast, pickup only where allowed.
+
+- Migration `0009_customer-cart` adds `carts` and `cart_lines`. Each customer has one cart. Its items, note and fulfillment choice survive signing out and reopening the app. Account deletion clears the cart.
+- The customer-only API reads or edits `/v1/me/cart`, adds at `POST /v1/me/cart/lines`, adjusts or removes at `PATCH` or `DELETE /v1/me/cart/lines/:id`, and checks readiness at `POST /v1/me/cart/validate`. The server checks product choices, price, store hours and minimum order.
+- **[Open]** The same-store suggestions use the first ten available menu products outside the cart. The captures do not show the store replacement dialog, pickup selector, retry and validation wording, or the per-line cap of 99. Adding or increasing items while the store is closed also uses the service-closed message.
+- “تابع للدفع” validates the cart and shows the service-closed toast when applicable. A successful check shows a checkout availability message **[Open]** until Phase 11 adds checkout.
+- Phone verification: run against an API with migration 0009 applied. Check store replacement, item editing, note entry with the keyboard open, pickup, and the closed-store toast in Arabic and English.
 
 ## Phase 11: Checkout and placing an order
 

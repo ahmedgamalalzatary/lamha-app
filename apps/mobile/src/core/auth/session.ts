@@ -2,7 +2,6 @@ import type { AuthResponse, Me } from '@tawsela/shared';
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import { api, ApiRequestError } from '../api/client';
-import { cartStore } from '@/features/cart/cart-store';
 import { queryClient } from '../query';
 import { localePreference } from '../i18n/locale';
 
@@ -41,13 +40,14 @@ let currentRefresh: string | null = null;
  */
 async function keep(res: AuthResponse, gen: number): Promise<void> {
   if (gen !== generation) return;
-  accessToken = res.accessToken;
   currentRefresh = res.refreshToken;
   await SecureStore.setItemAsync(REFRESH_KEY, res.refreshToken);
   if (gen !== generation) {
     await (currentRefresh ? SecureStore.setItemAsync(REFRESH_KEY, currentRefresh) : SecureStore.deleteItemAsync(REFRESH_KEY)).catch(() => undefined);
     return;
   }
+  // Publish the request credentials together with the account that owns them.
+  accessToken = res.accessToken;
   useSession.setState({ status: 'signedIn', user: res.user });
 }
 
@@ -60,8 +60,6 @@ export const session = {
     const gen = ++generation;
     currentRefresh = null;
     queryClient.clear();
-    // The cart belongs to the account that filled it (review F30).
-    cartStore.clear();
     await keep(res, gen);
     if (gen === generation && localePreference.current() !== res.user.locale) {
       await localePreference.restore(res.user.locale);
@@ -130,7 +128,6 @@ export const session = {
     accessToken = null;
     currentRefresh = null;
     queryClient.clear();
-    cartStore.clear();
     useSession.setState({ status: 'signedOut', user: null });
     await SecureStore.deleteItemAsync(REFRESH_KEY).catch(() => undefined);
   },

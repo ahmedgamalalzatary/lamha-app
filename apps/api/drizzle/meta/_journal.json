@@ -64,6 +64,13 @@
       "when": 1795544584644,
       "tag": "0008_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1795599661771,
+      "tag": "0009_customer-cart",
+      "breakpoints": true
     }
   ]
 }

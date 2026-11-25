@@ -1,9 +1,10 @@
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
-import { Text } from 'react-native';
+import Cart from '@/app/customer/cart';
 import { ToastHost } from '@/components/Toast';
 import { session } from '@/core/auth/session';
+import { cartApi } from '@/features/cart/api/cart';
 import { FavoritesScreen } from '@/features/favorites/screens/FavoritesScreen';
 import { CategoryScreen } from '@/features/store/screens/CategoryScreen';
 import { StoreScreen } from '@/features/store/screens/StoreScreen';
@@ -22,7 +23,6 @@ function Root() {
   );
 }
 
-const Cart = () => <Text>cart</Text>;
 const ROUTES = {
   _layout: Root,
   'store/[id]/index': StoreScreen,
@@ -44,6 +44,63 @@ beforeEach(async () => {
 });
 
 describe('store page and product sheet (contract §8.4, §8.5; real API)', () => {
+  it('opens the persisted cart, edits quantities and the note, and handles a store closing', async () => {
+    const store = await insertStore('ماكي', 'restaurant', { pickupAllowed: true });
+    const category = await insertCategory(store, 'الوجبات');
+    await insertMenuItem(store, category, 'برجر', 85);
+    await insertMenuItem(store, category, 'بطاطس', 20, 1);
+    await renderApp(ROUTES, { initialUrl: `/store/${store}` });
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'أضف برجر' }));
+    await fireEvent.press(await screen.findByRole('button', { name: /عرض السلة/ }));
+    expect(await screen.findByText('سلة المشتريات')).toBeTruthy();
+    expect(screen.getByText('بطاطس')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'زيادة كمية برجر' }));
+    expect(await screen.findAllByText('170.00 ج.م')).toHaveLength(2);
+    await fireEvent.press(screen.getByRole('radio', { name: 'استلام من المحل' }));
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'استلام من المحل' })).toBeChecked());
+    await fireEvent.press(screen.getByRole('button', { name: 'دوّن ملاحظة' }));
+    await fireEvent.changeText(screen.getByPlaceholderText('دوّن ملاحظة'), 'اتصل قبل الوصول');
+    await fireEvent.press(screen.getByRole('button', { name: 'تم' }));
+    expect(await screen.findByText('اتصل قبل الوصول')).toBeTruthy();
+
+    await sql('UPDATE stores SET closed_now = true WHERE id = ?', [store]);
+    await fireEvent.press(screen.getByRole('button', { name: 'تابع للدفع' }));
+    expect(await screen.findByText('عذراً الخدمة مغلقة الآن')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'تقليل كمية برجر' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'حذف برجر' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'إلغاء' }));
+    expect(screen.getByText('برجر')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'حذف برجر' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'حذف' }));
+    expect(await screen.findByText('سلتك فارغة')).toBeTruthy();
+  });
+
+  it('keeps the earlier cart on cancel and switches stores on confirmation in English', async () => {
+    await sql("UPDATE users SET locale = 'en' WHERE phone = ?", ['01554459196']);
+    await session.signIn(await signInAs('01554459196'));
+    const first = await insertStore('First store', 'restaurant', { pickupAllowed: true });
+    const second = await insertStore('Second store');
+    await insertMenuItem(first, await insertCategory(first, 'Meals'), 'Burger', 85);
+    await insertMenuItem(second, await insertCategory(second, 'Meals'), 'Pizza', 95);
+    await renderApp(ROUTES, { initialUrl: `/store/${first}` });
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Add Burger' }));
+    await within(bar()).findByText('85.00 EGP');
+    await act(async () => router.push(`/store/${second}`));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Add Pizza' }));
+    expect(await screen.findByText('Your cart contains items from First store. Replace them?')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect((await cartApi.get()).cart?.store.id).toBe(first);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Add Pizza' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Replace cart' }));
+    await fireEvent.press(await screen.findByRole('button', { name: /View cart/ }));
+    expect(await screen.findByText('Shopping cart')).toBeTruthy();
+    expect(screen.getByText('Second store')).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'Store pickup' })).toBeNull();
+  });
+
   it('restaurant: info row, menu list, categories sheet, quick add, the sheet with a required choice and ingredients; the bar follows the cart', async () => {
     const sara = await insertStore('سارة سوشي - Sara sushi');
     const sushi = await insertCategory(sara, 'السوشي', 0);
@@ -83,7 +140,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
 
     // "+" adds a simple item at once; the bar turns into the cart.
     await fireEvent.press(screen.getByRole('button', { name: 'أضف جولدن(8)' }));
-    expect(within(bar()).getByText('عرض السلة')).toBeTruthy();
+    expect(await within(bar()).findByText('عرض السلة')).toBeTruthy();
     expect(within(bar()).getByText('160.00 ج.م')).toBeTruthy();
 
     // "‹" opens the sheet: the button waits for the required choice.
@@ -148,7 +205,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     expect(screen.queryByText('بصل ابيض')).toBeNull();
 
     await fireEvent.press(screen.getByRole('button', { name: 'أضف طماطم فرز أول' }));
-    expect(within(bar()).getByText('عرض السلة')).toBeTruthy();
+    expect(await within(bar()).findByText('عرض السلة')).toBeTruthy();
     expect(within(bar()).getByText('20.00 ج.م')).toBeTruthy();
   });
 
@@ -170,7 +227,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     expect(screen.getByText('سموكي ميلت')).toBeTruthy();
     expect(screen.queryByText('تويستر')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'أضف سموكي فرايز' }));
-    expect(within(bar()).getByText('110.00 ج.م')).toBeTruthy();
+    await waitFor(() => expect(within(bar()).getByText('110.00 ج.م')).toBeTruthy());
 
     await fireEvent.changeText(box, 'zzqq');
     expect(screen.queryByText('سموكي ميلت')).toBeNull();

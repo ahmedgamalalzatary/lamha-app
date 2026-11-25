@@ -102,6 +102,12 @@ export type ApiErrorCode =
   | 'ACCOUNT_NOT_FOUND'
   /** A store, category, product, cuisine or home tile that does not exist. */
   | 'NOT_FOUND'
+  | 'CART_STORE_CONFLICT'
+  | 'CART_STORE_CLOSED'
+  | 'CART_ITEM_UNAVAILABLE'
+  | 'CART_PICKUP_UNAVAILABLE'
+  | 'CART_MINIMUM_ORDER'
+  | 'CART_QUANTITY_LIMIT'
   /** A category that still holds products or sub-categories cannot be deleted. */
   | 'CATEGORY_NOT_EMPTY'
   /** A product's category, or a sub-category's main category, belongs to another store. */

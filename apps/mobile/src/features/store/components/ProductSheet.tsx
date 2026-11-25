@@ -1,4 +1,5 @@
 import {
+  CART_QUANTITY_LIMIT,
   choicesComplete,
   formatMoney,
   type Ingredient,
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
+import { useSubmit } from '@/core/hooks/useSubmit';
 import { useReduceMotion } from '@/core/hooks/useReduceMotion';
 import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
@@ -29,7 +31,7 @@ interface Props {
   /** The store's products in menu order, for "تُطلب معًا". */
   menu: Product[];
   countOf: (productId: number) => number;
-  onAdd: (item: { product: Product; optionIds: number[]; removedIngredientIds: number[]; quantity: number }) => void;
+  onAdd: (item: { product: Product; optionIds: number[]; removedIngredientIds: number[]; quantity: number }) => Promise<boolean>;
   /** Another product from "تُطلب معًا" that has choices: the sheet shows it instead. */
   onOpen: (product: Product) => void;
   onClose: () => void;
@@ -62,6 +64,9 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
   const together = orderedTogether(menu.filter((p) => p.active || p.id === product.id), product.id);
   const image = mediaUrl(product.image);
   const addLabel = complete ? `${t('product.add')} ${formatMoney(total, locale)}` : t('product.add');
+  const submit = useSubmit(async () => {
+    if (await onAdd({ product, optionIds: chosen, removedIngredientIds: removed, quantity })) onClose();
+  });
 
   const toggleIngredient = (i: Ingredient) => setRemoved((r) => (r.includes(i.id) ? r.filter((id) => id !== i.id) : [...r, i.id]));
 
@@ -154,12 +159,9 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel={addLabel}
-              accessibilityState={{ disabled: !complete }}
-              disabled={!complete}
-              onPress={() => {
-                onAdd({ product, optionIds: chosen, removedIngredientIds: removed, quantity });
-                onClose();
-              }}
+              accessibilityState={{ disabled: !complete || submit.busy, busy: submit.busy }}
+              disabled={!complete || submit.busy}
+              onPress={() => void submit.run()}
               style={[styles.add, complete ? null : styles.addOff]}
             >
               <AppText weight="bold" color={complete ? colors.bg : colors.ink2}>
@@ -172,7 +174,13 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
               ) : null}
             </PressableScale>
             <View style={styles.stepper}>
-              <PressableScale accessibilityRole="button" accessibilityLabel={t('product.more')} onPress={() => setQuantity((q) => q + 1)} hitSlop={8}>
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel={t('product.more')}
+                disabled={quantity >= CART_QUANTITY_LIMIT}
+                onPress={() => setQuantity((q) => Math.min(q + 1, CART_QUANTITY_LIMIT))}
+                hitSlop={8}
+              >
                 <Plus size={22} color={colors.primary} />
               </PressableScale>
               <AppText weight="bold" size={fontSizes.listTitle}>

@@ -295,23 +295,23 @@ export class CatalogRepository {
   }
 
   /** Each product's option groups (with their options) and ingredients, in order. */
-  async choicesOf(productIds: number[]): Promise<Map<number, { optionGroups: OptionGroup[]; ingredients: Ingredient[] }>> {
+  async choicesOf(productIds: number[], db: Db | Tx = this.db): Promise<Map<number, { optionGroups: OptionGroup[]; ingredients: Ingredient[] }>> {
     const map = new Map(productIds.map((id) => [id, { optionGroups: [] as OptionGroup[], ingredients: [] as Ingredient[] }]));
     if (!productIds.length) return map;
     const [groups, ingredients] = await Promise.all([
-      this.db
+      db
         .select()
         .from(productOptionGroups)
         .where(inArray(productOptionGroups.productId, productIds))
         .orderBy(asc(productOptionGroups.sortOrder), asc(productOptionGroups.id)),
-      this.db
+      db
         .select()
         .from(productIngredients)
         .where(inArray(productIngredients.productId, productIds))
         .orderBy(asc(productIngredients.sortOrder), asc(productIngredients.id)),
     ]);
     const options = groups.length
-      ? await this.db
+      ? await db
           .select()
           .from(productOptions)
           .where(

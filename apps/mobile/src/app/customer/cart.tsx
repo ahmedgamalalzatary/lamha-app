@@ -1,5 +1,1 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
-
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.cart" />;
-}
+export { CartScreen as default } from '@/features/cart/screens/CartScreen';

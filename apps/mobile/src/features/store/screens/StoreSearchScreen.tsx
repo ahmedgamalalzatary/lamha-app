@@ -13,6 +13,7 @@ import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useStorePage } from '../api/store';
 import { CartBar } from '../components/CartBar';
+import { CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { ProductGrid } from '../components/ProductItems';
 import { ProductSheet } from '../components/ProductSheet';
 import { useProductTaps } from '../hooks/useProductTaps';
@@ -27,7 +28,7 @@ export function StoreSearchScreen() {
   const t = useT();
   const storeId = Number(useLocalSearchParams<{ id: string }>().id);
   const page = useStorePage(storeId);
-  const { cart, actions, sheet, setSheet } = useProductTaps(storeId);
+  const { cart, actions, sheet, setSheet, conflict } = useProductTaps(storeId);
   const [q, setQ] = useState('');
   const store = page.data;
   const menu = store?.categories.flatMap((c) => c.products) ?? [];
@@ -74,7 +75,8 @@ export function StoreSearchScreen() {
       {store ? (
         <>
           <CartBar count={cart.count} total={cart.total} minimumOrder={cart.count ? store.minimumOrder : 0} />
-          <ProductSheet product={sheet} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
+          <ProductSheet product={conflict.storeName ? null : sheet} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
+          <CartConflictDialog {...conflict} />
         </>
       ) : null}
     </SafeAreaView>

@@ -16,6 +16,7 @@ import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useFavorites, useStorePage, useToggleFavorite } from '../api/store';
 import { CartBar } from '../components/CartBar';
+import { CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { CategoriesSheet } from '../components/CategoriesSheet';
 import { CategoryTabs, TABS_HEIGHT } from '../components/CategoryTabs';
 import { NoProducts } from '../components/NoProducts';
@@ -46,7 +47,7 @@ export function StoreScreen() {
   const page = useStorePage(storeId);
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
-  const { cart, actions, sheet, setSheet } = useProductTaps(storeId);
+  const { cart, actions, sheet, setSheet, conflict } = useProductTaps(storeId);
   const [solid, setSolid] = useState(false);
 
   const isFavorite = favorites.data?.some((s) => s.id === storeId) ?? false;
@@ -121,7 +122,8 @@ export function StoreScreen() {
         </>
       )}
       <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
-      <ProductSheet product={shown} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
+      <ProductSheet product={conflict.storeName ? null : shown} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
+      <CartConflictDialog {...conflict} />
     </View>
   );
 }
