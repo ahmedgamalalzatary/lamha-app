@@ -40,9 +40,14 @@ export const orders = mysqlTable(
     appShare: money('app_share').notNull(),
     storeGets: money('store_gets').notNull(),
     storeFromDriver: money('store_from_driver').notNull(),
+    /** The delivery man who took it (§10), or the one the admin assigned. */
+    driverId: id('driver_id').references(() => users.id),
+    /** When he tapped وصلت للمتجر. */
+    atStoreAt: datetime('at_store_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [
+    index('orders_driver_idx').on(t.driverId, t.status),
     uniqueIndex('orders_request_idx').on(t.customerId, t.requestId),
     index('orders_customer_idx').on(t.customerId, t.createdAt),
     index('orders_store_idx').on(t.storeId, t.createdAt),

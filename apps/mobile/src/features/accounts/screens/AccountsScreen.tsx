@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isEgyptianMobile, normalizePhone, type PartnerAccount } from '@tawsela/shared';
+import { type DriverAccount, isEgyptianMobile, normalizePhone, type PartnerAccount } from '@tawsela/shared';
 import * as Clipboard from 'expo-clipboard';
 import { Ban, CircleCheck, KeyRound, Search, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -18,23 +18,29 @@ import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, radius, spacing } from '@/core/theme';
+import { driversApi } from '../api/drivers';
 import { partnersApi } from '../api/partners';
 
-type Pending = { kind: 'reset' | 'disable' | 'enable'; account: PartnerAccount };
+/** Partners belong to a store; drivers do not (contract §2). */
+type Account = PartnerAccount | DriverAccount;
+type Kind = 'partner' | 'driver';
+type Pending = { kind: 'reset' | 'disable' | 'enable'; account: Account };
 type Shown = { phone: string; password: string };
 
-const fullName = (a: PartnerAccount) => `${a.firstName} ${a.lastName}`.trim();
+const fullName = (a: Account) => `${a.firstName} ${a.lastName}`.trim();
+const apiOf = (kind: Kind) => (kind === 'partner' ? partnersApi : driversApi);
 
 /**
  * The admin's one area in the app (contract §11.2, M2): partner accounts with search; create one for a
  * store, reset its password, disable or enable it. A generated password is shown once, with copy and
- * share. Driver accounts join in Phase 13. [Open] No Tawsilty screen exists for this; it uses the
- * account screen's cards, sheets and the address-delete confirm look.
+ * share. Phase 13 adds the delivery men behind a second tab. [Open] No Tawsilty screen exists for
+ * this; it uses the account screen's cards, sheets and the address-delete confirm look.
  */
 export function AccountsScreen() {
   const textAlign = useTextStart();
   const t = useT();
   const client = useQueryClient();
+  const [kind, setKind] = useState<Kind>('partner');
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
@@ -48,16 +54,16 @@ export function AccountsScreen() {
   }, [query]);
 
   // While a new search loads, the last results stay on screen instead of skeletons.
-  const accounts = useQuery({ queryKey: ['admin', 'partners', search], queryFn: () => partnersApi.list(search), placeholderData: keepPreviousData });
-  const refresh = () => client.invalidateQueries({ queryKey: ['admin', 'partners'] });
+  const accounts = useQuery<Account[]>({ queryKey: ['admin', `${kind}s`, search], queryFn: () => apiOf(kind).list(search), placeholderData: keepPreviousData });
+  const refresh = () => client.invalidateQueries({ queryKey: ['admin', `${kind}s`] });
 
-  const act = useSubmit(async ({ kind, account }: Pending) => {
+  const act = useSubmit(async ({ kind: action, account }: Pending) => {
     setPending(null);
-    if (kind === 'reset') {
-      const { password } = await partnersApi.resetPassword(account.id);
+    if (action === 'reset') {
+      const { password } = await apiOf(kind).resetPassword(account.id);
       setShown({ phone: account.phone, password });
     } else {
-      await partnersApi.setDisabled(account.id, kind === 'disable');
+      await apiOf(kind).setDisabled(account.id, action === 'disable');
     }
     await refresh();
   });
@@ -72,6 +78,24 @@ export function AccountsScreen() {
           {t('accounts.title')}
         </AppText>
         <AppText color={colors.ink2}>{t('accounts.subtitle')}</AppText>
+      </View>
+      <View accessibilityRole="tablist" style={styles.tabs}>
+        {(['partner', 'driver'] as const).map((k) => {
+          const on = k === kind;
+          return (
+            <Pressable
+              key={k}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              onPress={() => setKind(k)}
+              style={[styles.tab, on && styles.tabOn]}
+            >
+              <AppText weight="semibold" color={on ? colors.bg : colors.ink}>
+                {t(k === 'partner' ? 'accounts.tabPartners' : 'accounts.tabDrivers')}
+              </AppText>
+            </Pressable>
+          );
+        })}
       </View>
       <View style={styles.search}>
         <Search size={20} color={colors.ink2} />
@@ -101,7 +125,9 @@ export function AccountsScreen() {
           data={accounts.data}
           keyExtractor={(a) => String(a.id)}
           contentContainerStyle={[styles.list, accounts.data.length === 0 && styles.grow]}
-          ListEmptyComponent={<EmptyState icon={Users} title={t('accounts.empty')} message={t('accounts.emptyBody')} />}
+          ListEmptyComponent={
+            <EmptyState icon={Users} title={t('accounts.empty')} message={t(kind === 'partner' ? 'accounts.emptyBody' : 'accounts.driversEmptyBody')} />
+          }
           renderItem={({ item }) => (
             <AccountCard
               account={item}
@@ -126,6 +152,7 @@ export function AccountsScreen() {
         onCancel={() => setPending(null)}
       />
       <NewAccountSheet
+        kind={kind}
         visible={adding}
         onClose={() => setAdding(false)}
         onCreated={async (s) => {
@@ -139,7 +166,7 @@ export function AccountsScreen() {
   );
 }
 
-function AccountCard({ account, onReset, onToggle }: { account: PartnerAccount; onReset: () => void; onToggle: () => void }) {
+function AccountCard({ account, onReset, onToggle }: { account: Account; onReset: () => void; onToggle: () => void }) {
   const t = useT();
   const name = fullName(account);
   return (
@@ -156,8 +183,15 @@ function AccountCard({ account, onReset, onToggle }: { account: PartnerAccount; 
               </AppText>
             </View>
           ) : null}
+          {'onShift' in account && account.onShift ? (
+            <View style={[styles.pill, styles.pillOk]}>
+              <AppText size={12} weight="semibold" color={colors.success}>
+                {t('accounts.onShift')}
+              </AppText>
+            </View>
+          ) : null}
         </View>
-        <AppText color={colors.ink2}>{account.store.name}</AppText>
+        {'store' in account ? <AppText color={colors.ink2}>{account.store.name}</AppText> : null}
         <AppText color={colors.ink2}>{account.phone}</AppText>
       </View>
       <IconAction label={t('accounts.reset')} onPress={onReset}>
@@ -178,9 +212,10 @@ function IconAction({ label, onPress, children }: { label: string; onPress: () =
   );
 }
 
-function NewAccountSheet({ visible, onClose, onCreated }: { visible: boolean; onClose: () => void; onCreated: (s: Shown) => void }) {
+function NewAccountSheet({ kind, visible, onClose, onCreated }: { kind: Kind; visible: boolean; onClose: () => void; onCreated: (s: Shown) => void }) {
   const t = useT();
-  const stores = useQuery({ queryKey: ['admin', 'stores'], queryFn: partnersApi.stores, enabled: visible });
+  const forStore = kind === 'partner';
+  const stores = useQuery({ queryKey: ['admin', 'stores'], queryFn: partnersApi.stores, enabled: visible && forStore });
   const [storeQuery, setStoreQuery] = useState('');
   const [storeId, setStoreId] = useState<number | null>(null);
   const [firstName, setFirstName] = useState('');
@@ -189,7 +224,7 @@ function NewAccountSheet({ visible, onClose, onCreated }: { visible: boolean; on
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const ready = storeId !== null && firstName.trim() !== '' && isEgyptianMobile(normalizePhone(phone));
+  const ready = (!forStore || storeId !== null) && firstName.trim() !== '' && isEgyptianMobile(normalizePhone(phone));
   const matching = (stores.data ?? []).filter((s) => s.name.includes(storeQuery.trim()));
 
   const reset = () => {
@@ -206,7 +241,8 @@ function NewAccountSheet({ visible, onClose, onCreated }: { visible: boolean; on
     setBusy(true);
     setError(null);
     try {
-      const res = await partnersApi.create({ storeId, firstName: firstName.trim(), lastName: lastName.trim(), phone: normalizePhone(phone) });
+      const person = { firstName: firstName.trim(), lastName: lastName.trim(), phone: normalizePhone(phone) };
+      const res = forStore && storeId !== null ? await partnersApi.create({ storeId, ...person }) : await driversApi.create(person);
       reset();
       onCreated({ phone: res.account.phone, password: res.password });
     } catch (e) {
@@ -217,35 +253,39 @@ function NewAccountSheet({ visible, onClose, onCreated }: { visible: boolean; on
   };
 
   return (
-    <BottomSheet visible={visible} title={t('accounts.newTitle')} onClose={onClose} scroll>
+    <BottomSheet visible={visible} title={t(forStore ? 'accounts.newTitle' : 'accounts.newDriverTitle')} onClose={onClose} scroll>
       <View style={styles.sheetBody}>
-        <AppText weight="semibold">{t('accounts.store')}</AppText>
-        <TextField value={storeQuery} onChangeText={setStoreQuery} accessibilityLabel={t('accounts.storeSearch')} placeholder={t('accounts.storeSearch')} />
-        <View accessibilityRole="radiogroup" style={styles.stores}>
-          {stores.isError ? (
-            <View style={styles.storesError}>
-              <AppText color={colors.danger}>{errorMessage(stores.error)}</AppText>
-              <Button label={t('common.retry')} variant="soft" onPress={() => void stores.refetch()} />
+        {forStore ? (
+          <>
+            <AppText weight="semibold">{t('accounts.store')}</AppText>
+            <TextField value={storeQuery} onChangeText={setStoreQuery} accessibilityLabel={t('accounts.storeSearch')} placeholder={t('accounts.storeSearch')} />
+            <View accessibilityRole="radiogroup" style={styles.stores}>
+              {stores.isError ? (
+                <View style={styles.storesError}>
+                  <AppText color={colors.danger}>{errorMessage(stores.error)}</AppText>
+                  <Button label={t('common.retry')} variant="soft" onPress={() => void stores.refetch()} />
+                </View>
+              ) : null}
+              {stores.data && matching.length === 0 ? <AppText color={colors.ink2}>{t('accounts.noStores')}</AppText> : null}
+              {matching.slice(0, 8).map((s) => {
+                const on = s.id === storeId;
+                return (
+                  <Pressable
+                    key={s.id}
+                    accessibilityRole="radio"
+                    accessibilityLabel={s.name}
+                    accessibilityState={{ checked: on }}
+                    onPress={() => setStoreId(s.id)}
+                    style={[styles.storeRow, on && styles.storeRowOn]}
+                  >
+                    <View style={[styles.radio, on && styles.radioOn]} />
+                    <AppText weight={on ? 'bold' : 'regular'}>{s.name}</AppText>
+                  </Pressable>
+                );
+              })}
             </View>
-          ) : null}
-          {stores.data && matching.length === 0 ? <AppText color={colors.ink2}>{t('accounts.noStores')}</AppText> : null}
-          {matching.slice(0, 8).map((s) => {
-            const on = s.id === storeId;
-            return (
-              <Pressable
-                key={s.id}
-                accessibilityRole="radio"
-                accessibilityLabel={s.name}
-                accessibilityState={{ checked: on }}
-                onPress={() => setStoreId(s.id)}
-                style={[styles.storeRow, on && styles.storeRowOn]}
-              >
-                <View style={[styles.radio, on && styles.radioOn]} />
-                <AppText weight={on ? 'bold' : 'regular'}>{s.name}</AppText>
-              </Pressable>
-            );
-          })}
-        </View>
+          </>
+        ) : null}
         <TextField label={t('auth.details.firstName')} value={firstName} onChangeText={setFirstName} maxLength={100} />
         <TextField label={t('auth.details.lastName')} value={lastName} onChangeText={setLastName} maxLength={100} />
         <TextField label={t('auth.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="01xxxxxxxxx" />
@@ -331,6 +371,10 @@ const styles = StyleSheet.create({
   cardText: { flex: 1, gap: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   pill: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: '#FDECEA' },
+  pillOk: { backgroundColor: colors.success50 },
+  tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  tab: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.input },
+  tabOn: { backgroundColor: colors.primary },
   iconAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.bg },
   footer: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   sheetBody: { gap: spacing.md, paddingVertical: spacing.md },

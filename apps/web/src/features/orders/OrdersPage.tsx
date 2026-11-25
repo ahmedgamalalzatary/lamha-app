@@ -1,10 +1,12 @@
 'use client';
 
 import { type AdminOrder, formatMoney, type OrderStatus, orderStatusLabel } from '@tawsela/shared';
-import { ClipboardList } from 'lucide-react';
+import { Bike, ClipboardList } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
-import { EmptyState, LoadState, Table } from '@/components/ui';
+import { Dialog, DialogActions, EmptyState, ErrorLine, IconButton, LoadState, Table, TextField } from '@/components/ui';
+import { useAssignDriver, useDrivers } from '@/features/drivers/api';
+import { ShiftPill } from '@/features/drivers/DriversPage';
 import { useAdminOrders } from './api';
 
 /** The tabs in Tawsilty's order: its capture shows the first three; the rest follow the order flow. */
@@ -14,11 +16,12 @@ export const ORDER_TABS: OrderStatus[] = ['pending_review', 'preparing', 'out_fo
  * الطلبات (contract §11, admin/admin-orders-list-sidebar-status-tabs-flags.png): status tabs with the
  * active one in orange, an orange header row, "#504578" codes with outlined flag pills and a red bar
  * beside a flagged row. [Open] The middle columns are hidden in the capture; these follow the demo.
- * Assigning a captain and notifying arrive with the drivers (Phase 13).
+ * 🛵 gives an accepted delivery to a delivery man (Phase 13); notifying waits for push (Phase 16).
  */
 export function OrdersPage() {
   const [tab, setTab] = useState<OrderStatus>('pending_review');
   const orders = useAdminOrders(tab);
+  const [assigning, setAssigning] = useState<AdminOrder | null>(null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,18 +46,24 @@ export function OrdersPage() {
       ) : orders.data.length === 0 ? (
         <EmptyState icon={ClipboardList} title="لا توجد طلبات" />
       ) : (
-        <Table headers={['الكود', 'المتجر', 'العميل', 'الإجمالي', 'طريقة الدفع', 'الكابتن']}>
+        <Table headers={['الكود', 'المتجر', 'العميل', 'الإجمالي', 'طريقة الدفع', 'الكابتن', 'العمليات']}>
           {orders.data.map((o) => (
-            <OrderRow key={o.id} order={o} />
+            <OrderRow key={o.id} order={o} onAssign={() => setAssigning(o)} />
           ))}
         </Table>
       )}
+      {assigning ? <AssignDriver order={assigning} onClose={() => setAssigning(null)} /> : null}
     </div>
   );
 }
 
-function OrderRow({ order: o }: { order: AdminOrder }) {
-  const flags = [...(o.hasDriver || o.mode === 'pickup' ? [] : ['بدون كابتن']), ...(o.note.trim() ? ['ملاحظات'] : [])];
+/** Needs one of the app's captains: a delivery the store does not bring itself. */
+const needsCaptain = (o: AdminOrder) => o.mode === 'delivery' && o.deliveredBy === 'platform';
+/** The admin may give it to one until it leaves the store. */
+const canAssign = (o: AdminOrder) => needsCaptain(o) && (o.status === 'preparing' || o.status === 'ready');
+
+function OrderRow({ order: o, onAssign }: { order: AdminOrder; onAssign: () => void }) {
+  const flags = [...(o.hasDriver || !needsCaptain(o) ? [] : ['بدون كابتن']), ...(o.note.trim() ? ['ملاحظات'] : [])];
   return (
     <tr className="border-t border-tw-line">
       <td className={`px-4 py-3 ${flags.length ? 'border-s-4 border-s-tw-danger' : ''}`}>
@@ -81,7 +90,46 @@ function OrderRow({ order: o }: { order: AdminOrder }) {
       </td>
       <td className="px-4 py-3 whitespace-nowrap">{formatMoney(o.total)}</td>
       <td className="px-4 py-3 whitespace-nowrap">الدفع عند الاستلام</td>
-      <td className="px-4 py-3">{o.mode === 'pickup' ? 'استلام من المحل' : '—'}</td>
+      <td className="px-4 py-3">{o.mode === 'pickup' ? 'استلام من المحل' : o.deliveredBy === 'store' ? 'توصيل المتجر' : (o.driver?.name ?? '—')}</td>
+      <td className="px-4 py-2">
+        {canAssign(o) ? (
+          <IconButton label={`تعيين كابتن للطلب #${o.code}`} onClick={onAssign}>
+            <Bike className="size-4" aria-hidden />
+          </IconButton>
+        ) : null}
+      </td>
     </tr>
+  );
+}
+
+/** The 🛵: pick a delivery man, those working now first. It may replace the one who has it. */
+function AssignDriver({ order, onClose }: { order: AdminOrder; onClose: () => void }) {
+  const [query, setQuery] = useState('');
+  const drivers = useDrivers(query);
+  const assign = useAssignDriver();
+  const [picked, setPicked] = useState<number | null>(order.driver?.id ?? null);
+  const list = [...(drivers.data ?? [])].filter((d) => !d.disabled).sort((a, b) => Number(b.onShift) - Number(a.onShift));
+  return (
+    <Dialog title={`تعيين كابتن للطلب #${order.code}`} onClose={onClose}>
+      <TextField label="ابحث بالاسم أو رقم الهاتف" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div role="radiogroup" aria-label="المندوبين" className="flex max-h-72 flex-col gap-1 overflow-y-auto">
+        {drivers.isError ? <ErrorLine>{errorMessage(drivers.error)}</ErrorLine> : null}
+        {drivers.data && list.length === 0 ? <p className="text-sm text-tw-ink-2">لا يوجد مندوبين</p> : null}
+        {list.map((d) => (
+          <label key={d.id} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${picked === d.id ? 'bg-tw-50' : ''}`}>
+            <input type="radio" name="driver" checked={picked === d.id} onChange={() => setPicked(d.id)} className="accent-tw" />
+            <span className="flex-1 font-semibold">{`${d.firstName} ${d.lastName}`.trim()}</span>
+            <ShiftPill driver={d} />
+          </label>
+        ))}
+      </div>
+      {assign.isError ? <ErrorLine>{errorMessage(assign.error)}</ErrorLine> : null}
+      <DialogActions
+        ready={picked !== null && picked !== order.driver?.id}
+        busy={assign.isPending}
+        onClose={onClose}
+        onSave={() => picked !== null && assign.mutate({ orderId: order.id, driverId: picked }, { onSuccess: onClose })}
+      />
+    </Dialog>
   );
 }

@@ -1,3 +1,3 @@
-import { ComingSoon } from '@/features/shell/ComingSoon';
+import { DriversPage } from '@/features/drivers/DriversPage';
 
-export default ComingSoon;
+export default DriversPage;

@@ -143,6 +143,20 @@ describe('/partner/orders (contract §9, §11.1; real API and live socket)', () 
     await user.click(within(pickupDetails).getByRole('button', { name: 'تم الاستلام' }));
     await waitFor(async () => expect(await statusOf(pickup)).toBe('delivered'));
   });
+
+  it('a store delivering itself sends a ready order out and closes it (Phase 13)', async () => {
+    await sql("UPDATE stores SET delivered_by = 'store' WHERE id = ?", [store]);
+    const id = await insertOrder('ready');
+    renderWith(<PartnerOrdersPage />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'تم التجهيز' }));
+    await user.click(within((await screen.findByText(`#${100000 + id}`)).closest('tr')!).getByRole('button', { name: 'التفاصيل' }));
+    const details = await screen.findByRole('dialog', { name: `الطلب # ${100000 + id}` });
+    expect(within(details).queryByText('استلم من المندوب')).toBeNull();
+    await user.click(within(details).getByRole('button', { name: 'خارج للتوصيل' }));
+    await user.click(await within(details).findByRole('button', { name: 'تم التوصيل' }));
+    await waitFor(async () => expect(await statusOf(id)).toBe('delivered'));
+  });
 });
 
 describe('/partner/products and /partner/store (contract §11.1; real API)', () => {

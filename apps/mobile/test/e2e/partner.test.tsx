@@ -162,6 +162,17 @@ describe('the partner app (contract §9; real API and live socket)', () => {
     await waitFor(async () => expect(await statusOf(id)).toBe('delivered'));
   });
 
+  it('a store delivering itself sends a ready order out and closes it (Phase 13)', async () => {
+    await sql("UPDATE stores SET delivered_by = 'store' WHERE id = ?", [store]);
+    const id = await insertOrder('ready');
+    await renderApp(ROUTES, { initialUrl: `/partner-order/${id}` });
+    expect(await screen.findByRole('button', { name: 'خارج للتوصيل' })).toBeTruthy();
+    expect(screen.queryByText('استلم من المندوب')).toBeNull();
+    await press('خارج للتوصيل');
+    await fireEvent.press(await screen.findByRole('button', { name: 'تم التوصيل' }));
+    await waitFor(async () => expect(await statusOf(id)).toBe('delivered'));
+  });
+
   it('منتجات: search, category tabs and the availability switch', async () => {
     await renderApp(ROUTES, { initialUrl: '/partner/products' });
     expect(await screen.findByText('شاورما فراخ')).toBeTruthy();

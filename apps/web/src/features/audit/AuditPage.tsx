@@ -21,6 +21,14 @@ const ACTIONS: Record<AuditAction, string> = {
   'zone.create': 'إضافة منطقة',
   'zone.update': 'تعديل منطقة',
   'settings.delivery': 'تعديل رسوم التوصيل والدفع',
+  'driver.create': 'إضافة مندوب',
+  'driver.password': 'إعادة تعيين كلمة مرور مندوب',
+  'driver.disable': 'إيقاف مندوب',
+  'driver.enable': 'تفعيل مندوب',
+  'driver.schedule': 'تعديل نوبات مندوب',
+  'driver.shift': 'بدء نوبة عمل لمندوب',
+  'order.assign': 'تعيين كابتن لطلب',
+  'settings.drivers': 'تعديل نوبات العمل وقواعد المندوبين',
 };
 
 /** The fields' names as the forms show them; any other field keeps its own name. */

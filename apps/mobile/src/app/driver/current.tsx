@@ -1,5 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { DriverCurrentScreen } from '@/features/driver/DriverCurrentScreen';
 
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.currentOrders" />;
-}
+export default DriverCurrentScreen;

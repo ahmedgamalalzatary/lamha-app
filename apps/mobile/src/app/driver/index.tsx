@@ -1,5 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { DriverHomeScreen } from '@/features/driver/DriverHomeScreen';
 
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.home" />;
-}
+export default DriverHomeScreen;

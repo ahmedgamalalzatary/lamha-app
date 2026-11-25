@@ -8,6 +8,7 @@ import {
   deliveryFeeFor,
   deliverySlots,
   distanceKm,
+  DRIVER_SOCKET_EVENTS,
   type LatLng,
   nextStatus,
   ORDER_SOCKET_EVENTS,
@@ -22,6 +23,7 @@ import {
   type PlaceOrderInput,
 } from '@tawsela/shared';
 import { and, asc, count as countRows, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/mysql-core';
 import { ApiException } from '../../common/api-exception.js';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import type { AddressRow } from '../addresses/addresses.schema.js';
@@ -32,7 +34,11 @@ import { type StoreRow, stores } from '../catalog/catalog.schema.js';
 import { cairoMinuteOfDay, locationOf } from '../catalog/store-view.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { users } from '../users/users.schema.js';
+import { nameOf } from '../audit/audit.service.js';
 import { OrdersGateway } from './orders.gateway.js';
+
+/** The delivery man, joined beside the customer (both are users). */
+const driverUsers = alias(users, 'driver_users');
 import { orderEvents, orderLines, type OrderRow, orders } from './orders.schema.js';
 
 const cents = (n: number) => Math.round(n * 100) / 100;
@@ -172,13 +178,20 @@ export class OrdersService {
 
   async partnerDetails(storeId: number, id: number): Promise<PartnerOrderDetails> {
     const [row] = await this.db
-      .select({ order: orders, customer: { firstName: users.firstName, lastName: users.lastName, phone: users.phone } })
+      .select({
+        order: orders,
+        customer: { firstName: users.firstName, lastName: users.lastName, phone: users.phone },
+        driver: { firstName: driverUsers.firstName, lastName: driverUsers.lastName },
+        deliveredBy: stores.deliveredBy,
+      })
       .from(orders)
       .innerJoin(users, eq(users.id, orders.customerId))
+      .innerJoin(stores, eq(stores.id, orders.storeId))
+      .leftJoin(driverUsers, eq(driverUsers.id, orders.driverId))
       .where(and(eq(orders.id, id), eq(orders.storeId, storeId)));
     if (!row) throw orderNotFound();
     const lines = await this.db.select().from(orderLines).where(eq(orderLines.orderId, id)).orderBy(asc(orderLines.id));
-    const { order, customer } = row;
+    const { order, customer, driver } = row;
     return {
       ...toPartnerOrder(order, lines.reduce((n, l) => n + l.quantity, 0)),
       customer: { name: `${customer.firstName} ${customer.lastName}`.trim(), phone: order.phone ?? customer.phone },
@@ -194,26 +207,31 @@ export class OrdersService {
       })),
       payoutOption: order.payoutOption,
       storeFromDriver: order.storeFromDriver,
-      driver: null,
+      driver: driver ? { name: nameOf(driver) } : null,
+      deliveredBy: row.deliveredBy,
     };
   }
 
   /**
-   * قبول, رفض, تم التجهيز, تم الاستلام. The order row is locked, so two phones tapping at once move it
-   * once; the loser gets ORDER_STATUS and sees the order as it is now.
+   * قبول, رفض, تم التجهيز, تم الاستلام, and خارج للتوصيل and تم التوصيل for a store delivering with its
+   * own people. The order row is locked, so two phones tapping at once move it once; the loser gets
+   * ORDER_STATUS and sees the order as it is now. Accepting a delivery the app's captains bring
+   * offers it to every delivery man (§10); marking it ready tells its delivery man.
    */
-  async partnerStep(storeId: number, userId: number, id: number, action: PartnerAction): Promise<PartnerOrderDetails> {
-    const status = await this.db.transaction(async (tx) => {
-      const [row] = await tx.select().from(orders).where(and(eq(orders.id, id), eq(orders.storeId, storeId))).for('update');
+  async partnerStep(store: Pick<StoreRow, 'id' | 'deliveredBy'>, userId: number, id: number, action: PartnerAction): Promise<PartnerOrderDetails> {
+    const { status, row } = await this.db.transaction(async (tx) => {
+      const [row] = await tx.select().from(orders).where(and(eq(orders.id, id), eq(orders.storeId, store.id))).for('update');
       if (!row) throw orderNotFound();
-      const next = nextStatus(row.status, action, row.mode);
+      const next = nextStatus(row.status, action, row.mode, store.deliveredBy);
       if (!next) throw new ApiException(HttpStatus.CONFLICT, 'ORDER_STATUS', `The order is ${row.status}; it cannot be moved by "${action}"`);
       await tx.update(orders).set({ status: next }).where(eq(orders.id, id));
       await tx.insert(orderEvents).values({ orderId: id, status: next, byUserId: userId });
-      return next;
+      return { status: next, row };
     });
-    this.live.toStore(storeId, ORDER_SOCKET_EVENTS.status, { id, status });
-    return this.partnerDetails(storeId, id);
+    this.live.toStore(store.id, ORDER_SOCKET_EVENTS.status, { id, status });
+    if (status === 'preparing' && row.mode === 'delivery' && store.deliveredBy === 'platform') this.live.toDrivers(DRIVER_SOCKET_EVENTS.offer, { id });
+    if (row.driverId !== null) this.live.toDriver(row.driverId, DRIVER_SOCKET_EVENTS.order, { id });
+    return this.partnerDetails(store.id, id);
   }
 
   private async partnerCards(where: SQL | undefined): Promise<PartnerOrder[]> {
@@ -241,20 +259,25 @@ export class OrdersService {
       .select({
         order: orders,
         store: { id: stores.id, name: stores.name, logo: stores.logo },
+        deliveredBy: stores.deliveredBy,
         customer: { id: users.id, firstName: users.firstName, lastName: users.lastName, phone: users.phone },
+        driver: { firstName: driverUsers.firstName, lastName: driverUsers.lastName },
       })
       .from(orders)
       .innerJoin(stores, eq(stores.id, orders.storeId))
       .innerJoin(users, eq(users.id, orders.customerId))
+      .leftJoin(driverUsers, eq(driverUsers.id, orders.driverId))
       .where(status ? eq(orders.status, status) : undefined)
       .orderBy(desc(orders.id))
       .limit(200);
     const counts = await this.counts(this.db, rows.map((r) => r.order.id));
-    return rows.map(({ order, store, customer }) => ({
+    return rows.map(({ order, store, deliveredBy, customer, driver }) => ({
       ...toCustomerOrder(order, store, counts.get(order.id) ?? 0),
       customer: { id: customer.id, name: `${customer.firstName} ${customer.lastName}`.trim(), phone: order.phone ?? customer.phone },
       note: order.note,
-      hasDriver: false,
+      hasDriver: order.driverId !== null,
+      driver: order.driverId !== null && driver ? { id: order.driverId, name: nameOf(driver) } : null,
+      deliveredBy,
       paymentMethod: 'cash',
       payoutOption: order.payoutOption,
       appShare: order.appShare,

@@ -22,7 +22,15 @@ export const ADMIN_NAV: NavGroup[] = [
   { label: 'الطلبات', icon: ClipboardList, items: [{ label: 'الطلبات', href: '/orders' }] },
   { label: 'العملاء', icon: Users, items: [{ label: 'الشكاوى والاقتراحات', href: '/customers/complaints' }] },
   { label: 'الموردين', icon: Store, items: [{ label: 'الموردين', href: '/stores' }] },
-  { label: 'المندوبين', icon: Bike, items: [{ label: 'المندوبين', href: '/drivers' }] },
+  {
+    label: 'المندوبين',
+    icon: Bike,
+    items: [
+      { label: 'المندوبين', href: '/drivers' },
+      // Phase 13: the global week and the shift, offer and skip numbers (§15.1 #5) [Open: name and layout ours].
+      { label: 'نوبات العمل والقواعد', href: '/drivers/rules' },
+    ],
+  },
   {
     label: 'المنتجات والكتالوج',
     icon: Package,

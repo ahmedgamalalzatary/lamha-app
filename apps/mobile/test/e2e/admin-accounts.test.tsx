@@ -133,4 +133,25 @@ describe('الحسابات: partner accounts in the admin app (contract §11.2; 
     await press('حفظ');
     expect(await screen.findByText('رقم الهاتف مسجل بالفعل لحساب آخر')).toBeTruthy();
   });
+
+  it('المندوبين: lists delivery men and creates one without a store (Phase 13)', async () => {
+    await insertUser('driver', '01000000003', { firstName: 'كريم' });
+    await renderApp(ROUTES, { initialUrl: '/admin' });
+    await cardOf('حسن');
+    await fireEvent.press(screen.getByRole('tab', { name: 'المندوبين' }));
+    const karim = await cardOf('كريم');
+    expect(within(karim).getByText('01000000003')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByTestId(/^account-حسن/)).toBeNull());
+
+    await press('إضافة حساب');
+    expect(await screen.findByText('حساب مندوب جديد')).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'شاورما الساقية' })).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText('الاسم الأول'), 'سامح');
+    await fireEvent.changeText(screen.getByLabelText('رقم الهاتف'), '01011111111');
+    await press('حفظ');
+    const password = (await screen.findByTestId('generated-password')).props.children as string;
+    expect(await signsIn('01011111111', password)).toBe(true);
+    await press('تم');
+    expect(await cardOf('سامح')).toBeTruthy();
+  });
 });

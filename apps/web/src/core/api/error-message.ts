@@ -21,6 +21,8 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   ZONE_SHAPE: 'حدود المنطقة غير صالحة: لا تكرر نقطة ولا تجعل الخطوط تتقاطع',
   CONFLICT: 'حدث تغيير في نفس اللحظة، حاول مرة أخرى',
   EMAIL_TAKEN: 'البريد الإلكتروني مستخدم في حساب آخر',
+  ORDER_STATUS: 'تغيرت حالة الطلب، راجعه مرة أخرى',
+  SHIFT_NOT_OPEN: 'لا توجد نوبة عمل يمكن بدؤها الآن',
 };
 
 export const GENERIC_ERROR = 'حدث خطأ، حاول مرة أخرى';

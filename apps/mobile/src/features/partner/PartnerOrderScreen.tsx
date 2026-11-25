@@ -1,4 +1,4 @@
-import { formatMoney, orderStatusLabel, type PartnerOrderDetails } from '@tawsela/shared';
+import { formatMoney, orderStatusLabel, type PartnerAction, type PartnerOrderDetails } from '@tawsela/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { CalendarDays, Check, MapPin, NotebookText, Phone } from 'lucide-react-native';
 import type { ReactNode } from 'react';
@@ -90,14 +90,14 @@ function Details({
   order: PartnerOrderDetails;
   busy: boolean;
   error?: string;
-  onStep: (action: 'accept' | 'reject' | 'ready' | 'collected') => void;
+  onStep: (action: PartnerAction) => void;
 }) {
   const t = useT();
   const locale = useLocale();
   const when = useWhen();
   const money = (n: number) => formatMoney(n, locale);
   const delivered = o.status === 'delivered';
-  const collects = o.mode === 'delivery' && o.payoutOption !== 'nothing';
+  const collects = o.mode === 'delivery' && o.deliveredBy === 'platform' && o.payoutOption !== 'nothing';
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -243,6 +243,10 @@ function Details({
         </>
       ) : o.status === 'ready' && o.mode === 'pickup' ? (
         <Button label={t('partner.collected')} loading={busy} onPress={() => onStep('collected')} />
+      ) : o.mode === 'delivery' && o.deliveredBy === 'store' && o.status === 'ready' ? (
+        <Button label={t('partner.out')} loading={busy} onPress={() => onStep('out')} />
+      ) : o.mode === 'delivery' && o.deliveredBy === 'store' && o.status === 'out_for_delivery' ? (
+        <Button label={t('partner.delivered')} loading={busy} onPress={() => onStep('delivered')} />
       ) : null}
     </ScrollView>
   );

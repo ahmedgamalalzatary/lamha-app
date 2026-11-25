@@ -96,11 +96,20 @@ describe('nextStatus (the store\'s steps, contract §9)', () => {
 
   it('a delivery is handed to the delivery man, never closed by the store', () => {
     expect(nextStatus('ready', 'collected', 'delivery')).toBeNull();
+    expect(nextStatus('ready', 'out', 'delivery')).toBeNull();
+  });
+
+  it('a store delivering with its own people sends it out and closes it [Owner, 2026-11-25]', () => {
+    expect(nextStatus('ready', 'out', 'delivery', 'store')).toBe('out_for_delivery');
+    expect(nextStatus('preparing', 'out', 'delivery', 'store')).toBeNull();
+    expect(nextStatus('out_for_delivery', 'delivered', 'delivery', 'store')).toBe('delivered');
+    expect(nextStatus('out_for_delivery', 'delivered', 'delivery')).toBeNull();
+    expect(nextStatus('ready', 'out', 'pickup', 'store')).toBeNull();
   });
 
   it('nothing moves a finished order', () => {
-    for (const status of ['delivered', 'rejected', 'cancelled', 'out_for_delivery'] as const) {
-      for (const action of PARTNER_ACTIONS) expect(nextStatus(status, action, 'pickup')).toBeNull();
+    for (const status of ['delivered', 'rejected', 'cancelled'] as const) {
+      for (const action of PARTNER_ACTIONS) expect(nextStatus(status, action, 'delivery', 'store')).toBeNull();
     }
   });
 });

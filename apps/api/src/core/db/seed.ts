@@ -22,6 +22,7 @@ import {
 } from '../../modules/catalog/catalog.schema.js';
 import { users } from '../../modules/users/users.schema.js';
 import { zones } from '../../modules/addresses/addresses.schema.js';
+import { driverSettings, drivers } from '../../modules/drivers/drivers.schema.js';
 
 config({ path: '../../.env', quiet: true });
 
@@ -291,5 +292,18 @@ if (!anyZone) {
     await db.update(stores).set({ zoneId: zone!.id, lat, lng }).where(eq(stores.id, id));
   }
   console.log(`zones: الفيوم with ${unzoned.length} stores`);
+}
+
+// Phase 13: the try-out delivery man's row, and, while the global week is still empty, a shift every
+// day from 08:00 to 02:00 so he can start work. The admin sets the real week in الإعدادات.
+const seededDrivers = await db.select({ id: users.id }).from(users).where(eq(users.role, 'driver'));
+for (const { id } of seededDrivers) await db.insert(drivers).ignore().values({ userId: id });
+const [rules] = await db.select({ schedule: driverSettings.schedule }).from(driverSettings).where(eq(driverSettings.id, 1));
+if (rules && rules.schedule.every((day) => day === null)) {
+  await db
+    .update(driverSettings)
+    .set({ schedule: Array.from({ length: 7 }, () => ({ start: '08:00', end: '02:00' })) })
+    .where(eq(driverSettings.id, 1));
+  console.log('drivers: a shift every day 08:00–02:00');
 }
 await conn.end();

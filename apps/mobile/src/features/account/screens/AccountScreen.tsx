@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, ChevronLeft, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User } from 'lucide-react-native';
+import { Bell, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -110,6 +110,16 @@ export function AccountScreen() {
         ) : null}
 
         {user.role === 'partner' ? <OrdersMadeRow /> : null}
+
+        {user.role === 'driver' ? (
+          <>
+            {/* driver/driver-account-invoices-points-shifts-history.jpg: العمل › نوبات عملي. فواتيري, نقاطي and سجل الطلبات come with their phases. */}
+            <AppText weight="semibold" color={colors.ink2} style={styles.group}>
+              {t('driver.groupWork')}
+            </AppText>
+            <AccountRow icon={Clock} label={t('driver.myShifts')} onPress={() => router.push('/driver-shifts')} />
+          </>
+        ) : null}
 
         {user.role === 'customer' ? (
           <>

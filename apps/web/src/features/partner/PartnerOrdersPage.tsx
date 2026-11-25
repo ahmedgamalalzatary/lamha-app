@@ -183,7 +183,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /** The order details (partner/partner-order-details-preparing-receive-from-driver.png), and the store's next step. */
 function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails; busy: boolean; onStep: (a: PartnerAction) => void; error?: string }) {
-  const collects = o.mode === 'delivery' && o.payoutOption !== 'nothing';
+  const collects = o.mode === 'delivery' && o.deliveredBy === 'platform' && o.payoutOption !== 'nothing';
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -280,6 +280,14 @@ function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails
       ) : o.status === 'ready' && o.mode === 'pickup' ? (
         <Button loading={busy} onClick={() => onStep('collected')} className="h-12">
           تم الاستلام
+        </Button>
+      ) : o.mode === 'delivery' && o.deliveredBy === 'store' && o.status === 'ready' ? (
+        <Button loading={busy} onClick={() => onStep('out')} className="h-12">
+          خارج للتوصيل
+        </Button>
+      ) : o.mode === 'delivery' && o.deliveredBy === 'store' && o.status === 'out_for_delivery' ? (
+        <Button loading={busy} onClick={() => onStep('delivered')} className="h-12">
+          تم التوصيل
         </Button>
       ) : null}
     </div>

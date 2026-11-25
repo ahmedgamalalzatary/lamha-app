@@ -70,7 +70,7 @@ export class PartnerOrdersController {
 
   @Post(':id/:action')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'accept, reject, ready, or collected (a pickup the customer took); 409 ORDER_STATUS when it already moved on' })
+  @ApiOperation({ summary: 'accept, reject, ready, collected (a pickup the customer took), out and delivered (a store delivering itself); 409 ORDER_STATUS when it already moved on' })
   step(
     @CurrentUser() me: AuthUser,
     @CurrentStore() store: StoreRow,
@@ -78,7 +78,7 @@ export class PartnerOrdersController {
     @Param('action') action: string,
   ): Promise<PartnerOrderDetails> {
     if (!(PARTNER_ACTIONS as readonly string[]).includes(action)) throw new NotFoundException();
-    return this.orders.partnerStep(store.id, me.id, id, action as PartnerAction);
+    return this.orders.partnerStep(store, me.id, id, action as PartnerAction);
   }
 }
 

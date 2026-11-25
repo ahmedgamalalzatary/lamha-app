@@ -37,7 +37,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 10 | Cart | 🔍 in-verify | none |
 | 11 | Checkout and placing an order (cash only) | 🔍 in-verify | none (#3, #11 decided) |
 | 12 | Partner: orders and products (mobile and `/partner`) | 🔍 in-verify | none (uncaptured screens marked [Open]) |
-| 13 | Driver: shifts, offers and skips | ⬜ | 9 (driver home and current orders) |
+| 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (driver home and current orders marked [Open], #9) |
 | 14 | Order status and the delivered view (live tracking out of scope) | ⬜ | none |
 | 15 | Ratings, complaints and support | ⬜ | |
 | 16 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
@@ -321,6 +321,51 @@ Owner's answers before the phase (2026-11-25):
 ## Phase 13: Driver: shifts, offers and skips
 
 Contract §10: driver accounts generated from the dashboard or the admin's mobile app (password shown once, reset, disable); shift schedule from the admin, start unlocks 30 min before, end and extend, offers with details, accept/skip with warning and suspension, order steps to delivered; dispatch from the dashboard (assign driver, "بدون كابتن" flag).
+
+Owner's answers before the phase (2026-11-25):
+- Build it without the driver home and current-orders screenshots; those parts are [Open].
+- An order is offered when the store accepts it, to **every delivery man on shift at once**; the first to accept takes it.
+- A delivery man may hold as many orders as he accepts.
+- Nobody accepts in 60 s: it shows again to all of them. Ignoring it is not a skip; only "تخطي" counts.
+- Skips count in a row: accepting an order or the end of a block starts the count again.
+- A store "delivered by: store" gets no offers: the store taps خارج للتوصيل, then تم التوصيل.
+
+- **Migration 0012:** `driver_settings` (the global week and the 8 rule numbers, one row), `drivers` (his own week, skips in a row, blocked until), `shifts` (scheduled start and end, extensions, who started it, ended), `order_skips`; `orders.driver_id` and `orders.at_store_at`; the audit log's target may be an order.
+- **Shared (TDD):** the week from Sunday in Cairo time (a range past midnight, the same time = all day), `shiftAt` (the shift running now or the next, Egypt's summer time included), the start window, `skipOutcome`, `driverStep` (وصلت للمتجر → خارج للتوصيل once ready → تم التوصيل), the store's own `out` and `delivered`; the API shapes, socket events and error codes.
+- **API:**
+  - `GET /v1/driver/shift`, `POST /v1/driver/shift/{start|extend|end}`; `GET /v1/driver/offers`, `POST /v1/driver/offers/:id/{accept|skip}`; `GET /v1/driver/orders`, `GET /v1/driver/orders/:id`, `POST /v1/driver/orders/:id/{arrived|out|delivered}`.
+  - Admin: `/v1/admin/drivers` (list, create, password, disable), `PUT /v1/admin/drivers/:id/schedule`, `POST /v1/admin/drivers/:id/shift`, `GET|PATCH /v1/admin/settings/drivers`, `POST /v1/admin/orders/:id/driver`. Each change goes in سجل التغييرات.
+  - Accepting locks the order, so of several men tapping at once one takes it and the rest get `OFFER_TAKEN`. A man off shift or blocked sees no offers and cannot accept. He sees the customer's phone only on his own orders (§14).
+  - Live socket: delivery men join the drivers' room (`offer.new`, `offer.gone`) and their own (`driver.order` when the store marks it ready or the admin moves it). The store hears when a man takes its order.
+- **Dashboard:**
+  - المندوبين: the table (name, phone, account, الشفت: في الشفت / خارج الشفت / موقوف حتى, own or global week), إضافة with the password once, reset, disable, the week dialog, and بدء الشفت for a man who missed his window.
+  - المندوبين › نوبات العمل والقواعد: the global week and the numbers.
+  - الطلبات: الكابتن shows his name; 🛵 (العمليات) gives an accepted delivery to a man, working ones first. "بدون كابتن" shows only on deliveries the app's captains bring.
+  - `/partner`: خارج للتوصيل and تم التوصيل for a store delivering itself.
+- **App:**
+  - الرئيسية: the status pill (يعمل / لا يعمل), "نوبة عمل محجوزة" with "ستبدأ في … دقيقة", the time range and بدء نوبة العمل (locked outside the window, with why); while working "نوبة العمل الحالية", تمديد and إنهاء; the block notice; الطلبات الجديدة as cards with قبول and تخطي.
+  - The offer popup over every tab: it vibrates, counts down, and rings again each round; back leaves it on الرئيسية until the next round. A skip shows the warning or the block at once (push in Phase 16).
+  - الطلبات الحالية: his orders not yet delivered.
+  - تفاصيل الطلب as in the photo: البائع with عرض الموقع, the customer with call, SMS and WhatsApp, المنتجات folded with each line's photo [Client], ادفع نقداً للبائع, المبلغ — تحصيل النقود, then the step button.
+  - حسابي › العمل › نوبات عملي: his week.
+  - The admin's الحسابات: a المندوبين tab; a driver account has no store.
+- **[Open] not captured:**
+  - The driver's الرئيسية and الطلبات الحالية (§15.1 #9): the status pill and the shift card follow the client's reference from another app; the cards use the store's card look.
+  - The offer popup (the store's popup look), the warning and block wording, and the نوبات عملي screen.
+  - المندوبين and نوبات العمل والقواعد in the dashboard (the orders-table look; names ours).
+  - Stores have no written address: عنوان البائع shows the store's zone, and the customer's area is their address's zone.
+- **[Derived]**
+  - The admin may start a man's shift from 30 minutes before it until it ends; a shift he already worked (ended early) does not start again, the next one does.
+  - تمديد is offered during the shift; ending it keeps the orders he holds.
+  - He goes out (خارج للتوصيل) only once the store marked the order ready; the admin's 🛵 works until then and may replace the man who had it.
+  - Disabling a delivery man ends his shift.
+- **Changed from the plan:** speed points (§10) wait for Points (Phase 18); his own fee values (§8.7) and earnings wait for history and fines (Phase 24); the warning goes by push with Phase 16.
+- **Phone verification:**
+  - Set a week in نوبات العمل والقواعد; sign in as the delivery man and start the shift in its window; extend; end.
+  - Two delivery men on shift: a store accepts an order; both phones vibrate and pop up; one accepts, the other's popup goes.
+  - Skip three offers: the warning, then the block.
+  - وصلت للمتجر, wait for تم التجهيز, خارج للتوصيل, تم التوصيل; call and WhatsApp the customer; عرض الموقع.
+  - In the dashboard: 🛵 on an order, and بدء الشفت for a late man. In the admin's app: add a delivery man.
 
 ## Phase 14: Order status and the delivered view
 

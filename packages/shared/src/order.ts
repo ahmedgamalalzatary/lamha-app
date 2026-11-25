@@ -1,7 +1,7 @@
 // Checkout, delivery fee and who pays whom (contract §8.7, §15.1 #3 and #11).
 import type { LatLng } from './address.js';
 import type { CartMode } from './cart.js';
-import { isOpenAt, minuteOfDay, type StoreHours } from './catalog.js';
+import { type DeliveredBy, isOpenAt, minuteOfDay, type StoreHours } from './catalog.js';
 import type { OrderStatus } from './enums.js';
 
 const cents = (n: number) => Math.round(n * 100) / 100;
@@ -133,8 +133,12 @@ export interface PlacedOrder {
 export interface AdminOrder extends CustomerOrder {
   customer: { id: number; name: string; phone: string };
   note: string;
-  /** "بدون كابتن" until a delivery man takes it (Phase 13). */
+  /** "بدون كابتن" until a delivery man takes it (§10). */
   hasDriver: boolean;
+  /** الكابتن: who took it, or whom the admin assigned. */
+  driver: { id: number; name: string } | null;
+  /** A store delivering with its own people never needs a captain. */
+  deliveredBy: DeliveredBy;
   paymentMethod: 'cash';
   payoutOption: PayoutOption;
   appShare: number;
@@ -143,19 +147,25 @@ export interface AdminOrder extends CustomerOrder {
 
 // The store's side of an order (contract §9, §11.1).
 
-/** What a store does to an order: قبول, رفض, تم التجهيز, and تم الاستلام for a pickup the customer took. */
-export const PARTNER_ACTIONS = ['accept', 'reject', 'ready', 'collected'] as const;
+/**
+ * What a store does to an order: قبول, رفض, تم التجهيز, تم الاستلام for a pickup the customer took,
+ * and خارج للتوصيل and تم التوصيل when the store delivers with its own people.
+ */
+export const PARTNER_ACTIONS = ['accept', 'reject', 'ready', 'collected', 'out', 'delivered'] as const;
 export type PartnerAction = (typeof PARTNER_ACTIONS)[number];
 
 /**
  * The status an action moves the order to, or null when it may not happen now. A delivery leaves
- * "تم التجهيز" with the delivery man (Phase 13); a pickup is closed by the store when the customer
- * takes it [Owner, 2026-11-25].
+ * "تم التجهيز" with the delivery man (§10); a pickup is closed by the store when the customer takes
+ * it; a store delivering with its own people sends it out and closes it [Owner, 2026-11-25].
  */
-export function nextStatus(status: OrderStatus, action: PartnerAction, mode: CartMode): OrderStatus | null {
+export function nextStatus(status: OrderStatus, action: PartnerAction, mode: CartMode, deliveredBy: DeliveredBy = 'platform'): OrderStatus | null {
   if (status === 'pending_review') return action === 'accept' ? 'preparing' : action === 'reject' ? 'rejected' : null;
   if (status === 'preparing') return action === 'ready' ? 'ready' : null;
-  if (status === 'ready' && mode === 'pickup') return action === 'collected' ? 'delivered' : null;
+  if (mode === 'pickup') return status === 'ready' && action === 'collected' ? 'delivered' : null;
+  if (deliveredBy !== 'store') return null;
+  if (status === 'ready') return action === 'out' ? 'out_for_delivery' : null;
+  if (status === 'out_for_delivery') return action === 'delivered' ? 'delivered' : null;
   return null;
 }
 
@@ -196,14 +206,16 @@ export interface PartnerOrderDetails extends PartnerOrder {
   payoutOption: PayoutOption;
   /** "استلم من المندوب": what the delivery man pays the store in cash. */
   storeFromDriver: number;
-  /** معلومات المندوب, once one takes the order (Phase 13). */
+  /** معلومات المندوب, once one takes the order (§10). */
   driver: { name: string } | null;
+  /** "store": the store sends it out and closes it itself (خارج للتوصيل, تم التوصيل). */
+  deliveredBy: DeliveredBy;
 }
 
 /** How many of the store's orders are in each status (طلباتى tabs, the account's orders count). */
 export type PartnerOrderCounts = Record<OrderStatus, number>;
 
-/** The live socket (§12 S3): events sent to a store's partners. */
+/** The live socket (§12 S3): events sent to a store's partners (delivery men: DRIVER_SOCKET_EVENTS). */
 export const ORDER_SOCKET_EVENTS = {
   /** A customer placed an order at this store: { order: PartnerOrder }. */
   placed: 'order.placed',

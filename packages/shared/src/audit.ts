@@ -15,10 +15,18 @@ export const AUDIT_ACTIONS = [
   'zone.create',
   'zone.update',
   'settings.delivery',
+  'driver.create',
+  'driver.password',
+  'driver.disable',
+  'driver.enable',
+  'driver.schedule',
+  'driver.shift',
+  'order.assign',
+  'settings.drivers',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditTargetType = 'account' | 'store' | 'zone' | 'settings';
+export type AuditTargetType = 'account' | 'store' | 'zone' | 'settings' | 'order';
 
 export interface AuditEntry {
   id: number;
