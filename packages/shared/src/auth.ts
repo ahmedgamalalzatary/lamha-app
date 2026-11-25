@@ -118,6 +118,8 @@ export type ApiErrorCode =
   | 'CHECKOUT_NO_STORE_LOCATION'
   /** The later-delivery slot is no longer offered. */
   | 'CHECKOUT_SLOT'
+  /** The order already moved on (another partner, or a second tap): the store sees its status now. */
+  | 'ORDER_STATUS'
   /** A category that still holds products or sub-categories cannot be deleted. */
   | 'CATEGORY_NOT_EMPTY'
   /** A product's category, or a sub-category's main category, belongs to another store. */

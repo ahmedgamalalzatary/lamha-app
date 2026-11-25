@@ -1,8 +1,20 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { AdminOrder, CheckoutQuote, CustomerOrder, PlacedOrder } from '@tawsela/shared';
+import {
+  type AdminOrder,
+  type CheckoutQuote,
+  type CustomerOrder,
+  PARTNER_ACTIONS,
+  type PartnerAction,
+  type PartnerOrder,
+  type PartnerOrderCounts,
+  type PartnerOrderDetails,
+  type PlacedOrder,
+} from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import type { StoreRow } from '../catalog/catalog.schema.js';
+import { CurrentStore, PartnerArea } from '../partners/partner-store.guard.js';
 import { AdminOrdersQuery, CheckoutQuoteDto, PlaceOrderDto } from './orders.dto.js';
 import { OrdersService } from './orders.service.js';
 
@@ -30,6 +42,43 @@ export class OrdersController {
   @Get('orders')
   mine(@CurrentUser() me: AuthUser): Promise<CustomerOrder[]> {
     return this.orders.mine(me.id);
+  }
+}
+
+/** The store's orders, in the partner app and /partner (contract §9, §11.1): only the partner's own store. */
+@ApiTags('partner')
+@ApiBearerAuth()
+@PartnerArea()
+@Controller('partner/orders')
+export class PartnerOrdersController {
+  constructor(private readonly orders: OrdersService) {}
+
+  @Get()
+  list(@CurrentStore() store: StoreRow, @Query() query: AdminOrdersQuery): Promise<PartnerOrder[]> {
+    return this.orders.partnerList(store.id, query.status);
+  }
+
+  @Get('counts')
+  counts(@CurrentStore() store: StoreRow): Promise<PartnerOrderCounts> {
+    return this.orders.partnerCounts(store.id);
+  }
+
+  @Get(':id')
+  details(@CurrentStore() store: StoreRow, @Param('id', ParseIntPipe) id: number): Promise<PartnerOrderDetails> {
+    return this.orders.partnerDetails(store.id, id);
+  }
+
+  @Post(':id/:action')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'accept, reject, ready, or collected (a pickup the customer took); 409 ORDER_STATUS when it already moved on' })
+  step(
+    @CurrentUser() me: AuthUser,
+    @CurrentStore() store: StoreRow,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('action') action: string,
+  ): Promise<PartnerOrderDetails> {
+    if (!(PARTNER_ACTIONS as readonly string[]).includes(action)) throw new NotFoundException();
+    return this.orders.partnerStep(store.id, me.id, id, action as PartnerAction);
   }
 }
 

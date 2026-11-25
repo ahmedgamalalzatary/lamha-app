@@ -8,7 +8,7 @@ import { EmptyState, LoadState, Table } from '@/components/ui';
 import { useAdminOrders } from './api';
 
 /** The tabs in Tawsilty's order: its capture shows the first three; the rest follow the order flow. */
-const TABS: OrderStatus[] = ['pending_review', 'preparing', 'out_for_delivery', 'ready', 'delivered', 'rejected', 'cancelled'];
+export const ORDER_TABS: OrderStatus[] = ['pending_review', 'preparing', 'out_for_delivery', 'ready', 'delivered', 'rejected', 'cancelled'];
 
 /**
  * الطلبات (contract §11, admin/admin-orders-list-sidebar-status-tabs-flags.png): status tabs with the
@@ -24,7 +24,7 @@ export function OrdersPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold">الطلبات</h1>
       <div role="tablist" className="flex flex-wrap gap-6 border-b border-tw-line">
-        {TABS.map((t) => (
+        {ORDER_TABS.map((t) => (
           <button
             key={t}
             type="button"

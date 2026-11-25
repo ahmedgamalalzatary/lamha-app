@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, ChevronLeft, Heart, Languages, LogOut, MapPin, Trash2, User } from 'lucide-react-native';
+import { Bell, ChevronLeft, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +19,21 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { meApi } from '../api/me';
 import { AccountRow } from '../components/AccountRow';
+import { usePartnerOrderCounts } from '@/features/partner/api';
+
+/** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
+function OrdersMadeRow() {
+  const t = useT();
+  const counts = usePartnerOrderCounts();
+  return (
+    <AccountRow
+      icon={ReceiptText}
+      label={t('partner.ordersMade')}
+      value={counts.data ? String(counts.data.delivered) : undefined}
+      onPress={() => router.push('/partner/orders')}
+    />
+  );
+}
 
 /**
  * "حسابي" (customer/account/account-top-wallet-points-invite.png and account-app-group-logout-footer.png).
@@ -93,6 +108,8 @@ export function AccountScreen() {
             <AddressesSheet visible={addressesOpen} onClose={() => setAddressesOpen(false)} />
           </>
         ) : null}
+
+        {user.role === 'partner' ? <OrdersMadeRow /> : null}
 
         {user.role === 'customer' ? (
           <>

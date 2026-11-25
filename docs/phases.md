@@ -36,7 +36,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 9 | English LTR and the language switch (project review F47) | 🔍 in-verify | none |
 | 10 | Cart | 🔍 in-verify | none |
 | 11 | Checkout and placing an order (cash only) | 🔍 in-verify | none (#3, #11 decided) |
-| 12 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens) |
+| 12 | Partner: orders and products (mobile and `/partner`) | 🔍 in-verify | none (uncaptured screens marked [Open]) |
 | 13 | Driver: shifts, offers and skips | ⬜ | 9 (driver home and current orders) |
 | 14 | Order status and the delivered view (live tracking out of scope) | ⬜ | none |
 | 15 | Ratings, complaints and support | ⬜ | |
@@ -276,6 +276,47 @@ Contract §8.6–§8.7: confirm the location on a map, the distance-based delive
 ## Phase 12: Partner: orders and products
 
 Contract §9 and §11.1: incoming orders live (socket), accept/prepare/ready, past orders with counts, product availability toggles, notifications, account with the orders-made count. Built twice on the same API: in the mobile app and in the web dashboard's partner area (`/partner`: orders, products, store settings the partner may edit). The partner edits only what contract §11.1 allows.
+
+Owner's answers before the phase (2026-11-25):
+- A pickup is closed by the store: after "تم التجهيز" it taps **تم الاستلام** when the customer takes it.
+- A new order vibrates the phone now; the ring sound comes with notifications (Phase 16).
+- `/partner` gets live orders through `socket.io-client` (installed in the web app).
+- Print: on `/partner` it opens the browser's print page; hidden on the phone.
+
+- **No migration.** The order's status and its history (`order_events`) already exist.
+- **Shared (TDD):** `nextStatus`: قبول and رفض on a new order, تم التجهيز on an accepted one, تم الاستلام only on a ready pickup. A delivery leaves "تم التجهيز" with the delivery man (Phase 13). The types for the cards, the details and the counts; the socket events; error `ORDER_STATUS`.
+- **API:**
+  - `GET /v1/partner/orders?status=`, `GET /v1/partner/orders/counts`, `GET /v1/partner/orders/:id`, `POST /v1/partner/orders/:id/{accept|reject|ready|collected}`. Only the partner's own store; another store's order is "not found".
+  - Each step locks the order, so two phones tapping at once move it once; the other gets 409 `ORDER_STATUS`. Each step is added to the history with who made it.
+  - Live socket (socket.io, same CORS rule as the API): a partner connects with the access token and hears only their store: `order.placed` with the card, `order.status` with the new status. Anyone else is disconnected.
+  - `PATCH /v1/partner/store` takes only hours, closed now and the cover; any other field is refused. `/v1/partner/categories` and `/v1/partner/products` are the admin's menu code held to the partner's store.
+- **Dashboard `/partner`:**
+  - الطلبات: status tabs in the admin table's look, "متصل" while live. A new order opens the popup (قبول, رفض). التفاصيل opens the details with the next step and طباعة.
+  - المنتجات: the admin's menu page for the partner's own store, without the store picker.
+  - المتجر: hours, مغلق الآن, cover.
+  - الحساب: "الطلبات اللي اتعملت".
+  - التقارير stays "coming soon" until Phase 25.
+- **App (partner tabs):**
+  - الرئيسية: "الطلبات الجديده" with the cards. A new order vibrates and opens the popup over any tab.
+  - The details screen (`/partner-order/:id`) as in the photo, with "استلم من المندوب" and the 5-minute note, then تم التجهيز, or تم الاستلام for a ready pickup.
+  - طلباتى: status tabs, same cards. منتجات: search, category tabs, the متاح switch.
+  - حسابي: "الطلبات اللي اتعملت" with the count; it opens طلباتى.
+- **[Open] not captured:**
+  - طلباتى, منتجات and every `/partner` page (they use the admin pages' look).
+  - The live connection dot and "متصل"/"غير متصل".
+  - "احصل على مساعدة" shows "الدعم متاح قريباً" until support exists (Phase 15).
+  - "لا توجد طلبات جديدة", the pickup wording on the details ("استلام من المحل", "موعد الاستلام").
+  - The print and mute icons on the phone wait for a printer and the ring sound.
+- **[Derived]**
+  - "الطلبات اللي اتعملت" counts the store's delivered orders.
+  - "استلم من المندوب" shows on deliveries unless the store's option is 3 (the delivery man pays nothing).
+  - The popup shows the oldest unanswered new order; closing it (back button, Escape) leaves it in قيد المراجعة.
+- **Changed from the plan:** "notifications" (push) stays with Phase 16; the live socket covers the open app.
+- **Phone verification:**
+  - Sign in as a partner, place an order from a customer phone: the partner phone vibrates and the popup opens; قبول.
+  - Open the details, تم التجهيز. A pickup: تم الاستلام.
+  - منتجات: switch a product off and see it greyed for the customer.
+  - The same on `/partner` in the browser, and طباعة.
 
 ## Phase 13: Driver: shifts, offers and skips
 

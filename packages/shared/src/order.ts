@@ -140,3 +140,81 @@ export interface AdminOrder extends CustomerOrder {
   appShare: number;
   storeFromDriver: number;
 }
+
+// The store's side of an order (contract §9, §11.1).
+
+/** What a store does to an order: قبول, رفض, تم التجهيز, and تم الاستلام for a pickup the customer took. */
+export const PARTNER_ACTIONS = ['accept', 'reject', 'ready', 'collected'] as const;
+export type PartnerAction = (typeof PARTNER_ACTIONS)[number];
+
+/**
+ * The status an action moves the order to, or null when it may not happen now. A delivery leaves
+ * "تم التجهيز" with the delivery man (Phase 13); a pickup is closed by the store when the customer
+ * takes it [Owner, 2026-11-25].
+ */
+export function nextStatus(status: OrderStatus, action: PartnerAction, mode: CartMode): OrderStatus | null {
+  if (status === 'pending_review') return action === 'accept' ? 'preparing' : action === 'reject' ? 'rejected' : null;
+  if (status === 'preparing') return action === 'ready' ? 'ready' : null;
+  if (status === 'ready' && mode === 'pickup') return action === 'collected' ? 'delivered' : null;
+  return null;
+}
+
+/** An order card in the store's lists: الطلبات الجديده and طلباتى. */
+export interface PartnerOrder {
+  id: number;
+  code: string;
+  status: OrderStatus;
+  mode: CartMode;
+  scheduledFor: string | null;
+  count: number;
+  itemsTotal: number;
+  total: number;
+  /** ملاحظات العميل, shown in red. */
+  note: string;
+  /** طريقة الدفع (§9): cash only for now (§15.1 #2). */
+  paymentMethod: 'cash';
+  createdAt: string;
+}
+
+/** A product line as it was ordered. */
+export interface OrderLine {
+  name: string;
+  options: string[];
+  removedIngredients: string[];
+  image: string | null;
+  unitPrice: number;
+  quantity: number;
+}
+
+/** The store's order details screen (§9). */
+export interface PartnerOrderDetails extends PartnerOrder {
+  customer: { name: string; phone: string };
+  /** التوصيل إلى; null for a pickup. */
+  addressText: string | null;
+  deliveryFee: number;
+  lines: OrderLine[];
+  payoutOption: PayoutOption;
+  /** "استلم من المندوب": what the delivery man pays the store in cash. */
+  storeFromDriver: number;
+  /** معلومات المندوب, once one takes the order (Phase 13). */
+  driver: { name: string } | null;
+}
+
+/** How many of the store's orders are in each status (طلباتى tabs, the account's orders count). */
+export type PartnerOrderCounts = Record<OrderStatus, number>;
+
+/** The live socket (§12 S3): events sent to a store's partners. */
+export const ORDER_SOCKET_EVENTS = {
+  /** A customer placed an order at this store: { order: PartnerOrder }. */
+  placed: 'order.placed',
+  /** One of the store's orders changed status: { id, status }. */
+  status: 'order.status',
+} as const;
+
+/** What a partner may change on their store (§11.1): hours, open now and the cover. */
+export interface PartnerStoreInput {
+  opensAt: string;
+  closesAt: string;
+  closedNow: boolean;
+  cover: string | null;
+}

@@ -586,6 +586,9 @@ importers:
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
+      socket.io-client:
+        specifier: ^4.8.4
+        version: 4.8.4(supports-color@7.2.0)
     devDependencies:
       '@node-rs/argon2':
         specifier: ^2.2.2

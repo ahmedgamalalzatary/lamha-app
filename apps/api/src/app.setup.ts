@@ -3,12 +3,28 @@ import { type INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost } from '@nestjs/core';
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import type { Server, ServerOptions } from 'socket.io';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { UPLOADS_DIR } from '@tawsela/shared';
 import helmet from 'helmet';
 import { DbErrorFilter } from './common/filters/db-error.filter.js';
 import { ApiValidationPipe } from './common/pipes/api-validation.pipe.js';
 import type { Env } from './core/config/env.js';
+
+/** socket.io with the HTTP API's CORS rule. */
+class CorsIoAdapter extends IoAdapter {
+  constructor(
+    app: INestApplication,
+    private readonly cors: { origin: string[] | boolean; credentials: boolean },
+  ) {
+    super(app);
+  }
+
+  override createIOServer(port: number | undefined, options?: ServerOptions): Server {
+    return super.createIOServer(port, { ...options, cors: this.cors } as ServerOptions);
+  }
+}
 
 /** Everything main.ts sets on the app. e2e tests call this too, so they test the real setup. */
 export function configureApp(app: INestApplication): void {
@@ -23,7 +39,10 @@ export function configureApp(app: INestApplication): void {
   // The phone app needs no CORS. Browsers get the listed origins; with none listed,
   // any origin is allowed outside production, and none in production.
   const origins = config.get('CORS_ORIGINS', { infer: true });
-  app.enableCors({ origin: origins.length ? origins : dev, credentials: true });
+  const cors = { origin: origins.length ? origins : dev, credentials: true };
+  app.enableCors(cors);
+  // The live orders socket follows the same origins.
+  app.useWebSocketAdapter(new CorsIoAdapter(app, cors));
 
   app.setGlobalPrefix('v1', { exclude: ['docs', 'docs-json'] });
 

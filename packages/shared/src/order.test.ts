@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deliveryFeeFor, deliverySlots, payout, slotLabel } from './order.js';
+import { deliveryFeeFor, deliverySlots, nextStatus, PARTNER_ACTIONS, payout, slotLabel } from './order.js';
 
 const rule = { baseFee: 20, baseKm: 2, perKm: 10 };
 
@@ -78,5 +78,29 @@ describe('slotLabel', () => {
     expect(slotLabel(12 * 60)).toBe('12:00 PM');
     expect(slotLabel(24 * 60 + 30)).toBe('12:30 AM');
     expect(slotLabel(9 * 60)).toBe('9:00 AM');
+  });
+});
+
+describe('nextStatus (the store\'s steps, contract §9)', () => {
+  it('a new order is accepted or rejected', () => {
+    expect(nextStatus('pending_review', 'accept', 'delivery')).toBe('preparing');
+    expect(nextStatus('pending_review', 'reject', 'delivery')).toBe('rejected');
+    expect(nextStatus('pending_review', 'ready', 'delivery')).toBeNull();
+  });
+
+  it('an accepted order becomes ready; only then can a pickup be handed over', () => {
+    expect(nextStatus('preparing', 'ready', 'delivery')).toBe('ready');
+    expect(nextStatus('preparing', 'collected', 'pickup')).toBeNull();
+    expect(nextStatus('ready', 'collected', 'pickup')).toBe('delivered');
+  });
+
+  it('a delivery is handed to the delivery man, never closed by the store', () => {
+    expect(nextStatus('ready', 'collected', 'delivery')).toBeNull();
+  });
+
+  it('nothing moves a finished order', () => {
+    for (const status of ['delivered', 'rejected', 'cancelled', 'out_for_delivery'] as const) {
+      for (const action of PARTNER_ACTIONS) expect(nextStatus(status, action, 'pickup')).toBeNull();
+    }
   });
 });

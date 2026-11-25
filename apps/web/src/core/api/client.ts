@@ -7,6 +7,9 @@ import { createApi, type TokenStore } from './create-api';
 /** NEXT_PUBLIC_API_URL from the root .env. */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
 
+/** The API's server without /v1: the live orders socket connects there. */
+export const apiOrigin = new URL(API_URL).origin;
+
 /** An uploaded image's path ("/uploads/…") as a full URL on the API's server. */
 export const mediaUrl = (path: string) => new URL(path, API_URL).href;
 

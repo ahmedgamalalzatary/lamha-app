@@ -1,5 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { PartnerOrdersScreen } from '@/features/partner/PartnerOrdersScreen';
 
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.partnerOrders" />;
-}
+export default PartnerOrdersScreen;

@@ -15,6 +15,7 @@ import type {
   ProductOptionsInput,
   StoreInput,
 } from '@tawsela/shared';
+import { createContext, useContext } from 'react';
 import { api } from '@/core/api/client';
 
 /** Every catalog query starts with this key, so a change can refresh them all. */
@@ -62,42 +63,90 @@ export const useSetPartnerDisabled = () =>
 
 // Categories and products
 
-export const useCategories = (storeId: number | undefined) =>
-  useQuery({ queryKey: key('categories', storeId), queryFn: () => api.request<Category[]>(`/admin/stores/${storeId}/categories`), enabled: storeId !== undefined });
+/**
+ * Where a store's menu lives: the admin reaches any store's under /admin/stores/:id, a partner only
+ * their own under /partner (contract §11.1). The same menu screens serve both.
+ */
+export interface MenuPaths {
+  /** The store's categories and products lists. */
+  store: (storeId: number) => string;
+  /** One category or product, by id. */
+  item: string;
+}
 
-export const useCreateCategory = () =>
-  useCatalogMutation(({ storeId, ...body }: { storeId: number; name: string; image?: string | null; parentId?: number | null }) =>
-    api.request<Category>(`/admin/stores/${storeId}/categories`, { method: 'POST', body }),
+export const ADMIN_MENU: MenuPaths = { store: (storeId) => `/admin/stores/${storeId}`, item: '/admin' };
+export const PARTNER_MENU: MenuPaths = { store: () => '/partner', item: '/partner' };
+
+const MenuPathsContext = createContext<MenuPaths>(ADMIN_MENU);
+export const MenuPathsProvider = MenuPathsContext.Provider;
+const useMenuPaths = () => useContext(MenuPathsContext);
+
+export function useCategories(storeId: number | undefined) {
+  const paths = useMenuPaths();
+  return useQuery({
+    queryKey: key('categories', storeId),
+    queryFn: () => api.request<Category[]>(`${paths.store(storeId!)}/categories`),
+    enabled: storeId !== undefined,
+  });
+}
+
+export function useCreateCategory() {
+  const paths = useMenuPaths();
+  return useCatalogMutation(({ storeId, ...body }: { storeId: number; name: string; image?: string | null; parentId?: number | null }) =>
+    api.request<Category>(`${paths.store(storeId)}/categories`, { method: 'POST', body }),
   );
+}
 
-export const useUpdateCategory = () =>
-  useCatalogMutation(({ id, ...body }: { id: number; name?: string; image?: string | null; parentId?: number | null }) =>
-    api.request<Category>(`/admin/categories/${id}`, { method: 'PATCH', body }),
+export function useUpdateCategory() {
+  const paths = useMenuPaths();
+  return useCatalogMutation(({ id, ...body }: { id: number; name?: string; image?: string | null; parentId?: number | null }) =>
+    api.request<Category>(`${paths.item}/categories/${id}`, { method: 'PATCH', body }),
   );
+}
 
-export const useDeleteCategory = () => useCatalogMutation((id: number) => api.request<void>(`/admin/categories/${id}`, { method: 'DELETE' }));
+export function useDeleteCategory() {
+  const paths = useMenuPaths();
+  return useCatalogMutation((id: number) => api.request<void>(`${paths.item}/categories/${id}`, { method: 'DELETE' }));
+}
 
-export const useOrderCategories = () =>
-  useCatalogMutation(({ storeId, ids }: { storeId: number; ids: number[] }) =>
-    api.request<Category[]>(`/admin/stores/${storeId}/categories/order`, { method: 'PUT', body: { ids } }),
+export function useOrderCategories() {
+  const paths = useMenuPaths();
+  return useCatalogMutation(({ storeId, ids }: { storeId: number; ids: number[] }) =>
+    api.request<Category[]>(`${paths.store(storeId)}/categories/order`, { method: 'PUT', body: { ids } }),
   );
+}
 
-export const useProducts = (storeId: number | undefined) =>
-  useQuery({ queryKey: key('products', storeId), queryFn: () => api.request<Product[]>(`/admin/stores/${storeId}/products`), enabled: storeId !== undefined });
+export function useProducts(storeId: number | undefined) {
+  const paths = useMenuPaths();
+  return useQuery({
+    queryKey: key('products', storeId),
+    queryFn: () => api.request<Product[]>(`${paths.store(storeId!)}/products`),
+    enabled: storeId !== undefined,
+  });
+}
 
 export const useInactiveProducts = () => useQuery({ queryKey: key('inactive'), queryFn: () => api.request<AdminProduct[]>('/admin/products/inactive') });
 
 export type ProductFields = Pick<Product, 'categoryId' | 'name' | 'description' | 'price' | 'unit' | 'image' | 'active'> & Partial<ProductOptionsInput>;
 
-export const useCreateProduct = () =>
-  useCatalogMutation(({ storeId, ...body }: ProductFields & { storeId: number }) =>
-    api.request<Product>(`/admin/stores/${storeId}/products`, { method: 'POST', body }),
+export function useCreateProduct() {
+  const paths = useMenuPaths();
+  return useCatalogMutation(({ storeId, ...body }: ProductFields & { storeId: number }) =>
+    api.request<Product>(`${paths.store(storeId)}/products`, { method: 'POST', body }),
   );
+}
 
-export const useUpdateProduct = () =>
-  useCatalogMutation(({ id, ...body }: Partial<ProductFields> & { id: number }) => api.request<Product>(`/admin/products/${id}`, { method: 'PATCH', body }));
+export function useUpdateProduct() {
+  const paths = useMenuPaths();
+  return useCatalogMutation(({ id, ...body }: Partial<ProductFields> & { id: number }) =>
+    api.request<Product>(`${paths.item}/products/${id}`, { method: 'PATCH', body }),
+  );
+}
 
-export const useDeleteProduct = () => useCatalogMutation((id: number) => api.request<void>(`/admin/products/${id}`, { method: 'DELETE' }));
+export function useDeleteProduct() {
+  const paths = useMenuPaths();
+  return useCatalogMutation((id: number) => api.request<void>(`${paths.item}/products/${id}`, { method: 'DELETE' }));
+}
 
 // Cuisines and home tiles
 

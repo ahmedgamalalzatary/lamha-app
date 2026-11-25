@@ -1,5 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { PartnerProductsScreen } from '@/features/partner/PartnerProductsScreen';
 
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.products" />;
-}
+export default PartnerProductsScreen;

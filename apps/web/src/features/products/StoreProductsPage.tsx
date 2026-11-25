@@ -59,7 +59,7 @@ export function StoreProductsPage({ initialStoreId }: { initialStoreId?: number 
   );
 }
 
-function Categories({ storeId }: { storeId: number }) {
+export function Categories({ storeId }: { storeId: number }) {
   const categories = useCategories(storeId);
   const order = useOrderCategories();
   const remove = useDeleteCategory();
@@ -170,7 +170,7 @@ function CategoryDialog({ storeId, categories, category, onClose }: { storeId: n
   );
 }
 
-function Products({ storeId }: { storeId: number }) {
+export function Products({ storeId }: { storeId: number }) {
   const categories = useCategories(storeId);
   const products = useProducts(storeId);
   const update = useUpdateProduct();

@@ -1,5 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { PartnerHomeScreen } from '@/features/partner/PartnerHomeScreen';
 
-export default function Screen() {
-  return <PlaceholderScreen title="tabs.home" />;
-}
+export default PartnerHomeScreen;

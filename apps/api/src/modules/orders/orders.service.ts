@@ -9,12 +9,19 @@ import {
   deliverySlots,
   distanceKm,
   type LatLng,
+  nextStatus,
+  ORDER_SOCKET_EVENTS,
+  ORDER_STATUSES,
   type OrderStatus,
+  type PartnerAction,
+  type PartnerOrder,
+  type PartnerOrderCounts,
+  type PartnerOrderDetails,
   payout,
   type PlacedOrder,
   type PlaceOrderInput,
 } from '@tawsela/shared';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count as countRows, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { ApiException } from '../../common/api-exception.js';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import type { AddressRow } from '../addresses/addresses.schema.js';
@@ -25,6 +32,7 @@ import { type StoreRow, stores } from '../catalog/catalog.schema.js';
 import { cairoMinuteOfDay, locationOf } from '../catalog/store-view.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { users } from '../users/users.schema.js';
+import { OrdersGateway } from './orders.gateway.js';
 import { orderEvents, orderLines, type OrderRow, orders } from './orders.schema.js';
 
 const cents = (n: number) => Math.round(n * 100) / 100;
@@ -50,6 +58,7 @@ export class OrdersService {
     private readonly carts: CartService,
     private readonly addresses: AddressesService,
     private readonly settings: SettingsService,
+    private readonly live: OrdersGateway,
   ) {}
 
   quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
@@ -64,8 +73,9 @@ export class OrdersService {
    * locked first, so racing taps and cart edits run one after another; a repeated request id gives
    * back the order it already placed.
    */
-  place(userId: number, input: PlaceOrderInput): Promise<PlacedOrder> {
-    return this.db.transaction(async (tx) => {
+  async place(userId: number, input: PlaceOrderInput): Promise<PlacedOrder> {
+    let newId: number | undefined;
+    const placed = await this.db.transaction(async (tx) => {
       const [user] = await tx.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).for('update');
       if (!user) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
       const [placed] = await tx.select({ id: orders.id }).from(orders).where(and(eq(orders.customerId, userId), eq(orders.requestId, input.requestId)));
@@ -131,8 +141,85 @@ export class OrdersService {
       );
       await tx.insert(orderEvents).values({ orderId, status: 'pending_review', byUserId: userId });
       await this.carts.clear(tx, bill.cartId);
+      newId = orderId;
       return { order: await this.customerOrder(tx, orderId) };
     });
+    // Only once it is saved, and only the first time: the store's phones ring for it (§9).
+    if (newId !== undefined) {
+      const [card] = await this.partnerCards(eq(orders.id, newId));
+      this.live.toStore(placed.order.store.id, ORDER_SOCKET_EVENTS.placed, { order: card });
+    }
+    return placed;
+  }
+
+  // The store's side (contract §9, §11.1). Every query is limited to the partner's own store.
+
+  /** الطلبات الجديده and طلباتى: the store's orders, newest first, optionally one status. */
+  partnerList(storeId: number, status?: OrderStatus): Promise<PartnerOrder[]> {
+    return this.partnerCards(and(eq(orders.storeId, storeId), status ? eq(orders.status, status) : undefined));
+  }
+
+  async partnerCounts(storeId: number): Promise<PartnerOrderCounts> {
+    const rows = await this.db
+      .select({ status: orders.status, n: countRows() })
+      .from(orders)
+      .where(eq(orders.storeId, storeId))
+      .groupBy(orders.status);
+    const counts = Object.fromEntries(ORDER_STATUSES.map((s) => [s, 0])) as PartnerOrderCounts;
+    for (const { status, n } of rows) counts[status] = n;
+    return counts;
+  }
+
+  async partnerDetails(storeId: number, id: number): Promise<PartnerOrderDetails> {
+    const [row] = await this.db
+      .select({ order: orders, customer: { firstName: users.firstName, lastName: users.lastName, phone: users.phone } })
+      .from(orders)
+      .innerJoin(users, eq(users.id, orders.customerId))
+      .where(and(eq(orders.id, id), eq(orders.storeId, storeId)));
+    if (!row) throw orderNotFound();
+    const lines = await this.db.select().from(orderLines).where(eq(orderLines.orderId, id)).orderBy(asc(orderLines.id));
+    const { order, customer } = row;
+    return {
+      ...toPartnerOrder(order, lines.reduce((n, l) => n + l.quantity, 0)),
+      customer: { name: `${customer.firstName} ${customer.lastName}`.trim(), phone: order.phone ?? customer.phone },
+      addressText: order.addressText,
+      deliveryFee: order.deliveryFee,
+      lines: lines.map((l) => ({
+        name: l.name,
+        options: l.options,
+        removedIngredients: l.removedIngredients,
+        image: l.image,
+        unitPrice: l.unitPrice,
+        quantity: l.quantity,
+      })),
+      payoutOption: order.payoutOption,
+      storeFromDriver: order.storeFromDriver,
+      driver: null,
+    };
+  }
+
+  /**
+   * قبول, رفض, تم التجهيز, تم الاستلام. The order row is locked, so two phones tapping at once move it
+   * once; the loser gets ORDER_STATUS and sees the order as it is now.
+   */
+  async partnerStep(storeId: number, userId: number, id: number, action: PartnerAction): Promise<PartnerOrderDetails> {
+    const status = await this.db.transaction(async (tx) => {
+      const [row] = await tx.select().from(orders).where(and(eq(orders.id, id), eq(orders.storeId, storeId))).for('update');
+      if (!row) throw orderNotFound();
+      const next = nextStatus(row.status, action, row.mode);
+      if (!next) throw new ApiException(HttpStatus.CONFLICT, 'ORDER_STATUS', `The order is ${row.status}; it cannot be moved by "${action}"`);
+      await tx.update(orders).set({ status: next }).where(eq(orders.id, id));
+      await tx.insert(orderEvents).values({ orderId: id, status: next, byUserId: userId });
+      return next;
+    });
+    this.live.toStore(storeId, ORDER_SOCKET_EVENTS.status, { id, status });
+    return this.partnerDetails(storeId, id);
+  }
+
+  private async partnerCards(where: SQL | undefined): Promise<PartnerOrder[]> {
+    const rows = await this.db.select().from(orders).where(where).orderBy(desc(orders.id)).limit(200);
+    const counts = await this.counts(this.db, rows.map((r) => r.id));
+    return rows.map((row) => toPartnerOrder(row, counts.get(row.id) ?? 0));
   }
 
   /** طلباتي: the customer's orders, newest first. */
@@ -223,6 +310,24 @@ export class OrdersService {
 /** The address as the store and the delivery man read it: "شارع 2، مبنى 2، الدور 3، شقه 2، temp". */
 const addressText = (a: AddressRow) =>
   [a.street, a.building, a.floor && `الدور ${a.floor}`, a.apartment, a.landmark].filter((part) => part?.trim()).join('، ');
+
+const orderNotFound = () => new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'No order of this store has this id');
+
+function toPartnerOrder(row: OrderRow, count: number): PartnerOrder {
+  return {
+    id: row.id,
+    code: codeOf(row.id),
+    status: row.status,
+    mode: row.mode,
+    scheduledFor: row.scheduledFor?.toISOString() ?? null,
+    count,
+    itemsTotal: row.itemsTotal,
+    total: row.total,
+    note: row.note,
+    paymentMethod: 'cash',
+    createdAt: row.createdAt.toISOString(),
+  };
+}
 
 function toCustomerOrder(row: OrderRow, store: CustomerOrder['store'], count: number): CustomerOrder {
   return {
