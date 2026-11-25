@@ -35,14 +35,14 @@ The order in which the real product is built. Each phase points at the contract 
 | 8 | Addresses, zones and the map picker | 🔍 in-verify | Google Maps key |
 | 9 | English LTR and the language switch (project review F47) | 🔍 in-verify | none |
 | 10 | Cart | 🔍 in-verify | none |
-| 11 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
-| 12 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens), 11 |
-| 13 | Driver: shifts, offers and skips | ⬜ | 5, 9 (driver home and current orders), 11 |
-| 14 | Live tracking and the delivered view | ⬜ | 9 (live tracking; the delivered view is captured) |
+| 11 | Checkout and placing an order (cash only) | ⬜ | none (#3, #11 decided) |
+| 12 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens) |
+| 13 | Driver: shifts, offers and skips | ⬜ | 9 (driver home and current orders) |
+| 14 | Order status and the delivered view (live tracking out of scope) | ⬜ | none |
 | 15 | Ratings, complaints and support | ⬜ | |
 | 16 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
 | 17 | Wallet (top-up excluded for now) | ⬜ | none |
-| 18 | Points | ⬜ | 4 |
+| 18 | Points | ⬜ | none (#4 decided) |
 | 19 | Invite friends | ⬜ | |
 | 20 | Offers, coupons and banners | ⬜ | |
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
@@ -237,7 +237,7 @@ Contract §8.6: one store per cart, steppers, delete confirm, upsell row, note s
 
 ## Phase 11: Checkout and placing an order
 
-Contract §8.6–§8.7: confirm the location on a map, delivery fee, payment method (cash on delivery only; card and e-wallet excluded for now), coupon, place order; server-side totals; order created for the store.
+Contract §8.6–§8.7: confirm the location on a map, the distance-based delivery fee and the store's payment option (§8.7), points as payment once Phase 18 exists, payment method (cash on delivery only; card and e-wallet excluded for now), coupon, place order; server-side totals; order created for the store.
 
 ## Phase 12: Partner: orders and products
 
@@ -247,9 +247,9 @@ Contract §9 and §11.1: incoming orders live (socket), accept/prepare/ready, pa
 
 Contract §10: driver accounts generated from the dashboard or the admin's mobile app (password shown once, reset, disable); shift schedule from the admin, start unlocks 30 min before, end and extend, offers with details, accept/skip with warning and suspension, order steps to delivered; dispatch from the dashboard (assign driver, "بدون كابتن" flag).
 
-## Phase 14: Live tracking and the delivered view
+## Phase 14: Order status and the delivered view
 
-Contract §8.8: live status and driver location while active; plain details view once delivered; reorder inside طلباتي.
+Contract §8.8: the order's status while it is active (no driver location: live tracking is out of scope); the plain details view once delivered; reorder inside طلباتي.
 
 ## Phase 15: Ratings, complaints and support
 

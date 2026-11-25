@@ -63,7 +63,7 @@ Every feature module of the product. Each one is detailed in the section shown a
 | C6 | Addresses and map | Saved addresses, map picker, address form, delivery-zone check | 8.9 | Tawsilty | 8 |
 | C7 | Cart | Lines, upsell, note, payment summary, pickup where allowed | 8.6 | Tawsilty, Client | 10 |
 | C8 | Checkout and payment | Address, now or scheduled slot, wallet toggle, cash on delivery only (e-wallet and card excluded for now), coupon code, service fee, place order; location confirm on the map | 8.7 | Tawsilty, Client | 11 |
-| C9 | Orders | Orders list, live tracking, delivered details view, reorder | 8.8 | Tawsilty, Client | 14 |
+| C9 | Orders | Orders list, order status (live tracking out of scope), delivered details view, reorder | 8.8 | Tawsilty, Client | 14 |
 | C10 | Ratings | Stars, good/bad suggestion chips, written reason | 8.8 | Client | 15 |
 | C11 | Support | Order problem → ticket, suggestion, complaint (general or past order), contact us | 8.8, 8.14 | Tawsilty, Client | 15 |
 | C12 | Notifications | Notification list, push, notification settings (no SMS toggle, since no SMS is sent) | 8.14 | Tawsilty | 16 |
@@ -444,10 +444,27 @@ Built in Phase 7: the admin sets each product's option groups (title, required, 
 
 E-wallet and card providers: excluded for now (§15.1 #2).
 
+#### Delivery fee [Owner, 2026-11-25, §15.1 #3]
+
+- Admin settings (الإعدادات): a **base fee** for the first **base distance**, then a fee **per extra km**. Example: 20 ج.م for the first 2 km, then 10 ج.م for each km over.
+- The distance is a straight line from the store's location to the delivery address. A started kilometre counts as a whole one: 2.3 km costs 20 + 10 = 30 ج.م.
+- The customer always pays this global fee. It is shown on the store lists and at checkout for the chosen address.
+- The admin can give one delivery man his own base fee, base distance and per-km fee. That changes only **his earnings** on the order, never what the customer pays. A delivery man without his own setting earns the global fee.
+
+#### Who pays whom (cash orders) [Owner, 2026-11-25, §15.1 #11]
+
+The admin picks one of three options. It is a global setting, and a store can have its own; the app's percentage in option 2 works the same way (global, with a per-store value).
+
+1. **Fee only:** the delivery man keeps his delivery fee and pays the store the rest (the full items total).
+2. **Fee + app share:** the delivery man keeps his delivery fee and the app's percentage of the **items total**, which he owes to the app. He pays the store the items total minus that percentage. Example: 10% on 205 ج.م → the store gets 184.5 (the partner photos, §9).
+3. **Nothing to the store:** the delivery man keeps his fee and hands the rest to the app. The app settles with the store later; the dashboard shows what the app owes each store.
+
+Whatever the customer paid with points (§8.16), the app owes to the party that would have received that cash.
+
 ### 8.8 Orders (طلباتي)
 
 - [Tawsilty] List of orders; empty "لا توجد طلبات — ابدأ بطلب منتجاتك المفضلة الآن".
-- Live order tracking: [Open] (not seen yet).
+- Live order tracking: **out of scope** [Owner, 2026-11-25] (§15.2). The order shows its status only.
 - [Client] Once an order is **delivered**, the customer no longer sees the tracking; they see a plain details view (items, totals, address, store).
 - [Tawsilty] That **delivered details view** ("تفاصيل الطلب", back arrow): a green "تم التوصيل" pill with a tick; the store logo and name, the date (11/13/2026) and "رقم الطلب 494358"; "عنوان التوصيل" with a pin; "معلومات المندوب" with "الاسم" and the captain's name; "تفاصيل الطلب": "1 × name" lines with prices; المجموع, رسوم التوصيل, رسوم الخدمة; **قيمة الطلب** (bold); طريقة الدفع ("الدفع عند الاستلام"); وقت التوصيل ("الآن"). Reference: `customer/orders/order-details-delivered-driver-fees-payment.jpg`.
 - [Tawsilty] **Rating screen** (full screen, ✕ top-left, soft beige top): the store logo, "كيف كان طلبك من <store>؟", five stars with a word under them (1 star = "مخيبة للآمال"). For a low rating: "ما هي المشكلة التي واجهتها مع طلبك؟" with outlined chips عنصر مفقود · طلب خاطئ · الطعام غير ساخن · المذاق غير جيد · الكمية غير كافية · التغليف غير مناسب, the red hint "اختر سبب واحد على الأقل", a "أخبرنا المزيد" text box, and a grey "أكمل" button until a reason is picked. Reference: `customer/orders/rating-one-star-problem-chips-tell-more.jpg`. [Client] wants this, with the chips changing between good and bad ratings and the written reason always shown.
@@ -533,7 +550,14 @@ Orange balance card ("0.0 ج.م"), "شحن المحفظة"; tabs الإضافا�
 
 ### 8.16 Points (نقاطي) [Tawsilty]
 
-Orange card: balance, progress bar, "باقي <n> نقطة للاستبدال", قيمة نقاطك (EGP value) and الحد الأدنى للاستبدال (240 نقطة). Tabs المكتسبة / المنفقة. Points are earned per order. Earn and redeem rates: [Open].
+Orange card: balance, progress bar, "باقي <n> نقطة للاستبدال", قيمة نقاطك (EGP value) and الحد الأدنى للاستبدال (240 نقطة). Tabs المكتسبة / المنفقة. Points are earned per order.
+
+[Owner, 2026-11-25, §15.1 #4] The rules are global admin settings, with nothing set per customer:
+- **Rate:** "X ج.م = Y نقطة". It works the same both ways: what earns a point is also what a point pays.
+- **Earning:** only the cash paid for the items earns points, once the order is delivered. The delivery fee and any part paid with points earn nothing.
+- **Spending:** points can pay the whole order, delivery fee included. Example: an order of 120 ج.م, with points worth up to 100 ج.م, takes all 100 and leaves 20 to pay in cash.
+- **Minimum to spend:** an admin setting (default 100 points). It replaces Tawsilty's 240.
+- Points never expire.
 
 ### 8.17 Invite friends (ادعُ أصدقاءك) [Tawsilty]
 
@@ -583,15 +607,19 @@ Tawsilty's driver app is not public. Three of its screens came in the client's W
   - **ادفع نقداً للبائع <amount>** in orange: what the captain pays the store.
   - **المبلغ — تحصيل النقود <amount>**: what the captain collects from the customer.
   - Orange button **خارج للتوصيل**.
-  - In the example, the captain pays the store 270, which is the full items total (2 products, 270). The partner photos (§9) show the store collecting 90% of the items total. Which amount is right: [Open].
+  - In the example, the captain pays the store 270, which is the full items total (2 products, 270). The partner photos (§9) show the store collecting 90% of the items total. [Owner, 2026-11-25] Both are right: the amount follows the store's payment option (§8.7, "Who pays whom").
 - **Order history** ("طلباتى", back arrow): two date pickers (from, to), an outlined blue "بحث" button; a card per order: "الطلب #500569", a status pill (ملغي red, تم التوصيل green), the store name, "الاجمالى <items count>", a red "تقديم شكوى" button, the date ("Wednesday, 18 November 2026") and the earning in green ("+ 25.0 ج.م"). A grey bottom panel: **اجمالى الارباح** and **عدد الطلبات المكتملة**.
 
 **Rules:**
 
 - **Sign-in** with the phone + password the admin generated (§2); no sign-up. A forgotten password is reset by the admin.
 - **Shifts**: the driver cannot start work at any time. The admin sets shift times; the "ابدأ الشفت" button unlocks **30 minutes** before the shift starts. [Client] reference from another app (`client-requests/client-driver-shift-reserved-start-reference-other-app.jpg`): a "نوبة عمل محجوزة" card with "ستبدأ في 9 دقائق", the time range, the place, "عرض على الخريطة", and a "بدء نوبة العمل" button.
-- When the shift ends, the driver gets no new orders unless they **extend the shift** (by 60 minutes).
-- **Skips**: skipping offers is counted. After **2** skips the driver gets a warning notification; after **3** they are **suspended for 15 minutes**. (The numbers are admin settings; confirm the defaults with the client.)
+- [Owner, 2026-11-25, §15.1 #5] **Schedule:** a global weekly schedule. For each of the 7 days it holds one time range, which may pass midnight, or no shift that day. The admin can give one delivery man his own schedule; without one, he follows the global schedule.
+- **Starting:** the delivery man can start from 30 minutes before the shift until 15 minutes after it starts. After that he cannot start it; only the admin can start it for him. Delivery men are paid by delivery fees only, so the early 30 minutes are not counted as shift time.
+- When the shift ends, the driver gets no new orders unless they **extend the shift**: +60 minutes each time, at most 3 times (3 hours). Both numbers are admin settings.
+- **Offers:** an offer waits **60 seconds** (an admin setting) for an answer, then goes to another delivery man. An offer left unanswered counts as a skip.
+- **Skips**: skipping offers is counted. After **2** skips the driver gets a warning notification; after **3** they are **suspended for 15 minutes**. All three numbers are admin settings.
+- **Speed points** [Owner, 2026-11-25]: the time from accepting the offer to delivering it, divided by the store-to-customer km (§8.7), gives his minutes per km. The admin sets levels, for example up to 10 min/km earns X points and up to 12 min/km earns Y. The admin also sets what a point is worth in ج.م, and that cash is added to what the app owes him.
 - **Order offer and details**: store name and address, customer name, phone and address, items with prices, what to pay the store and what to collect. Steps: accept → at the store → "خارج للتوصيل" → delivered.
 - **Order history** (سجل الطلبات) with a date range and totals, and a complaint button per order. It replaces the earnings screen.
 - **Fines and deductions** (الخصومات والغرامات): every deduction with its amount, reason, date and order, so the driver always knows why money was taken.
@@ -694,7 +722,7 @@ First draft; each phase finalises its tables.
 
 ## 13. API
 
-REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver location. Modules follow the features: `auth`, `me`, `addresses`, `catalog` (verticals, stores, products, search), `cart`, `orders`, `ratings`, `support`, `wallet`, `points`, `invites`, `marketing` (banners, coupons, offers, wheel), `pharmacy`, `partner`, `driver` (shifts, offers, skips, fines), `notifications`, `admin/*`. Endpoints are listed in each phase.
+REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver location: live tracking is out of scope). Modules follow the features: `auth`, `me`, `addresses`, `catalog` (verticals, stores, products, search), `cart`, `orders`, `ratings`, `support`, `wallet`, `points`, `invites`, `marketing` (banners, coupons, offers, wheel), `pharmacy`, `partner`, `driver` (shifts, offers, skips, fines), `notifications`, `admin/*`. Endpoints are listed in each phase.
 
 ---
 
@@ -717,21 +745,22 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 |---|---|---|---|
 | 1 | ~~SMS provider for OTP~~ | **Decided:** no SMS. Codes go by email through Gmail SMTP (§8.1). | — |
 | 2 | ~~Payment methods at checkout and the e-wallet top-up provider~~ | **Excluded for now:** cash on delivery only; card, e-wallet and wallet top-up are not built (§8.7, §8.15). | — |
-| 3 | Delivery fee rules (per store, per distance, per zone) | Open | Checkout (Phase 11) |
-| 4 | Points earn rate and EGP value | Open | Points (Phase 18) |
-| 5 | Exact shift, skip and suspension defaults (2 / 3 / 15 min / 60 min extend) | Open | Driver shifts (Phase 13) |
+| 3 | ~~Delivery fee rules~~ | **Decided (2026-11-25):** base fee for a base distance, then a fee per started km, measured in a straight line from store to customer. These are admin settings; a delivery man's own values change only his earnings (§8.7). | — |
+| 4 | ~~Points earn rate and EGP value~~ | **Decided (2026-11-25):** one admin rate for earning and spending; only cash paid for items earns points; points can pay the whole order, fee included; minimum to spend 100; points never expire. Delivery men earn speed points by level, paid in cash (§8.16, §10). | — |
+| 5 | ~~Shift, skip and suspension defaults~~ | **Decided (2026-11-25):** a weekly schedule with a per-driver override; he can start from 30 min before until 15 min after the shift starts; extend by 60 min, at most 3 times; offers wait 60 s and no answer counts as a skip; warning after 2 skips, 15-minute block after 3. All admin settings (§10). | — |
 | 6 | ~~Production server and domain~~ | **Decided:** everything stays local until the first real mobile build; the owner then provides a VPS. | Deploy (Phase 2), moved to just before that build |
 | 7 | ~~Push provider~~ | **Decided:** Expo push service, called over its HTTP API with no SDK, as in the Maqar project. | — |
 | 8 | App identity, asked of the client: name (ZTechX already publishes apps named "توصيلة" and "توصيلتي"), package/bundle ID (`com.<company>.<app>`), logo (to be designed; the icon, adaptive icon and splash come from it), footer credit, and who owns the Google Play and Apple developer accounts | Open | Store release (Phase 26); until then placeholders in `app.config.ts` |
-| 9 | Screens not captured yet. The WhatsApp export (read 2026-11-23) brought the customer's delivered order details and rating screen (§8.8) and three driver screens (§10). Still missing: live tracking, the partner products and account screens, the driver home and current-orders tabs, and admin pages beyond the orders list. | Partly cleared | Phases 12, 13, 14 (live tracking), 25 |
+| 9 | Screens not captured yet. The WhatsApp export (read 2026-11-23) brought the customer's delivered order details and rating screen (§8.8) and three driver screens (§10). Still missing: the partner products and account screens, the driver home and current-orders tabs, and admin pages beyond the orders list. Live tracking is out of scope (§15.2). | Partly cleared | Phases 12, 13, 25 |
 | 10 | ~~Lucky wheel~~ | **Excluded for now.** Tawsilty has none; the client sent a reference from another app (`client-requests/client-lucky-wheel-reference-other-app.jpg`: "لفة الحظ", 8 prizes of points, discounts and free delivery, "لف العجلة", "متبقي 1 لفة اليوم"). | — |
-| 11 | What the captain pays the store: the full items total (driver photo) or the items total minus the 10% commission (partner photos)? | Open | Phases 11–13 |
+| 11 | ~~What the captain pays the store~~ | **Decided (2026-11-25):** three admin options, set globally or per store: the full items total; the items total minus the app's percentage; or nothing, with the app paying the store later (§8.7). | — |
 
 ### 15.2 Out of scope (until this file says otherwise)
 
 - Dark mode.
 - Tablet and desktop layouts for the mobile app.
 - Ride-hailing (ZTechX's other "توصيلة" app).
+- Live order tracking (the delivery man's position on a map) [Owner, 2026-11-25].
 
 ---
 
@@ -777,3 +806,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status and driver
 | 2026-11-24 | Project review F70 [Owner]: الإعدادات › سجل التغييرات (`/settings/audit`, `GET /v1/admin/audit`, migration 0008 `audit_log`). Every admin change to admin accounts, partner accounts (create, password reset, disable or enable), stores (create, and each save with the fields it sent, availability included) and zones (create, edit; the outline as its corner count) is recorded with the admin, the time and the target, by the names they had then. Generated passwords are never recorded. Newest first, 50 at a time with "عرض المزيد". Kept for good until the owner sets a retention [Open]; the page's name and wording are ours [Open]. Also: store builds run from main only and refuse a bad build number (F56); `db:push` removed (F68). |
 | 2026-11-25 | Phases renumbered [Owner]: "8a" (English LTR and the language switch) is now Phase 9, and every later phase moves up one (Cart 10 … Release 26). Every phase reference here, in `docs/phases.md` and in code comments follows; §15.1 decision numbers and § section numbers are unchanged. |
 | 2026-11-25 | Phase 10 cart (§8.6, §12): migration 0009 stores one cart per customer and persists its lines, note and fulfillment choice. Store changes require confirmation, prices come from the catalog, and checkout readiness checks availability and the minimum order. Pickup is offered only where allowed. Uncaptured details are listed in the phase plan. |
+| 2026-11-25 | Owner's decisions (§15.1 #3, #4, #5, #11): the delivery fee by straight-line distance, with a per-driver override for his earnings only (§8.7); three per-store options for who pays whom (§8.7); customer points rules and the delivery man's speed points (§8.16, §10); the weekly shift schedule, start window, extend limit, offer timeout and skip rules (§10). Live tracking is out of scope (§8.8, §15.2). |
