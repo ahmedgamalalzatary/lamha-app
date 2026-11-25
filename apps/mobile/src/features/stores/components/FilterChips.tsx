@@ -27,7 +27,7 @@ function Chip({ icon: Icon, label, on, menu, onPress }: { icon: LucideIcon; labe
 
 /**
  * The filter chips (contract §6.3): رتب حسب ▾ · التقييم ▾ · توصيل سريع · الاستلام.
- * خصومات and عروض التوصيل join them with the offers (Phase 19).
+ * خصومات and عروض التوصيل join them with the offers (Phase 20).
  */
 export function FilterChips({
   filter,

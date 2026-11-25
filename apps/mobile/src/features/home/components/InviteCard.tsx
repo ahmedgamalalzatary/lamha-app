@@ -8,7 +8,7 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 
 /**
  * Tawsilty's invite card (contract §8.2): "اربح 300 ج.م عن كل صديق — وصديقك يحصل على 25 ج.م فور
- * تسجيله", with ✕ to close it. The invite screen it opens arrives in Phase 18.
+ * تسجيله", with ✕ to close it. The invite screen it opens arrives in Phase 19.
  */
 export function InviteCard({ rewards, onClose }: { rewards: InviteRewards; onClose: () => void }) {
   const t = useT();

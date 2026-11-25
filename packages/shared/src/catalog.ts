@@ -129,7 +129,7 @@ export interface CatalogStore {
   layout: StoreLayout;
   pickupAllowed: boolean;
   isOpen: boolean;
-  /** null shows "جديد" until the store has ratings (Phase 14). */
+  /** null shows "جديد" until the store has ratings (Phase 15). */
   rating: number | null;
   ratingCount: number;
   cuisineIds: number[];
@@ -195,7 +195,7 @@ export interface Cuisine {
   sortOrder: number;
 }
 
-/** The invite card's rewards (§8.2, §8.17). Admin settings from Phase 18; these are Tawsilty's amounts. */
+/** The invite card's rewards (§8.2, §8.17). Admin settings from Phase 19; these are Tawsilty's amounts. */
 export interface InviteRewards {
   /** What the customer earns per friend. */
   reward: number;
@@ -205,7 +205,7 @@ export interface InviteRewards {
 
 export const INVITE_REWARDS: InviteRewards = { reward: 300, friendReward: 25 };
 
-/** GET /v1/catalog/home: what the customer home shows (§8.2). Banners and sections arrive in Phase 19. */
+/** GET /v1/catalog/home: what the customer home shows (§8.2). Banners and sections arrive in Phase 20. */
 export interface HomeScreen {
   tiles: HomeTile[];
   invite: InviteRewards;

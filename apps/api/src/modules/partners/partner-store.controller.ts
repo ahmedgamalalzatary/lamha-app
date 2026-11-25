@@ -6,7 +6,7 @@ import { AdminCatalogService } from '../catalog/admin-catalog.service.js';
 import type { StoreRow } from '../catalog/catalog.schema.js';
 import { CurrentStore, PartnerArea } from './partner-store.guard.js';
 
-/** Router for `/v1/partner/store`: the partner's own store (contract §11.1). Editing arrives in Phase 11. */
+/** Router for `/v1/partner/store`: the partner's own store (contract §11.1). Editing arrives in Phase 12. */
 @ApiTags('partner')
 @ApiBearerAuth()
 @PartnerArea()

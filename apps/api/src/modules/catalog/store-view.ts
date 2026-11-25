@@ -51,7 +51,7 @@ export function toStoreInput(row: StoreRow, cuisineIds: number[]): StoreInput {
 
 const locationOf = (row: StoreRow) => (row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng });
 
-/** A store as the apps list it. Ratings arrive in Phase 14; until then every store is "جديد". */
+/** A store as the apps list it. Ratings arrive in Phase 15; until then every store is "جديد". */
 export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date): CatalogStore {
   return {
     id: row.id,

@@ -33,7 +33,7 @@ const BOTTOM_ROOM = 140;
  * A store page (contract §8.4). The admin's layout decides the body: the restaurant layout lists the
  * products under sticky category tabs; the market layout shows the "الأقسام" grid, each opening its
  * category page. The bottom bar shows the minimum order, then the cart.
- * [Open] The voucher, free-delivery and discount cards under the info row arrive with offers (Phase 19);
+ * [Open] The voucher, free-delivery and discount cards under the info row arrive with offers (Phase 20);
  * the market's "العروض" and themed rails too.
  */
 export function StoreScreen() {

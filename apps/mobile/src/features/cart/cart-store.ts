@@ -3,7 +3,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 /**
  * The cart while the customer shops in a store (contract §8.4 bottom bar, §8.5 "أضف للسلة").
- * [Open] Until the cart screen and the server cart arrive (Phase 9), lines live in the app's memory,
+ * [Open] Until the cart screen and the server cart arrive (Phase 10), lines live in the app's memory,
  * one list per store.
  */
 type Lines = CartLine<Product>[];

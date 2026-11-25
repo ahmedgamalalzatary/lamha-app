@@ -6,7 +6,7 @@ import { ApiException } from '../../common/api-exception.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { UploadsService } from './uploads.service.js';
 
-/** Router for `/v1/admin/uploads`: one image for the catalog forms. Admins only (partners join in Phase 11). */
+/** Router for `/v1/admin/uploads`: one image for the catalog forms. Admins only (partners join in Phase 12). */
 @ApiTags('admin')
 @ApiBearerAuth()
 @Roles('admin')

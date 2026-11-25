@@ -12,7 +12,7 @@ import { useInviteDismissed } from '../invite-dismissed';
 
 /**
  * The customer's الرئيسية (contract §8.2): header with the address and search, the tiles, and the
- * invite card. Offers, banners and coloured sections join it in Phase 19.
+ * invite card. Offers, banners and coloured sections join it in Phase 20.
  */
 export function HomeScreen() {
   const t = useT();

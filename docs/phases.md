@@ -33,24 +33,24 @@ The order in which the real product is built. Each phase points at the contract 
 | 6 | Store lists, filters and search | 🔍 in-verify | |
 | 7 | Store page and product sheet | 🔍 in-verify | |
 | 8 | Addresses, zones and the map picker | 🔍 in-verify | Google Maps key |
-| 8a | English LTR and the language switch (project review F47) | ⬜ | none |
-| 9 | Cart | ⬜ | |
-| 10 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
-| 11 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens), 11 |
-| 12 | Driver: shifts, offers and skips | ⬜ | 5, 9 (driver home and current orders), 11 |
-| 13 | Live tracking and the delivered view | ⬜ | 9 (live tracking; the delivered view is captured) |
-| 14 | Ratings, complaints and support | ⬜ | |
-| 15 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
-| 16 | Wallet (top-up excluded for now) | ⬜ | none |
-| 17 | Points | ⬜ | 4 |
-| 18 | Invite friends | ⬜ | |
-| 19 | Offers, coupons and banners | ⬜ | |
-| 20 | Lucky wheel | ⛔ excluded for now | 10 |
-| 21 | Pharmacy: prescriptions and product photos | ⬜ | |
-| 22 | Send anything (اطلب دليفري) | ⬜ | |
-| 23 | Driver: history and fines | ⬜ | none (history captured; fines follow the client's rules) |
-| 24 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
-| 25 | Release | ⬜ | 8 |
+| 9 | English LTR and the language switch (project review F47) | ⬜ | none |
+| 10 | Cart | ⬜ | |
+| 11 | Checkout and placing an order (cash only) | ⬜ | 3, 11 |
+| 12 | Partner: orders and products (mobile and `/partner`) | ⬜ | 9 (products and account screens), 11 |
+| 13 | Driver: shifts, offers and skips | ⬜ | 5, 9 (driver home and current orders), 11 |
+| 14 | Live tracking and the delivered view | ⬜ | 9 (live tracking; the delivered view is captured) |
+| 15 | Ratings, complaints and support | ⬜ | |
+| 16 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
+| 17 | Wallet (top-up excluded for now) | ⬜ | none |
+| 18 | Points | ⬜ | 4 |
+| 19 | Invite friends | ⬜ | |
+| 20 | Offers, coupons and banners | ⬜ | |
+| 21 | Lucky wheel | ⛔ excluded for now | 10 |
+| 22 | Pharmacy: prescriptions and product photos | ⬜ | |
+| 23 | Send anything (اطلب دليفري) | ⬜ | |
+| 24 | Driver: history and fines | ⬜ | none (history captured; fines follow the client's rules) |
+| 25 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
+| 26 | Release | ⬜ | 8 |
 
 ---
 
@@ -129,22 +129,22 @@ Contract §8.3–§8.5, §11 (الموردين, المنتجات والكتال�
 - **Moved:**
   - `zones` go to Phase 8, with the map and the delivery-zone check.
   - Product option groups and ingredients (§8.5) go to Phase 7, with the product sheet.
-  - Product discounts (old price) go to Phase 19.
+  - Product discounts (old price) go to Phase 20.
 
 ## Phase 5: Customer home
 
-Contract §8.2: header with the address, rotating search, vertical tiles, invite card. (Banners and the wheel arrive in Phases 19–20.)
+Contract §8.2: header with the address, rotating search, vertical tiles, invite card. (Banners and the wheel arrive in Phases 20–21.)
 
 **Built:**
 
-- **API:** `GET /v1/catalog/home` gives the tiles customers may open (a tile pinned to a hidden store is left out) and the invite card's rewards. It replaces `GET /v1/catalog/home-tiles`. The rewards are Tawsilty's 300 and 25 ج.م (`INVITE_REWARDS` in shared) until Phase 18 makes them admin settings.
+- **API:** `GET /v1/catalog/home` gives the tiles customers may open (a tile pinned to a hidden store is left out) and the invite card's rewards. It replaces `GET /v1/catalog/home-tiles`. The rewards are Tawsilty's 300 and 25 ج.م (`INVITE_REWARDS` in shared) until Phase 19 makes them admin settings.
 - **Shared:** `formatAmount` writes whole amounts without decimals ("300 ج.م"), as the invite card does.
 - **Mobile (customer الرئيسية):**
   - The orange header with "التوصيل إلى" and the search box. The search word changes every 3 seconds: بيتزا · المطاعم · الأكلات المفضلة · أفضل العروض.
   - The tiles: a fixed first row, four across, then a row that scrolls sideways. Each tile has its image, its label (up to 2 lines) and an optional dark badge. A tile opens its type's store list (`/stores/<type>`) or its pinned store (`/store/<id>`); both are placeholders until Phases 6 and 7.
   - The invite card with ✕; pull to refresh; grey skeleton tiles while loading; the error with "إعادة المحاولة".
 - **Tests:** React Query now hands its updates on in a microtask under Jest (`jest.setup.ts`). Before that, an update queued while `renderRouter`'s fake timers were on was lost, and the screen stayed on its skeleton.
-- **[Open] stand-ins (contract §8.2):** the address reads "حدد موقعك" and opens nothing until Phase 8; the search box opens nothing until Phase 6; the invite card opens nothing until Phase 18, and once closed it stays hidden on that phone.
+- **[Open] stand-ins (contract §8.2):** the address reads "حدد موقعك" and opens nothing until Phase 8; the search box opens nothing until Phase 6; the invite card opens nothing until Phase 19, and once closed it stays hidden on that phone.
 
 ## Phase 6: Store lists, filters and search
 
@@ -192,7 +192,7 @@ Contract §8.4–§8.5: cover, info row, category grid, category pages, product 
   - **Bottom bar:** the minimum order, then "عرض السلة · <count> · <total>" (opens the cart tab).
   - **المفضلة** from حسابي (الخدمات المفضلة).
 - **Seed:** a few demo items get choices (شاورما فراخ, وجبة شاورما فراخ عربي, كلاسيك سماش, موز priced by weight). توصيلة ماركت's خضار وفاكهة gets الخضار and الفاكهة as sub-categories. This step also fills an existing dev database.
-- **Stand-ins and later work:** see contract §8.4, §8.5 and §8.14. The cart stays in the app's memory until Phase 9.
+- **Stand-ins and later work:** see contract §8.4, §8.5 and §8.14. The cart stays in the app's memory until Phase 10.
 
 ## Phase 8: Addresses, zones and the map picker
 
@@ -214,7 +214,7 @@ Contract §8.9: saved addresses sheet, map picker with zoom gate and location ba
   - The map needs `GOOGLE_MAPS_API_KEY` in the root `.env`, or as a CI secret, for Android builds.
   - Delivery fees per zone wait for checkout (§15.1 #3).
 
-## Phase 8a: English LTR and the language switch
+## Phase 9: English LTR and the language switch
 
 Contract §7, §14 and S2 (it was due in Phase 0; the project review, F47, found it missing). Both dictionaries exist, but the app always uses Arabic and forces RTL.
 
@@ -223,72 +223,72 @@ Contract §7, §14 and S2 (it was due in Phase 0; the project review, F47, found
 - Every screen checked in both directions: icons that point a way (back, chevrons) mirror, numbers and money keep their formats (§7).
 - Catalog text (store, product, category names) stays as the admin typed it, one language, until the client decides whether merchants enter both (review F48).
 
-## Phase 9: Cart
+## Phase 10: Cart
 
 Contract §8.6: one store per cart, steppers, delete confirm, upsell row, note sheet, payment summary, empty cart, service-closed toast, pickup only where allowed.
 
-## Phase 10: Checkout and placing an order
+## Phase 11: Checkout and placing an order
 
 Contract §8.6–§8.7: confirm the location on a map, delivery fee, payment method (cash on delivery only; card and e-wallet excluded for now), coupon, place order; server-side totals; order created for the store.
 
-## Phase 11: Partner: orders and products
+## Phase 12: Partner: orders and products
 
 Contract §9 and §11.1: incoming orders live (socket), accept/prepare/ready, past orders with counts, product availability toggles, notifications, account with the orders-made count. Built twice on the same API: in the mobile app and in the web dashboard's partner area (`/partner`: orders, products, store settings the partner may edit). The partner edits only what contract §11.1 allows.
 
-## Phase 12: Driver: shifts, offers and skips
+## Phase 13: Driver: shifts, offers and skips
 
 Contract §10: driver accounts generated from the dashboard or the admin's mobile app (password shown once, reset, disable); shift schedule from the admin, start unlocks 30 min before, end and extend, offers with details, accept/skip with warning and suspension, order steps to delivered; dispatch from the dashboard (assign driver, "بدون كابتن" flag).
 
-## Phase 13: Live tracking and the delivered view
+## Phase 14: Live tracking and the delivered view
 
 Contract §8.8: live status and driver location while active; plain details view once delivered; reorder inside طلباتي.
 
-## Phase 14: Ratings, complaints and support
+## Phase 15: Ratings, complaints and support
 
 Contract §8.8 and §8.14: star rating with good/bad chips and text; order problems open a support ticket; suggestions and complaints (general or about a past order); contact us; dashboard الشكاوى والاقتراحات.
 
-## Phase 15: Notifications and push
+## Phase 16: Notifications and push
 
 Notification list, notification settings (push only; no SMS), push tokens sent through Expo's push HTTP API with no SDK, order status pushes, dashboard الإشعارات التفاعلية campaigns.
 
-## Phase 16: Wallet
+## Phase 17: Wallet
 
 Contract §8.15: balance, additions and deductions, paying with the wallet. E-wallet top-up is excluded for now (§15.1 #2).
 
-## Phase 17: Points
+## Phase 18: Points
 
 Contract §8.16: earning per order, progress to 240, value, earned and spent tabs, redeeming.
 
-## Phase 18: Invite friends
+## Phase 19: Invite friends
 
 Contract §8.17: codes, rewards with their limits and expiry, monthly cap, friends list, share sheet and WhatsApp.
 
-## Phase 19: Offers, coupons and banners
+## Phase 20: Offers, coupons and banners
 
 Contract §8.2 and §8.10: offer banners, the mart banner with its product row, offer tiles, coupons, offers grouped by the customer's coupon, "عروض التوصيل" and "خصومات" filters; dashboard management.
 
-## Phase 20: Lucky wheel
+## Phase 21: Lucky wheel
 
 **Excluded for now** (contract §15.1 #10). Skipped until the owner says otherwise.
 
 Contract §8.2: one spin a day, prizes (points or coupons) from the dashboard.
 
-## Phase 21: Pharmacy
+## Phase 22: Pharmacy
 
 Contract §8.11: prescription and product-photo uploads, choose-a-pharmacy sheet, the pharmacy quotes and the customer confirms.
 
-## Phase 22: Send anything
+## Phase 23: Send anything
 
 Contract §8.12: no new screens. Seed an "اطلب دليفري" store with one 1 ج.م product; make sure the cart note reaches the driver and the store's orders.
 
-## Phase 23: Driver: history and fines
+## Phase 24: Driver: history and fines
 
 Contract §10: order history with a date range, totals and complaints; fines with reasons; dashboard fines.
 
-## Phase 24: Admin: overview and reports
+## Phase 25: Admin: overview and reports
 
 Contract §11: الرئيسية overview and التقارير.
 
-## Phase 25: Release
+## Phase 26: Release
 
 Brand assets, store listings, Android and iOS builds, release checks on real phones.

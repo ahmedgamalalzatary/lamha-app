@@ -28,7 +28,7 @@ const fullName = (a: PartnerAccount) => `${a.firstName} ${a.lastName}`.trim();
 /**
  * The admin's one area in the app (contract §11.2, M2): partner accounts with search; create one for a
  * store, reset its password, disable or enable it. A generated password is shown once, with copy and
- * share. Driver accounts join in Phase 12. [Open] No Tawsilty screen exists for this; it uses the
+ * share. Driver accounts join in Phase 13. [Open] No Tawsilty screen exists for this; it uses the
  * account screen's cards, sheets and the address-delete confirm look.
  */
 export function AccountsScreen() {
