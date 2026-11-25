@@ -18,10 +18,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
+import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useReduceMotion } from '@/core/hooks/useReduceMotion';
 import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { type CartConflict, CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { AddButton } from './AddButton';
 import { ProductPicture } from './ProductItems';
 import { ProductPrice } from './ProductPrice';
@@ -35,6 +37,7 @@ interface Props {
   /** Another product from "تُطلب معًا" that has choices: the sheet shows it instead. */
   onOpen: (product: Product) => void;
   onClose: () => void;
+  conflict: CartConflict;
 }
 
 /**
@@ -42,36 +45,74 @@ interface Props {
  * "تُطلب معًا", the stepper and "أضف للسلة <price>". Grey with "أكمل الاختيارات للإضافة للسلة"
  * until every required group has a choice.
  */
-export function ProductSheet({ product, ...rest }: Props) {
+export function ProductSheet({ product, conflict, ...rest }: Props) {
   const reduceMotion = useReduceMotion();
+  const [replaceError, setReplaceError] = useState<string | null>(null);
+  const replacing = conflict.storeName !== undefined;
+  const closeConflict = () => {
+    setReplaceError(null);
+    conflict.cancel();
+  };
+  const replacement = useSubmit(async () => {
+    setReplaceError(null);
+    try {
+      if (await conflict.replace()) rest.onClose();
+    } catch (e) {
+      setReplaceError(errorMessage(e));
+    }
+  });
   return (
-    <Modal visible={product !== null} transparent animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={rest.onClose}>
-      {product ? <SheetBody key={product.id} product={product} {...rest} /> : null}
+    <Modal
+      visible={product !== null || replacing}
+      transparent
+      animationType={reduceMotion ? 'none' : product ? 'slide' : 'fade'}
+      onRequestClose={replacing ? closeConflict : rest.onClose}
+    >
+      <View style={styles.fill}>
+        {product ? (
+          <View style={styles.fill} accessibilityElementsHidden={replacing} importantForAccessibility={replacing ? 'no-hide-descendants' : 'auto'}>
+            <SheetBody key={product.id} product={product} {...rest} />
+          </View>
+        ) : null}
+        <CartConflictDialog
+          storeName={conflict.storeName}
+          cancel={closeConflict}
+          replace={() => void replacement.run()}
+          busy={replacement.busy}
+          error={replaceError}
+        />
+      </View>
     </Modal>
   );
 }
 
-function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & { product: Product }) {
+function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Omit<Props, 'product' | 'conflict'> & { product: Product }) {
   const locale = useLocale();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [chosen, setChosen] = useState<number[]>([]);
   const [removed, setRemoved] = useState<number[]>([]);
   const [quantity, setQuantity] = useState(1);
+  const [addError, setAddError] = useState<string | null>(null);
   const complete = choicesComplete(product, chosen);
   const total = unitPrice(product, chosen) * quantity;
   // "غير متوفر" items are never offered with this one.
   const together = orderedTogether(menu.filter((p) => p.active || p.id === product.id), product.id);
   const image = mediaUrl(product.image);
   const addLabel = complete ? `${t('product.add')} ${formatMoney(total, locale)}` : t('product.add');
-  const submit = useSubmit(async () => {
-    if (await onAdd({ product, optionIds: chosen, removedIngredientIds: removed, quantity })) onClose();
+  const submit = useSubmit(async (item: Parameters<Props['onAdd']>[0], closeOnSuccess: boolean) => {
+    setAddError(null);
+    try {
+      if (await onAdd(item) && closeOnSuccess) onClose();
+    } catch (e) {
+      setAddError(errorMessage(e));
+    }
   });
 
   const toggleIngredient = (i: Ingredient) => setRemoved((r) => (r.includes(i.id) ? r.filter((id) => id !== i.id) : [...r, i.id]));
 
   return (
-    <View style={styles.fill}>
+    <View style={styles.fill} testID="product-sheet">
       <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { marginTop: insets.top + 40 }]}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -130,7 +171,7 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
                         <AddButton
                           product={p}
                           count={countOf(p.id)}
-                          onPress={() => (isCustomizable(p) ? onOpen(p) : onAdd({ product: p, optionIds: [], removedIngredientIds: [], quantity: 1 }))}
+                          onPress={() => (isCustomizable(p) ? onOpen(p) : void submit.run({ product: p, optionIds: [], removedIngredientIds: [], quantity: 1 }, false))}
                         />
                       </View>
                     </View>
@@ -150,6 +191,7 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
         </PressableScale>
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+          {addError ? <AppText accessibilityRole="alert" color={colors.danger}>{addError}</AppText> : null}
           {complete ? null : (
             <AppText color={colors.ink2} style={styles.center}>
               {t('product.incomplete')}
@@ -161,7 +203,7 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
               accessibilityLabel={addLabel}
               accessibilityState={{ disabled: !complete || submit.busy, busy: submit.busy }}
               disabled={!complete || submit.busy}
-              onPress={() => void submit.run()}
+              onPress={() => void submit.run({ product, optionIds: chosen, removedIngredientIds: removed, quantity }, true)}
               style={[styles.add, complete ? null : styles.addOff]}
             >
               <AppText weight="bold" color={complete ? colors.bg : colors.ink2}>

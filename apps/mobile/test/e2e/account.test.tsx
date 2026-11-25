@@ -45,6 +45,17 @@ async function signedInCustomer() {
 }
 
 describe('حسابي (contract §8.14; real API)', () => {
+  it('uses the saved profile language when the device write fails', async () => {
+    const { user } = await signedInCustomer();
+    await renderApp(ROUTES, { initialUrl: '/customer/account' });
+    jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(new Error('Device storage unavailable'));
+    await press('اللغة');
+    await press('English');
+    expect(await screen.findByRole('button', { name: 'Language' })).toBeTruthy();
+    const [profile] = await sql<{ locale: string }[]>('SELECT locale FROM users WHERE id = ?', [user.id]);
+    expect(profile?.locale).toBe('en');
+  });
+
   it('switches the app and signed-in profile to English and back to Arabic', async () => {
     const { user } = await signedInCustomer();
     await renderApp(ROUTES, { initialUrl: '/customer/account' });

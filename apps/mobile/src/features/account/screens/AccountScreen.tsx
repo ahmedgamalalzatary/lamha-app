@@ -40,7 +40,7 @@ export function AccountScreen() {
     const updated = await meApi.update({ locale: nextLocale });
     if (generation !== session.generation()) return;
     session.setUser(updated);
-    await localePreference.save(nextLocale);
+    await localePreference.save(updated.locale, () => generation === session.generation());
   });
 
   const signOut = useSubmit(async () => {

@@ -18,7 +18,8 @@ import { OfflineScreen } from '@/components/OfflineScreen';
 import { toast, ToastHost } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
 import { isRTL, translate, useLocale } from '@/core/i18n';
-import { localePreference } from '@/core/i18n/locale';
+import { localePreference, useLocalePersisted } from '@/core/i18n/locale';
+import { prepareDirectionReload } from '@/core/i18n/native-direction';
 import { queryClient } from '@/core/query';
 import { colors } from '@/core/theme';
 
@@ -27,7 +28,8 @@ void SplashScreen.preventAutoHideAsync();
 
 async function restoreSessionAndLocale() {
   await session.restore();
-  await localePreference.restore(useSession.getState().user?.locale);
+  const generation = session.generation();
+  await localePreference.restore(useSession.getState().user?.locale, () => generation === session.generation());
 }
 
 export default function RootLayout() {
@@ -39,11 +41,10 @@ export default function RootLayout() {
   });
   const status = useSession((s) => s.status);
   const locale = useLocale();
+  const persisted = useLocalePersisted();
   const rtl = isRTL(locale);
   const [restored, setRestored] = useState(false);
-  const [reloadFailed, setReloadFailed] = useState(false);
-  const directionPending = Platform.OS !== 'web' && I18nManager.isRTL !== rtl && !reloadFailed;
-  const ready = (fontsLoaded || fontError !== null) && restored && !directionPending;
+  const ready = (fontsLoaded || fontError !== null) && restored;
 
   useEffect(() => {
     void restoreSessionAndLocale().then(() => setRestored(true));
@@ -51,6 +52,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!restored) return;
+    if (!persisted) toast.show(translate('account.languageStorageFailed', locale), 'error');
     if (Platform.OS === 'web') {
       document.documentElement.dir = rtl ? 'rtl' : 'ltr';
       document.documentElement.lang = locale;
@@ -59,14 +61,29 @@ export default function RootLayout() {
     // Disable RTL for English even when the device itself is set to Arabic.
     I18nManager.allowRTL(rtl);
     I18nManager.forceRTL(rtl);
-    if (I18nManager.isRTL !== rtl) {
-      // Native views and navigation read the direction when the JS runtime starts.
-      void reloadAppAsync('App language changed').catch(() => {
-        setReloadFailed(true);
-        toast.show(translate('account.languageRestartFailed', locale), 'error');
-      });
-    }
-  }, [locale, restored, rtl]);
+    const matches = I18nManager.isRTL === rtl;
+    if (!persisted && !matches) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const notify = () => {
+      clearTimeout(timer);
+      if (active && !matches) toast.show(translate('account.languageRestartFailed', locale), 'error');
+    };
+    void prepareDirectionReload(locale, matches).then((attempt) => {
+      if (!active || matches) return;
+      if (!attempt) {
+        notify();
+        return;
+      }
+      // A native reload can acknowledge the request without actually replacing this runtime.
+      timer = setTimeout(notify, 2_500);
+      return reloadAppAsync('App language changed');
+    }).catch(notify);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [locale, persisted, restored, rtl]);
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();

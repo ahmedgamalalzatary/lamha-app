@@ -44,6 +44,36 @@ beforeEach(async () => {
 });
 
 describe('store page and product sheet (contract §8.4, §8.5; real API)', () => {
+  it('refreshes a stale cart when its line no longer exists', async () => {
+    const store = await insertStore('ماكي');
+    const productId = await insertMenuItem(store, await insertCategory(store, 'الوجبات'), 'برجر', 85);
+    const { cart } = await cartApi.add({ productId, quantity: 1, optionIds: [], removedIngredientIds: [] });
+    await renderApp(ROUTES, { initialUrl: '/customer/cart' });
+    const increase = await screen.findByRole('button', { name: 'زيادة كمية برجر' });
+    await cartApi.remove(cart!.lines[0]!.id);
+    await fireEvent.press(increase);
+    expect(await screen.findByText('سلتك فارغة')).toBeTruthy();
+  });
+
+  it('keeps a customized selection on cancel and shows add failures inside the product sheet', async () => {
+    const first = await insertStore('ماكي');
+    const second = await insertStore('الساقية');
+    const productId = await insertMenuItem(first, await insertCategory(first, 'الوجبات'), 'برجر', 85);
+    const custom = await insertMenuItem(second, await insertCategory(second, 'السندوتشات'), 'شاورما', 100);
+    await insertOptionGroup(custom, 'الحجم', true, 1, [['كبير', 20]]);
+    await cartApi.add({ productId, quantity: 1, optionIds: [], removedIngredientIds: [] });
+    await renderApp(ROUTES, { initialUrl: `/store/${second}?product=${custom}` });
+    await fireEvent.press(await screen.findByRole('radio', { name: 'كبير (+20.00 ج.م)' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'أضف للسلة 120.00 ج.م' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'إلغاء' }));
+    const add = await screen.findByRole('button', { name: 'أضف للسلة 120.00 ج.م' });
+    expect(add).toBeEnabled();
+    await sql('UPDATE stores SET closed_now = true WHERE id = ?', [second]);
+    await fireEvent.press(add);
+    const alert = await within(screen.getByTestId('product-sheet')).findByText('عذراً الخدمة مغلقة الآن');
+    expect(alert).toHaveProp('accessibilityRole', 'alert');
+  });
+
   it('opens the persisted cart, edits quantities and the note, and handles a store closing', async () => {
     const store = await insertStore('ماكي', 'restaurant', { pickupAllowed: true });
     const category = await insertCategory(store, 'الوجبات');

@@ -22,6 +22,7 @@ let refreshing: Promise<boolean> | null = null;
  * (a refresh, a profile save, a 401 retry) arrives too late and is dropped.
  */
 let generation = 0;
+let pendingSignIn: number | null = null;
 /** Why the last refresh failed: the server refused the token, or it could not be reached. */
 let lastRefusal: 'refused' | 'unreachable' = 'refused';
 
@@ -38,7 +39,7 @@ let currentRefresh: string | null = null;
  * The tokens of the session that generation `gen` started. If a sign-in or sign-out moved the
  * generation on meanwhile, nothing is kept, and a storage write that landed late is put back.
  */
-async function keep(res: AuthResponse, gen: number): Promise<void> {
+async function keep(res: AuthResponse, gen: number, newSession = false): Promise<number | undefined> {
   if (gen !== generation) return;
   currentRefresh = res.refreshToken;
   await SecureStore.setItemAsync(REFRESH_KEY, res.refreshToken);
@@ -47,8 +48,11 @@ async function keep(res: AuthResponse, gen: number): Promise<void> {
     return;
   }
   // Publish the request credentials together with the account that owns them.
+  // Requests started while SecureStore was writing belonged to the previous account.
+  if (newSession) generation++;
   accessToken = res.accessToken;
   useSession.setState({ status: 'signedIn', user: res.user });
+  return generation;
 }
 
 export const session = {
@@ -58,11 +62,16 @@ export const session = {
   /** A new session: the previous account's cached data goes with it. */
   async signIn(res: AuthResponse): Promise<void> {
     const gen = ++generation;
+    pendingSignIn = gen;
     currentRefresh = null;
     queryClient.clear();
-    await keep(res, gen);
-    if (gen === generation && localePreference.current() !== res.user.locale) {
-      await localePreference.restore(res.user.locale);
+    try {
+      const active = await keep(res, gen, true);
+      if (active === generation && localePreference.current() !== res.user.locale) {
+        await localePreference.restore(res.user.locale, () => active === generation);
+      }
+    } finally {
+      if (pendingSignIn === gen) pendingSignIn = null;
     }
   },
 
@@ -76,6 +85,7 @@ export const session = {
    * refresh. Only a refused token signs out; offline or a busy server keeps the session.
    */
   refresh(): Promise<boolean> {
+    if (pendingSignIn === generation) return Promise.resolve(false);
     refreshing ??= (async () => {
       const gen = generation;
       const refreshToken = await storedToken();
@@ -105,6 +115,7 @@ export const session = {
   /** At launch (and on retry): signed in again with the stored token, offline, or signed out. */
   async restore(): Promise<void> {
     const gen = generation;
+    if (pendingSignIn === gen) return;
     if (await session.refresh()) return;
     // A sign-in or sign-out meanwhile has already decided the state.
     if (gen !== generation) return;
@@ -125,6 +136,7 @@ export const session = {
 
   async signOutLocally(): Promise<void> {
     generation++;
+    pendingSignIn = null;
     accessToken = null;
     currentRefresh = null;
     queryClient.clear();

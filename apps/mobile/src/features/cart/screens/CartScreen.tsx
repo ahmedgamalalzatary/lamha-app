@@ -24,7 +24,6 @@ import { ProductPrice } from '@/features/store/components/ProductPrice';
 import { ProductSheet } from '@/features/store/components/ProductSheet';
 import { useProductTaps } from '@/features/store/hooks/useProductTaps';
 import { cartApi, useCart } from '../api/cart';
-import { CartConflictDialog } from '../components/CartConflictDialog';
 import { CartLineRow } from '../components/CartLineRow';
 
 export function CartScreen() {
@@ -220,8 +219,7 @@ function CartSuggestions({ cart }: { cart: CustomerCart }) {
           </View>
         ))}
       </ScrollView>
-      <ProductSheet product={conflict.storeName ? null : sheet} menu={menu} countOf={actions.countOf} onAdd={actionsCart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
-      <CartConflictDialog {...conflict} />
+      <ProductSheet product={sheet} conflict={conflict} menu={menu} countOf={actions.countOf} onAdd={actionsCart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
     </View>
   );
 }

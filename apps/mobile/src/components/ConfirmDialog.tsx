@@ -18,6 +18,10 @@ interface Props {
    *   red-outlined "إلغاء" pill of the same width.
    */
   tone?: 'danger' | 'primary' | 'outline';
+  /** Render over the content of a native modal that is already open. */
+  inline?: boolean;
+  confirmDisabled?: boolean;
+  error?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -27,7 +31,7 @@ const TONE = {
   primary: { card: 4, action: colors.primary, actionRadius: 8, cancel: colors.danger },
 } as const;
 
-export function ConfirmDialog({ visible, title, message, confirmLabel, tone = 'danger', onConfirm, onCancel }: Props) {
+export function ConfirmDialog({ visible, title, message, confirmLabel, tone = 'danger', inline, confirmDisabled, error, onConfirm, onCancel }: Props) {
   const t = useT();
   if (tone === 'outline') {
     return (
@@ -56,18 +60,19 @@ export function ConfirmDialog({ visible, title, message, confirmLabel, tone = 'd
     );
   }
   const look = TONE[tone];
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
+  const content = (
+      <View style={[styles.backdrop, inline && StyleSheet.absoluteFill]}>
         <View style={[styles.card, { borderRadius: look.card }]} accessibilityViewIsModal>
           <AppText weight="bold" size={fontSizes.sectionTitle}>
             {title}
           </AppText>
           {message ? <AppText size={15}>{message}</AppText> : null}
+          {error ? <AppText accessibilityRole="alert" size={15} color={colors.danger}>{error}</AppText> : null}
           <View style={styles.actions}>
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel={confirmLabel}
+              disabled={confirmDisabled}
               onPress={onConfirm}
               style={[styles.confirm, { backgroundColor: look.action, borderRadius: look.actionRadius }]}
             >
@@ -83,8 +88,9 @@ export function ConfirmDialog({ visible, title, message, confirmLabel, tone = 'd
           </View>
         </View>
       </View>
-    </Modal>
   );
+  if (inline) return visible ? content : null;
+  return <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>{content}</Modal>;
 }
 
 const styles = StyleSheet.create({

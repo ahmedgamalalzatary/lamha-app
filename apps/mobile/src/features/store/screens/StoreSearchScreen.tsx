@@ -13,7 +13,6 @@ import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useStorePage } from '../api/store';
 import { CartBar } from '../components/CartBar';
-import { CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { ProductGrid } from '../components/ProductItems';
 import { ProductSheet } from '../components/ProductSheet';
 import { useProductTaps } from '../hooks/useProductTaps';
@@ -75,8 +74,7 @@ export function StoreSearchScreen() {
       {store ? (
         <>
           <CartBar count={cart.count} total={cart.total} minimumOrder={cart.count ? store.minimumOrder : 0} />
-          <ProductSheet product={conflict.storeName ? null : sheet} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
-          <CartConflictDialog {...conflict} />
+          <ProductSheet product={sheet} conflict={conflict} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
         </>
       ) : null}
     </SafeAreaView>

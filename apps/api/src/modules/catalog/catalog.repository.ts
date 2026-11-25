@@ -4,6 +4,7 @@ import { and, asc, count, eq, inArray, isNull, like, max, min, ne, or, sql, type
 import type { MySqlTable } from 'drizzle-orm/mysql-core';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { zones } from '../addresses/addresses.schema.js';
+import { carts } from '../cart/cart.schema.js';
 import { type NewUser, users } from '../users/users.schema.js';
 import {
   cuisines,
@@ -115,7 +116,14 @@ export class CatalogRepository {
 
   async updateStore(id: number, values: Partial<NewStore>, cuisineIds?: number[]): Promise<void> {
     await this.db.transaction(async (tx) => {
+      // An older cart may still have pickup stored while the store is disabled.
+      const [previous] = values.pickupAllowed === true
+        ? await tx.select({ pickupAllowed: stores.pickupAllowed }).from(stores).where(eq(stores.id, id)).for('update')
+        : [];
       if (Object.keys(values).length) await tx.update(stores).set(values).where(eq(stores.id, id));
+      if (values.pickupAllowed === false || previous?.pickupAllowed === false) {
+        await tx.update(carts).set({ mode: 'delivery' }).where(and(eq(carts.storeId, id), eq(carts.mode, 'pickup')));
+      }
       if (cuisineIds) {
         await tx.delete(storeCuisines).where(eq(storeCuisines.storeId, id));
         if (cuisineIds.length) await tx.insert(storeCuisines).values(cuisineIds.map((cuisineId) => ({ storeId: id, cuisineId })));

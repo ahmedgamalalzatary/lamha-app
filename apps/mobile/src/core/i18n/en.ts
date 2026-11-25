@@ -68,6 +68,7 @@ export const en: Record<TranslationKey, string> = {
   'account.language': 'Language',
   'account.languageRestart': 'The app will reload to change the language.',
   'account.languageRestartFailed': 'Close and reopen the app to apply the new language.',
+  'account.languageStorageFailed': 'The language changed, but this device couldn’t save it.',
   'account.viewProfile': 'View profile',
   'account.notifications': 'Notifications',
   'account.groupAccount': 'Account',

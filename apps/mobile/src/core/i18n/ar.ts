@@ -66,6 +66,7 @@ export const ar = {
   'account.language': 'اللغة',
   'account.languageRestart': 'سيُعاد تشغيل التطبيق لتغيير اللغة.',
   'account.languageRestartFailed': 'أغلق التطبيق وافتحه لتطبيق اللغة الجديدة.',
+  'account.languageStorageFailed': 'تغيّرت اللغة، لكن تعذّر حفظها على هذا الجهاز.',
   'account.viewProfile': 'عرض الملف الشخصي',
   'account.notifications': 'الإشعارات',
   'account.groupAccount': 'الحساب',

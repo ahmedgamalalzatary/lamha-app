@@ -26,15 +26,16 @@ export function useProductTaps(storeId: number) {
     } catch (e) {
       if (session.generation() !== generation) return false;
       if (e instanceof ApiRequestError && e.code === 'CART_STORE_CONFLICT') {
-        const latest = (await query.refetch()).data?.cart;
+        const refreshed = await query.refetch();
         if (session.generation() !== generation) return false;
+        if (refreshed.isError) throw refreshed.error;
+        const latest = refreshed.data?.cart;
         if (latest && latest.store.id !== storeId) {
           setConflict({ item: input, id: latest.id, name: latest.store.name });
-          return true; // Let the product sheet close before displaying the confirmation.
+          return false;
         }
       }
-      toast.show(errorMessage(e), 'error');
-      return false;
+      throw e;
     }
   }
 
@@ -46,7 +47,7 @@ export function useProductTaps(storeId: number) {
     open: setSheet,
     add: (p) => {
       if (isCustomizable(p)) setSheet(p);
-      else void add({ product: p, optionIds: [], removedIngredientIds: [], quantity: 1 });
+      else void add({ product: p, optionIds: [], removedIngredientIds: [], quantity: 1 }).catch((e: unknown) => toast.show(errorMessage(e), 'error'));
     },
     countOf,
   };
@@ -56,10 +57,11 @@ export function useProductTaps(storeId: number) {
     conflict: {
       storeName: conflict?.name,
       cancel: () => setConflict(null),
-      replace: () => {
-        if (!conflict) return;
-        setConflict(null);
-        void send({ ...conflict.item, replaceCartId: conflict.id });
+      replace: async () => {
+        if (!conflict) return false;
+        const added = await send({ ...conflict.item, replaceCartId: conflict.id });
+        if (added) setConflict(null);
+        return added;
       },
     },
   };

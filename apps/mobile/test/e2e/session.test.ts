@@ -134,8 +134,10 @@ describe('session (real API)', () => {
     expect((await cartApi.get()).cart).toBeNull();
     const first = await signInAs('01554459196');
     const switching = session.signIn(first);
+    const duringSwitch = session.generation();
     const readBeforeSwitch = cartApi.get();
     await switching;
+    expect(session.generation()).not.toBe(duringSwitch);
     expect((await readBeforeSwitch).cart).toBeNull();
     expect((await cartApi.get()).cart).toMatchObject({ count: 2, total: 100 });
   });

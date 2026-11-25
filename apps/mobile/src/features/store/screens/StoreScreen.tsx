@@ -16,7 +16,6 @@ import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useFavorites, useStorePage, useToggleFavorite } from '../api/store';
 import { CartBar } from '../components/CartBar';
-import { CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { CategoriesSheet } from '../components/CategoriesSheet';
 import { CategoryTabs, TABS_HEIGHT } from '../components/CategoryTabs';
 import { NoProducts } from '../components/NoProducts';
@@ -122,8 +121,7 @@ export function StoreScreen() {
         </>
       )}
       <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
-      <ProductSheet product={conflict.storeName ? null : shown} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
-      <CartConflictDialog {...conflict} />
+      <ProductSheet product={shown} conflict={conflict} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
     </View>
   );
 }

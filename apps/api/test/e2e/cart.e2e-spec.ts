@@ -79,6 +79,23 @@ describe('customer cart (contract §8.6)', () => {
     expect((await get().expect(200)).body.cart.lines[0].available).toBe(false);
   });
 
+  it('keeps delivery selected after an admin disables and re-enables pickup', async () => {
+    const { body: { cart } } = await add(item(product)).expect(201);
+    await http().patch(path).auth(customer, { type: 'bearer' }).send({ cartId: cart.id, mode: 'pickup' }).expect(200);
+    const allowPickup = (pickupAllowed: boolean) =>
+      http().patch(`/v1/admin/stores/${store}`).auth(admin, { type: 'bearer' }).send({ pickupAllowed }).expect(200);
+    await allowPickup(false);
+    expect((await get().expect(200)).body.cart.mode).toBe('delivery');
+    await allowPickup(true);
+    expect((await get().expect(200)).body.cart.mode).toBe('delivery');
+
+    // Simulate a cart saved before pickup choices were cleared on disable.
+    await http().patch(path).auth(customer, { type: 'bearer' }).send({ cartId: cart.id, mode: 'pickup' }).expect(200);
+    await sql('UPDATE stores SET pickup_allowed = false WHERE id = ?', [store]);
+    await allowPickup(true);
+    expect((await get().expect(200)).body.cart.mode).toBe('delivery');
+  });
+
   it('prices chosen options and preserves separate customizations', async () => {
     const categoryId = await insertCategory(store, 'حلويات');
     const { body: custom } = await http().post(`/v1/admin/stores/${store}/products`).auth(admin, { type: 'bearer' }).send({

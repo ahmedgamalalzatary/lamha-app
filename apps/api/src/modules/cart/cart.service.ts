@@ -120,8 +120,12 @@ export class CartService {
       if (row?.id !== cartId) throw missing();
       const cart = await this.snapshot(tx, row);
       if (!cart) throw missing();
-      if (mode === 'pickup' && !cart.store.pickupAllowed) {
-        throw new ApiException(HttpStatus.CONFLICT, 'CART_PICKUP_UNAVAILABLE', 'This store does not offer pickup');
+      if (mode === 'pickup') {
+        // Serialize this choice with the store's admin update, which clears existing pickup choices.
+        const [store] = await tx.select({ pickupAllowed: stores.pickupAllowed }).from(stores).where(eq(stores.id, row.storeId)).for('share');
+        if (!store?.pickupAllowed) {
+          throw new ApiException(HttpStatus.CONFLICT, 'CART_PICKUP_UNAVAILABLE', 'This store does not offer pickup');
+        }
       }
       if (note !== undefined || mode !== undefined) await tx.update(carts).set({ note, mode }).where(eq(carts.id, cartId));
     });

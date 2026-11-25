@@ -17,7 +17,6 @@ import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useStorePage } from '../api/store';
 import { CartBar } from '../components/CartBar';
-import { CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { ProductGrid } from '../components/ProductItems';
 import { ProductSheet } from '../components/ProductSheet';
 import { SectionTitle } from '../components/SectionTitle';
@@ -119,14 +118,14 @@ export function CategoryScreen() {
         <>
           <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
           <ProductSheet
-            product={conflict.storeName ? null : sheet}
+            product={sheet}
+            conflict={conflict}
             menu={store.categories.flatMap((c) => c.products)}
             countOf={cart.countOf}
             onAdd={cart.add}
             onOpen={setSheet}
             onClose={() => setSheet(null)}
           />
-          <CartConflictDialog {...conflict} />
         </>
       ) : null}
     </SafeAreaView>

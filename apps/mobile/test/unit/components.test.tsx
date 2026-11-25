@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { I18nManager, Text } from 'react-native';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -9,6 +9,23 @@ import { OtpInput } from '@/components/OtpInput';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { toast, ToastHost } from '@/components/Toast';
 import { Package } from 'lucide-react-native';
+import { renderRouter } from 'expo-router/testing-library';
+import RootLayout from '@/app/_layout';
+
+jest.mock('@expo-google-fonts/alexandria', () => ({
+  useFonts: () => [true, null],
+}));
+
+it('keeps navigation usable when the native direction does not change after a reload request', async () => {
+  const original = I18nManager.isRTL;
+  I18nManager.isRTL = false;
+  try {
+    await renderRouter({ _layout: RootLayout, index: () => <Text>App content</Text> });
+    expect(await screen.findByText('App content')).toBeTruthy();
+  } finally {
+    I18nManager.isRTL = original;
+  }
+});
 
 describe('OtpInput', () => {
   it('takes digits from an Arabic keyboard (١٢٣٤) as 1234', async () => {
