@@ -92,7 +92,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     'expo-secure-store',
     // Arabic RTL from the first launch (contract §7). The English switch (LTR) comes with the account screen.
-    ['expo-localization', { supportsRTL: true, forcesRTL: true }],
+    ['expo-localization', { supportsRTL: true }],
     'expo-sharing',
     ['expo-location', { locationWhenInUsePermission: 'توصيلة تستخدم موقعك لتحديد عنوان التوصيل على الخريطة.' }],
     'expo-asset',

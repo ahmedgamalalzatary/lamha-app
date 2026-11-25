@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Check, ChevronLeft, MapPin, Pencil, Trash2, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -107,7 +108,7 @@ export function AddressesSheet({ visible, onClose }: { visible: boolean; onClose
               {t('address.otherText')}
             </AppText>
           </View>
-          <ChevronLeft size={22} color={colors.ink2} />
+          <DirectionalIcon icon={ChevronLeft} size={22} color={colors.ink2} />
         </PressableScale>
       </View>
       <ConfirmDialog

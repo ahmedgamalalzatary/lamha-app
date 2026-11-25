@@ -1,6 +1,7 @@
 import type { Category } from '@tawsela/shared';
 import { ChevronLeft } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
 import { PressableScale } from '@/components/PressableScale';
@@ -40,7 +41,7 @@ export function CategoriesSheet({
           <AppText color={colors.ink2} style={styles.count}>
             ({c.count})
           </AppText>
-          <ChevronLeft size={20} color={colors.ink2} />
+          <DirectionalIcon icon={ChevronLeft} size={20} color={colors.ink2} />
         </PressableScale>
       ))}
     </BottomSheet>

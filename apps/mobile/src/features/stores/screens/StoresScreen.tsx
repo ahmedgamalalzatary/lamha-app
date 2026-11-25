@@ -8,7 +8,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { errorMessage } from '@/core/api/error-message';
-import { useT } from '@/core/i18n';
+import { useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useDeliveryScope } from '@/features/addresses/chosen-address';
 import { useCuisines, useStores } from '../api/stores';
@@ -37,10 +37,12 @@ const NO_FLOOR = 0;
  * sort and rating sheets, store rows, empty state. Opened from a home tile, whose label is the title.
  */
 export function StoresScreen() {
+  const textAlign = useTextStart();
+  const locale = useLocale();
   const t = useT();
   const params = useLocalSearchParams<{ vertical: string; title?: string }>();
   const vertical: Vertical = VERTICALS.includes(params.vertical as Vertical) ? (params.vertical as Vertical) : 'restaurant';
-  const title = params.title || verticalLabel(vertical);
+  const title = params.title || verticalLabel(vertical, locale);
 
   const [text, setText] = useState('');
   const q = useSettled(text);
@@ -64,7 +66,7 @@ export function StoresScreen() {
           placeholderTextColor={colors.ink2}
           maxLength={SEARCH_MAX_LENGTH}
           returnKeyType="search"
-          style={styles.input}
+          style={[styles.input, { textAlign }]}
         />
       </View>
       {cuisines.data?.length ? <CuisineCircles cuisines={cuisines.data} selected={cuisineId} onSelect={setCuisineId} /> : null}
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     backgroundColor: colors.surface,
   },
-  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink, textAlign: 'right' },
+  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink },
   count: { paddingHorizontal: spacing.lg },
   errorBox: { padding: spacing.lg, gap: spacing.md },
 });

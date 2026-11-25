@@ -16,7 +16,7 @@ import { toast } from '@/components/Toast';
 import { ApiRequestError } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
-import { useT } from '@/core/i18n';
+import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, radius, spacing } from '@/core/theme';
 import { partnersApi } from '../api/partners';
 
@@ -32,6 +32,7 @@ const fullName = (a: PartnerAccount) => `${a.firstName} ${a.lastName}`.trim();
  * account screen's cards, sheets and the address-delete confirm look.
  */
 export function AccountsScreen() {
+  const textAlign = useTextStart();
   const t = useT();
   const client = useQueryClient();
   const [query, setQuery] = useState('');
@@ -80,7 +81,7 @@ export function AccountsScreen() {
           accessibilityLabel={t('accounts.search')}
           placeholder={t('accounts.searchPlaceholder')}
           placeholderTextColor={colors.ink2}
-          style={styles.searchInput}
+          style={[styles.searchInput, { textAlign }]}
         />
       </View>
 
@@ -314,7 +315,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.input,
   },
-  searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.ink, paddingVertical: spacing.md, textAlign: 'right' },
+  searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.ink, paddingVertical: spacing.md },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.md },
   grow: { flexGrow: 1 },
   skeleton: { height: 92, borderRadius: radius.md },

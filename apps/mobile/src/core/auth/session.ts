@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { api, ApiRequestError } from '../api/client';
 import { cartStore } from '@/features/cart/cart-store';
 import { queryClient } from '../query';
+import { localePreference } from '../i18n/locale';
 
 /**
  * loading: reading the stored session at launch. offline: a session is stored but the server could
@@ -62,6 +63,9 @@ export const session = {
     // The cart belongs to the account that filled it (review F30).
     cartStore.clear();
     await keep(res, gen);
+    if (gen === generation && localePreference.current() !== res.user.locale) {
+      await localePreference.restore(res.user.locale);
+    }
   },
 
   /** A fresh copy of the signed-in account; ignored once that account is no longer signed in. */

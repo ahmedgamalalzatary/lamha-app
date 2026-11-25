@@ -18,7 +18,7 @@ import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
 import { useReduceMotion } from '@/core/hooks/useReduceMotion';
-import { useT } from '@/core/i18n';
+import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { AddButton } from './AddButton';
 import { ProductPicture } from './ProductItems';
@@ -50,6 +50,7 @@ export function ProductSheet({ product, ...rest }: Props) {
 }
 
 function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & { product: Product }) {
+  const locale = useLocale();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [chosen, setChosen] = useState<number[]>([]);
@@ -60,7 +61,7 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
   // "غير متوفر" items are never offered with this one.
   const together = orderedTogether(menu.filter((p) => p.active || p.id === product.id), product.id);
   const image = mediaUrl(product.image);
-  const addLabel = complete ? `${t('product.add')} ${formatMoney(total)}` : t('product.add');
+  const addLabel = complete ? `${t('product.add')} ${formatMoney(total, locale)}` : t('product.add');
 
   const toggleIngredient = (i: Ingredient) => setRemoved((r) => (r.includes(i.id) ? r.filter((id) => id !== i.id) : [...r, i.id]));
 
@@ -166,7 +167,7 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
               </AppText>
               {complete ? (
                 <AppText weight="semibold" color={colors.bg}>
-                  {formatMoney(total)}
+                  {formatMoney(total, locale)}
                 </AppText>
               ) : null}
             </PressableScale>
@@ -197,6 +198,7 @@ function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Props & {
 
 /** An option group: title, "مطلوب", "اختر 1", and its rows with the price change. */
 function Group({ group, chosen, onPick }: { group: OptionGroup; chosen: number[]; onPick: (optionId: number) => void }) {
+  const locale = useLocale();
   const t = useT();
   const single = group.maxChoices === 1;
   return (
@@ -218,7 +220,7 @@ function Group({ group, chosen, onPick }: { group: OptionGroup; chosen: number[]
       </AppText>
       {group.options.map((o) => {
         const on = chosen.includes(o.id);
-        const label = o.priceDelta ? `${o.name} (+${formatMoney(o.priceDelta)})` : o.name;
+        const label = o.priceDelta ? `${o.name} (+${formatMoney(o.priceDelta, locale)})` : o.name;
         return (
           <PressableScale
             key={o.id}
@@ -232,7 +234,7 @@ function Group({ group, chosen, onPick }: { group: OptionGroup; chosen: number[]
             <AppText weight="medium" style={styles.optionName}>
               {o.name}
             </AppText>
-            {o.priceDelta ? <AppText color={colors.ink2}>{`(+${formatMoney(o.priceDelta)})`}</AppText> : null}
+            {o.priceDelta ? <AppText color={colors.ink2}>{`(+${formatMoney(o.priceDelta, locale)})`}</AppText> : null}
             <View style={[single ? styles.radio : styles.box, on ? styles.markOn : null]}>{on ? <Check size={14} color={colors.bg} /> : null}</View>
           </PressableScale>
         );

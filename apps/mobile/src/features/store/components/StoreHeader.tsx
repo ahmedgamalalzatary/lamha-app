@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { mediaUrl } from '@/core/api/client';
-import { useT } from '@/core/i18n';
+import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { FreeFee } from '@/features/stores/components/FreeFee';
 
@@ -19,6 +19,7 @@ const STAR = '#F5A623';
  * [Open] A closed store's cover is darkened, not turned grey (no greyscale filter in the app).
  */
 export function StoreHeader({ store }: { store: CatalogStore }) {
+  const locale = useLocale();
   const t = useT();
   const cover = mediaUrl(store.cover);
   const logo = mediaUrl(store.logo);
@@ -51,9 +52,9 @@ export function StoreHeader({ store }: { store: CatalogStore }) {
         </View>
       </View>
       <View style={styles.info}>
-        <Info icon={Clock} label={t('store.deliveryTime')} value={formatMinutes(store.deliveryMinutes)} color={colors.info} />
+        <Info icon={Clock} label={t('store.deliveryTime')} value={formatMinutes(store.deliveryMinutes, locale)} color={colors.info} />
         <View style={styles.divider} />
-        <Info icon={Bike} label={t('store.deliveryFee')} value={store.deliveryFee === 0 ? <FreeFee size={16} /> : formatAmount(store.deliveryFee)} />
+        <Info icon={Bike} label={t('store.deliveryFee')} value={store.deliveryFee === 0 ? <FreeFee size={16} /> : formatAmount(store.deliveryFee, locale)} />
         <View style={styles.divider} />
         <Info icon={StoreIcon} label={t('store.deliveredBy')} value={t(`store.deliveredBy.${store.deliveredBy}`)} color={colors.info} />
       </View>

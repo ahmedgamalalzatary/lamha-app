@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack } from 'expo-router';
 import { fireEvent, screen } from 'expo-router/testing-library';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -44,6 +45,27 @@ async function signedInCustomer() {
 }
 
 describe('حسابي (contract §8.14; real API)', () => {
+  it('switches the app and signed-in profile to English and back to Arabic', async () => {
+    const { user } = await signedInCustomer();
+    await renderApp(ROUTES, { initialUrl: '/customer/account' });
+
+    await press('اللغة');
+    expect(screen.getByText('سيُعاد تشغيل التطبيق لتغيير اللغة.')).toBeTruthy();
+    await press('English');
+    expect(await screen.findByRole('button', { name: 'Language' })).toBeTruthy();
+    expect(screen.getByText('احمد الزعتري')).toBeTruthy();
+    const [english] = await sql<{ locale: string }[]>('SELECT locale FROM users WHERE id = ?', [user.id]);
+    expect(english?.locale).toBe('en');
+    expect(await AsyncStorage.getItem('tawsela.locale')).toBe('en');
+
+    await press('Language');
+    await press('العربية');
+    expect(await screen.findByText('حسابي')).toBeTruthy();
+    const [arabic] = await sql<{ locale: string }[]>('SELECT locale FROM users WHERE id = ?', [user.id]);
+    expect(arabic?.locale).toBe('ar');
+    expect(await AsyncStorage.getItem('tawsela.locale')).toBe('ar');
+  });
+
   it('shows the name and signs out, ending the session on the server', async () => {
     const { refreshToken } = await signedInCustomer();
     await renderApp(ROUTES, { initialUrl: '/customer/account' });

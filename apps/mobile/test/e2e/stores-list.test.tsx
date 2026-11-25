@@ -5,7 +5,7 @@ import { Text } from 'react-native';
 import { session } from '@/core/auth/session';
 import { StoresScreen } from '@/features/stores/screens/StoresScreen';
 import { insertCuisine, insertStore } from '../utils/catalog';
-import { insertUser, resetDb, signInAs } from '../utils/db';
+import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { renderApp, testQueryClient } from '../utils/render';
 
 let client: QueryClient;
@@ -42,6 +42,17 @@ beforeEach(async () => {
 });
 
 describe('a store list (contract §8.3; real API)', () => {
+  it('uses English units and the default English title with the original catalog names', async () => {
+    await sql("UPDATE users SET locale = 'en' WHERE phone = ?", ['01554459196']);
+    await session.signIn(await signInAs('01554459196'));
+    await renderApp(ROUTES, { initialUrl: '/stores/restaurant' });
+
+    const row = await screen.findByRole('button', { name: 'شاورما الساقية' });
+    expect(screen.getByPlaceholderText('Search Restaurants')).toBeTruthy();
+    expect(within(row).getByText('50 min')).toBeTruthy();
+    expect(within(row).getByText('15 EGP')).toBeTruthy();
+  });
+
   it("lists the type's stores with their count, time, fee and the closed look; a row opens the store", async () => {
     await open();
     expect(await screen.findByText('3 المتاجر')).toBeTruthy();

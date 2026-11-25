@@ -1,7 +1,7 @@
 import { Eye, EyeOff, type LucideIcon, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, type TextInputProps, View } from 'react-native';
-import { useT } from '@/core/i18n';
+import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, radius, spacing } from '@/core/theme';
 import { AppText } from './AppText';
 
@@ -37,6 +37,7 @@ export function TextField({
   accessibilityLabel,
   ...rest
 }: Props) {
+  const textAlign = useTextStart();
   const t = useT();
   const [hidden, setHidden] = useState(true);
   const [focused, setFocused] = useState(false);
@@ -69,7 +70,7 @@ export function TextField({
             setFocused(false);
             rest.onBlur?.(e);
           }}
-          style={[styles.input, !label && !rest.placeholder && styles.centered]}
+          style={[styles.input, { textAlign }, !label && !rest.placeholder && styles.centered]}
         />
         {clearable && value ? (
           <Pressable
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     paddingHorizontal: spacing.xs,
   },
-  input: { flex: 1, fontFamily: fonts.regular, fontSize: 16, color: colors.ink, paddingVertical: spacing.md, textAlign: 'right' },
+  input: { flex: 1, fontFamily: fonts.regular, fontSize: 16, color: colors.ink, paddingVertical: spacing.md },
   centered: { textAlign: 'center' },
   eye: { paddingStart: spacing.sm },
   icon: { marginEnd: spacing.sm },

@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpLeft, ChevronLeft, Search, ShoppingBasket, Store, Ut
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -12,7 +13,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
-import { type TranslationKey, useT } from '@/core/i18n';
+import { type TranslationKey, useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useDeliveryScope } from '@/features/addresses/chosen-address';
 import { useSearch, useSuggestions } from '@/features/stores/api/stores';
@@ -67,7 +68,7 @@ function Suggestions({ text, scope, onSearch, onFill }: { text: string; scope: S
         <AppText weight="bold" size={fontSizes.listTitle} numberOfLines={1} style={styles.flex}>
           {t('search.for', { q: text.trim() })}
         </AppText>
-        <ChevronLeft size={20} color={colors.ink2} />
+        <DirectionalIcon icon={ChevronLeft} size={20} color={colors.ink2} />
       </PressableScale>
       {(suggestions.data ?? []).map((s) => (
         <View key={`${s.name}-${s.vertical}`} style={styles.line}>
@@ -85,7 +86,7 @@ function Suggestions({ text, scope, onSearch, onFill }: { text: string; scope: S
             </View>
           </PressableScale>
           <PressableScale accessibilityRole="button" accessibilityLabel={t('search.fill')} onPress={() => onFill(s.name)} hitSlop={10} scaleTo={0.85}>
-            <ArrowUpLeft size={22} color={colors.ink2} />
+            <DirectionalIcon icon={ArrowUpLeft} size={22} color={colors.ink2} />
           </PressableScale>
         </View>
       ))}
@@ -94,6 +95,7 @@ function Suggestions({ text, scope, onSearch, onFill }: { text: string; scope: S
 }
 
 function ProductCard({ product }: { product: Product }) {
+  const locale = useLocale();
   const uri = mediaUrl(product.image);
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={product.name} onPress={() => openProduct(product)} style={styles.product}>
@@ -103,7 +105,7 @@ function ProductCard({ product }: { product: Product }) {
       <AppText weight="bold" numberOfLines={1}>
         {product.name}
       </AppText>
-      <AppText weight="bold">{formatMoney(product.price)}</AppText>
+      <AppText weight="bold">{formatMoney(product.price, locale)}</AppText>
     </PressableScale>
   );
 }
@@ -176,6 +178,7 @@ function Results({ q, scope }: { q: string; scope: SearchScope }) {
  * typing, then each matching store with its matching products.
  */
 export function SearchScreen() {
+  const textAlign = useTextStart();
   const t = useT();
   const [text, setText] = useState('');
   const [submitted, setSubmitted] = useState('');
@@ -201,7 +204,7 @@ export function SearchScreen() {
             placeholderTextColor={colors.ink2}
             returnKeyType="search"
             autoFocus
-            style={styles.input}
+            style={[styles.input, { textAlign }]}
           />
           {text ? (
             <PressableScale accessibilityRole="button" accessibilityLabel={t('search.clear')} onPress={() => search('')} hitSlop={10} scaleTo={0.85}>
@@ -210,7 +213,7 @@ export function SearchScreen() {
           ) : null}
         </View>
         <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} hitSlop={8} scaleTo={0.9}>
-          <ArrowRight size={26} color={colors.ink} />
+          <DirectionalIcon icon={ArrowRight} size={26} color={colors.ink} />
         </PressableScale>
       </View>
       <Tabs scope={scope} onChange={setScope} />
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.input,
   },
-  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink, textAlign: 'right' },
+  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink },
   tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.line },
   tab: { flex: 1, alignItems: 'center', paddingTop: spacing.md, gap: spacing.md },
   tabLine: { height: 3, width: 64, borderRadius: 2, backgroundColor: 'transparent' },

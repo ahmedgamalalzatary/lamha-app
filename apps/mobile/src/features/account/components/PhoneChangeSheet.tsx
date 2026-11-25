@@ -8,7 +8,7 @@ import { OtpInput } from '@/components/OtpInput';
 import { toast } from '@/components/Toast';
 import { session } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
-import { useT } from '@/core/i18n';
+import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, radius, spacing } from '@/core/theme';
 import { meApi } from '../api/me';
 
@@ -18,6 +18,7 @@ import { meApi } from '../api/me';
  * title says so. The code step after it is not captured: it uses the "رمز التحقق" boxes [Open].
  */
 export function PhoneChangeSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const textAlign = useTextStart();
   const t = useT();
   const [phone, setPhone] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export function PhoneChangeSheet({ visible, onClose }: { visible: boolean; onClo
                 keyboardType="phone-pad"
                 maxLength={14}
                 autoFocus
-                style={[styles.input, !!error && styles.invalid]}
+                style={[styles.input, { textAlign }, !!error && styles.invalid]}
               />
               {error ? (
                 <AppText size={12} color={colors.danger} style={styles.error}>
@@ -111,7 +112,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 16,
     color: colors.ink,
-    textAlign: 'right',
     borderWidth: 1,
     borderColor: 'transparent',
   },

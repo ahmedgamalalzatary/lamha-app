@@ -2,7 +2,7 @@ import { ChevronDown, Phone } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { TextField } from '@/components/TextField';
-import { useT } from '@/core/i18n';
+import { useT, useTextStart } from '@/core/i18n';
 import { colors, radius, spacing } from '@/core/theme';
 
 /** Egypt only (contract §7): the country box shows the flag and +2 and opens nothing. */
@@ -51,6 +51,7 @@ export function PhoneField({ value, onChangeText, error }: Props) {
 
 /** "أهلاً بعودتك": the phone typed on the step before, locked, with the 11/11 count under it. */
 export function LockedPhone({ phone }: { phone: string }) {
+  const textAlign = useTextStart();
   const t = useT();
   return (
     <View style={styles.lockedWrap}>
@@ -59,7 +60,7 @@ export function LockedPhone({ phone }: { phone: string }) {
       </AppText>
       <View style={styles.locked} accessible accessibilityLabel={`${t('auth.phone')}: ${phone}`}>
         <Phone size={22} color={colors.ink2} />
-        <AppText size={17} style={styles.lockedNumber}>
+        <AppText size={17} style={[styles.lockedNumber, { textAlign }]}>
           {phone}
         </AppText>
         <Country round />
@@ -95,6 +96,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg + 4,
     paddingHorizontal: spacing.xl,
   },
-  lockedNumber: { flex: 1, textAlign: 'right' },
+  lockedNumber: { flex: 1 },
   count: { alignSelf: 'flex-end', marginTop: -spacing.xs },
 });

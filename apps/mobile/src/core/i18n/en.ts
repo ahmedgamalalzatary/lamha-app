@@ -65,6 +65,9 @@ export const en: Record<TranslationKey, string> = {
   'auth.reset.mismatch': 'The passwords do not match',
 
   'account.title': 'Account',
+  'account.language': 'Language',
+  'account.languageRestart': 'The app will reload to change the language.',
+  'account.languageRestartFailed': 'Close and reopen the app to apply the new language.',
   'account.viewProfile': 'View profile',
   'account.notifications': 'Notifications',
   'account.groupAccount': 'Account',

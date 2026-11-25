@@ -4,13 +4,14 @@ import { Camera, ChevronRight, Lock, type LucideIcon, Mail, MapPin, Phone, User,
 import { type ReactNode, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { toast } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
-import { useT } from '@/core/i18n';
+import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, radius, spacing } from '@/core/theme';
 import { meApi } from '../api/me';
 import { EmailCodeSheet } from '../components/EmailCodeSheet';
@@ -22,6 +23,7 @@ import { PhotoSheet } from '../components/PhotoSheet';
  * editable; the phone's "تغيير" opens its sheet and the avatar's camera the "اختر صورة" sheet.
  */
 export function ProfileScreen() {
+  const textAlign = useTextStart();
   const t = useT();
   const user = useSession((s) => s.user);
   const [email, setEmail] = useState(user?.email ?? '');
@@ -55,7 +57,7 @@ export function ProfileScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={12} onPress={() => router.back()}>
-          <ChevronRight size={28} color={colors.primary} />
+          <DirectionalIcon icon={ChevronRight} size={28} color={colors.primary} />
         </Pressable>
         <AppText accessibilityRole="header" weight="bold" size={19} style={styles.headerTitle}>
           {t('profile.title')}
@@ -99,7 +101,7 @@ export function ProfileScreen() {
                 placeholderTextColor={colors.ink2}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                style={styles.input}
+                style={[styles.input, { textAlign }]}
               />
             </Box>
             {emailError ? (
@@ -215,7 +217,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   boxValue: { flex: 1 },
-  input: { fontFamily: fonts.regular, fontSize: 16, color: colors.ink, textAlign: 'right', paddingVertical: spacing.md },
+  input: { fontFamily: fonts.regular, fontSize: 16, color: colors.ink, paddingVertical: spacing.md },
   genders: { flexDirection: 'row', gap: spacing.lg },
   gender: {
     flex: 1,

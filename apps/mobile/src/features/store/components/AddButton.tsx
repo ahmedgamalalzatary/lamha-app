@@ -1,6 +1,7 @@
 import { isCustomizable, type Product } from '@tawsela/shared';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
@@ -29,7 +30,7 @@ export function AddButton({ product, count, onPress }: { product: Product; count
           {count}
         </AppText>
       ) : custom ? (
-        <ChevronLeft size={22} color={colors.primary} />
+        <DirectionalIcon icon={ChevronLeft} size={22} color={colors.primary} />
       ) : (
         <Plus size={22} color={colors.primary} />
       )}

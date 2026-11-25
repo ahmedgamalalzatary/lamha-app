@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { ArrowRight, Heart } from 'lucide-react-native';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -23,7 +24,7 @@ export function FavoritesScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.bar}>
         <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} hitSlop={8} scaleTo={0.9}>
-          <ArrowRight size={26} color={colors.ink} />
+          <DirectionalIcon icon={ArrowRight} size={26} color={colors.ink} />
         </PressableScale>
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle} style={styles.title}>
           {t('favorites.title')}

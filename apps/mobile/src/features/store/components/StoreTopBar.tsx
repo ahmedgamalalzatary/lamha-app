@@ -3,6 +3,7 @@ import { ChevronRight, Heart, Search } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
@@ -28,7 +29,7 @@ export function StoreTopBar({ title, solid, favorite, onSearch, children }: Prop
     <View pointerEvents="box-none" style={[styles.wrap, { paddingTop: insets.top }, solid ? styles.solid : null]}>
       <View pointerEvents="box-none" style={styles.bar}>
         <Round label={t('common.back')} onPress={() => router.back()}>
-          <ChevronRight size={26} color={colors.ink} />
+          <DirectionalIcon icon={ChevronRight} size={26} color={colors.ink} />
         </Round>
         <View style={styles.title} accessibilityElementsHidden={!solid} importantForAccessibility={solid ? 'auto' : 'no-hide-descendants'}>
           {solid ? (

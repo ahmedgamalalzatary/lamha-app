@@ -4,11 +4,12 @@ import { ArrowRight, Search } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { PressableScale } from '@/components/PressableScale';
 import { errorMessage } from '@/core/api/error-message';
-import { useT } from '@/core/i18n';
+import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useStorePage } from '../api/store';
 import { CartBar } from '../components/CartBar';
@@ -22,6 +23,7 @@ import { useProductTaps } from '../hooks/useProductTaps';
  * typed, or nothing matching, leaves the page blank. The bar shows once something is in the cart [Open].
  */
 export function StoreSearchScreen() {
+  const textAlign = useTextStart();
   const t = useT();
   const storeId = Number(useLocalSearchParams<{ id: string }>().id);
   const page = useStorePage(storeId);
@@ -36,7 +38,7 @@ export function StoreSearchScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.bar}>
         <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} scaleTo={0.9} hitSlop={8}>
-          <ArrowRight size={26} color={colors.ink} />
+          <DirectionalIcon icon={ArrowRight} size={26} color={colors.ink} />
         </PressableScale>
         <AppText accessibilityRole="header" weight="bold" size={22} color={colors.primary} style={styles.title}>
           {t('store.searchTitle')}
@@ -56,7 +58,7 @@ export function StoreSearchScreen() {
             placeholderTextColor={colors.ink}
             returnKeyType="search"
             autoFocus
-            style={styles.input}
+            style={[styles.input, { textAlign }]}
           />
         </View>
         {page.isError ? (
@@ -108,6 +110,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  input: { flex: 1, fontFamily: fonts.medium, fontSize: fontSizes.listTitle, color: colors.ink, textAlign: 'right' },
+  input: { flex: 1, fontFamily: fonts.medium, fontSize: fontSizes.listTitle, color: colors.ink },
   error: { padding: spacing.xl, gap: spacing.md, alignItems: 'center' },
 });

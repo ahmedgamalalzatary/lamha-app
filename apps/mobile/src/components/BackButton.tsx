@@ -3,6 +3,7 @@ import { ArrowRight, ChevronRight } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 import { useT } from '@/core/i18n';
 import { colors, radius } from '@/core/theme';
+import { DirectionalIcon } from './DirectionalIcon';
 import { PressableScale } from './PressableScale';
 
 /**
@@ -21,7 +22,7 @@ export function BackButton({ variant = 'circle', onPress }: { variant?: 'circle'
       scaleTo={0.9}
       style={styles[variant]}
     >
-      {variant === 'circle' ? <ArrowRight size={24} color={colors.ink} /> : <ChevronRight size={24} color={colors.ink} />}
+      {variant === 'circle' ? <DirectionalIcon icon={ArrowRight} size={24} color={colors.ink} /> : <DirectionalIcon icon={ChevronRight} size={24} color={colors.ink} />}
     </PressableScale>
   );
 }

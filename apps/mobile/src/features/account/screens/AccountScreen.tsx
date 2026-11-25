@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { Bell, ChevronLeft, Heart, LogOut, MapPin, Trash2, User } from 'lucide-react-native';
+import { Bell, ChevronLeft, Heart, Languages, LogOut, MapPin, Trash2, User } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -12,7 +13,8 @@ import { PressableScale } from '@/components/PressableScale';
 import { TextField } from '@/components/TextField';
 import { session, useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
-import { useT } from '@/core/i18n';
+import { useLocale, useT } from '@/core/i18n';
+import { localePreference } from '@/core/i18n/locale';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { meApi } from '../api/me';
@@ -25,11 +27,21 @@ import { AccountRow } from '../components/AccountRow';
  */
 export function AccountScreen() {
   const t = useT();
+  const nextLocale = useLocale() === 'ar' ? 'en' : 'ar';
   const user = useSession((s) => s.user);
   const [deleting, setDeleting] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmOut, setConfirmOut] = useState(false);
   const [addressesOpen, setAddressesOpen] = useState(false);
+  const [confirmLanguage, setConfirmLanguage] = useState(false);
+
+  const changeLanguage = useSubmit(async () => {
+    const generation = session.generation();
+    const updated = await meApi.update({ locale: nextLocale });
+    if (generation !== session.generation()) return;
+    session.setUser(updated);
+    await localePreference.save(nextLocale);
+  });
 
   const signOut = useSubmit(async () => {
     await session.signOut();
@@ -66,13 +78,14 @@ export function AccountScreen() {
             </AppText>
             <AppText color={colors.ink2}>{t('account.viewProfile')}</AppText>
           </View>
-          <ChevronLeft size={22} color={colors.ink2} />
+          <DirectionalIcon icon={ChevronLeft} size={22} color={colors.ink2} />
         </PressableScale>
 
         <AppText weight="semibold" color={colors.ink2} style={styles.group}>
           {t('account.groupAccount')}
         </AppText>
         <AccountRow icon={User} label={t('account.settings')} onPress={() => router.push('/profile')} />
+        <AccountRow icon={Languages} label={t('account.language')} disabled={changeLanguage.busy} onPress={() => setConfirmLanguage(true)} />
         {user.role === 'customer' ? (
           <>
             <AccountRow icon={Heart} label={t('account.favorites')} onPress={() => router.push('/favorites')} />
@@ -97,12 +110,25 @@ export function AccountScreen() {
           onPress={() => setConfirmOut(true)}
           style={styles.signOut}
         >
-          <LogOut size={20} color={colors.danger} />
+          <DirectionalIcon icon={LogOut} size={20} color={colors.danger} />
           <AppText weight="bold" size={17} color={colors.danger}>
             {t('account.signOut')}
           </AppText>
         </PressableScale>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={confirmLanguage}
+        tone="primary"
+        title={t('account.language')}
+        message={t('account.languageRestart')}
+        confirmLabel={nextLocale === 'en' ? 'English' : 'العربية'}
+        onConfirm={() => {
+          setConfirmLanguage(false);
+          void changeLanguage.run();
+        }}
+        onCancel={() => setConfirmLanguage(false)}
+      />
 
       <ConfirmDialog
         visible={confirmOut}

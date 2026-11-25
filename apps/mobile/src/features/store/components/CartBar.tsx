@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
-import { useT } from '@/core/i18n';
+import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 
 /**
@@ -14,6 +14,7 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
  * [Open] A store with no minimum shows no bar until the cart has items.
  */
 export function CartBar({ count, total, minimumOrder }: { count: number; total: number; minimumOrder: number }) {
+  const locale = useLocale();
   const t = useT();
   const insets = useSafeAreaInsets();
   const left = minimumOrderLeft(total, minimumOrder);
@@ -31,14 +32,14 @@ export function CartBar({ count, total, minimumOrder }: { count: number; total: 
             {t('store.viewCart')}
           </AppText>
           <AppText weight="semibold" color={colors.bg}>
-            {formatMoney(total)}
+            {formatMoney(total, locale)}
           </AppText>
         </PressableScale>
       ) : (
         <View style={styles.minimum}>
           <View style={styles.minimumRow}>
             <Lock size={18} color={colors.primary} />
-            <AppText weight="semibold">{t('store.minimumOrder', { amount: formatMoney(left) })}</AppText>
+            <AppText weight="semibold">{t('store.minimumOrder', { amount: formatMoney(left, locale) })}</AppText>
           </View>
           <View style={styles.track}>
             <View style={[styles.progress, { width: `${Math.min(100, (total / minimumOrder) * 100)}%` }]} />

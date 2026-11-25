@@ -5,6 +5,7 @@ import { ChevronRight, LayoutGrid, Search, SearchX } from 'lucide-react-native';
 import { type ComponentRef, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -12,7 +13,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { mediaUrl } from '@/core/api/client';
-import { useT } from '@/core/i18n';
+import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useStorePage } from '../api/store';
 import { CartBar } from '../components/CartBar';
@@ -32,6 +33,7 @@ const matches = (q: string) => {
  * sub-category is its own section.
  */
 export function CategoryScreen() {
+  const textAlign = useTextStart();
   const t = useT();
   const params = useLocalSearchParams<{ id: string; categoryId: string }>();
   const storeId = Number(params.id);
@@ -60,7 +62,7 @@ export function CategoryScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.bar}>
         <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} scaleTo={0.9} style={styles.round}>
-          <ChevronRight size={24} color={colors.ink} />
+          <DirectionalIcon icon={ChevronRight} size={24} color={colors.ink} />
         </PressableScale>
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle} numberOfLines={1} style={styles.title}>
           {title}
@@ -95,7 +97,7 @@ export function CategoryScreen() {
               placeholder={t('store.search')}
               placeholderTextColor={colors.ink2}
               returnKeyType="search"
-              style={styles.input}
+              style={[styles.input, { textAlign }]}
             />
           </View>
           {children.length ? <Circles parent={category!} items={children} selected={sub} onSelect={setSub} /> : null}
@@ -179,7 +181,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.input,
   },
-  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink, textAlign: 'right' },
+  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink },
   circles: { gap: spacing.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   circleItem: { alignItems: 'center', gap: spacing.sm, width: CIRCLE + 16 },
   circle: {

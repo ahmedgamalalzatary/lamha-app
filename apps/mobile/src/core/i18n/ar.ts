@@ -63,6 +63,9 @@ export const ar = {
   'auth.reset.mismatch': 'كلمتا المرور غير متطابقتين',
 
   'account.title': 'حسابي',
+  'account.language': 'اللغة',
+  'account.languageRestart': 'سيُعاد تشغيل التطبيق لتغيير اللغة.',
+  'account.languageRestartFailed': 'أغلق التطبيق وافتحه لتطبيق اللغة الجديدة.',
   'account.viewProfile': 'عرض الملف الشخصي',
   'account.notifications': 'الإشعارات',
   'account.groupAccount': 'الحساب',

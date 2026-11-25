@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { ArrowRight, ChevronDown, ShoppingBag } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
+import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
@@ -17,7 +18,7 @@ export function StoresTopBar() {
   return (
     <View style={styles.bar}>
       <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} hitSlop={8} scaleTo={0.9}>
-        <ArrowRight size={26} color={colors.ink} />
+        <DirectionalIcon icon={ArrowRight} size={26} color={colors.ink} />
       </PressableScale>
       <PressableScale
         accessibilityRole="button"
