@@ -12,7 +12,6 @@ import {
   DRIVER_SOCKET_EVENTS,
   driverStep,
   type GeneratedPassword,
-  ORDER_SOCKET_EVENTS,
   type OrderStatus,
   shiftAt,
   type ShiftTime,
@@ -219,7 +218,7 @@ export class DriversService {
    * OFFER_TAKEN. Taking an order starts his skips in a row again.
    */
   async accept(driverId: number, orderId: number): Promise<DriverOrderDetails> {
-    const storeId = await this.db.transaction(async (tx) => {
+    const order = await this.db.transaction(async (tx) => {
       const me = await this.driverRow(tx, driverId, true);
       const now = new Date();
       if (me.blockedUntil && me.blockedUntil > now) throw conflict('DRIVER_BLOCKED', 'Blocked for skipping offers');
@@ -227,10 +226,10 @@ export class DriversService {
       const order = await this.lockOffer(tx, orderId);
       await tx.update(orders).set({ driverId }).where(eq(orders.id, orderId));
       await tx.update(drivers).set({ skipsInRow: 0 }).where(eq(drivers.userId, driverId));
-      return order.storeId;
+      return order;
     });
     this.live.toDrivers(DRIVER_SOCKET_EVENTS.offerGone, { id: orderId });
-    this.live.toStore(storeId, ORDER_SOCKET_EVENTS.status, { id: orderId });
+    this.live.orderChanged(order, { id: orderId });
     return this.details(driverId, orderId);
   }
 
@@ -326,7 +325,7 @@ export class DriversService {
 
   /** وصلت للمتجر, خارج للتوصيل, تم التوصيل on his own order; the row is locked so a double tap moves it once. */
   async step(driverId: number, orderId: number, action: DriverAction): Promise<DriverOrderDetails> {
-    const { storeId, status } = await this.db.transaction(async (tx) => {
+    const { row, status } = await this.db.transaction(async (tx) => {
       const [row] = await tx
         .select()
         .from(orders)
@@ -340,9 +339,9 @@ export class DriversService {
         .set({ ...(change.status ? { status: change.status } : {}), ...(change.atStore ? { atStoreAt: new Date() } : {}) })
         .where(eq(orders.id, orderId));
       if (change.status) await tx.insert(orderEvents).values({ orderId, status: change.status, byUserId: driverId });
-      return { storeId: row.storeId, status: change.status ?? row.status };
+      return { row, status: change.status ?? row.status };
     });
-    this.live.toStore(storeId, ORDER_SOCKET_EVENTS.status, { id: orderId, status });
+    this.live.orderChanged(row, { id: orderId, status });
     return this.details(driverId, orderId);
   }
 
@@ -441,7 +440,7 @@ export class DriversService {
     this.live.toDrivers(DRIVER_SOCKET_EVENTS.offerGone, { id: orderId });
     this.live.toDriver(driverId, DRIVER_SOCKET_EVENTS.order, { id: orderId });
     if (before.driverId !== null && before.driverId !== driverId) this.live.toDriver(before.driverId, DRIVER_SOCKET_EVENTS.order, { id: orderId });
-    this.live.toStore(before.storeId, ORDER_SOCKET_EVENTS.status, { id: orderId });
+    this.live.orderChanged(before, { id: orderId });
   }
 
   settingsOf(): Promise<DriverSettings> {

@@ -1,6 +1,11 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   type AdminOrder,
+  canReorder,
+  type CustomerOrderDetails,
+  type OrderLine,
+  type ReorderInput,
+  type ReorderResult,
   type CheckoutQuote,
   type CheckoutQuoteInput,
   type CustomerCart,
@@ -39,7 +44,7 @@ import { OrdersGateway } from './orders.gateway.js';
 
 /** The delivery man, joined beside the customer (both are users). */
 const driverUsers = alias(users, 'driver_users');
-import { orderEvents, orderLines, type OrderRow, orders } from './orders.schema.js';
+import { orderEvents, orderLines, type OrderLineRow, type OrderRow, orders } from './orders.schema.js';
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 const hhmm = (time: string) => time.slice(0, 5);
@@ -139,6 +144,8 @@ export class OrdersService {
             name: line.product.name,
             options,
             removedIngredients: removed,
+            optionIds: line.optionIds,
+            removedIngredientIds: line.removedIngredientIds,
             image: line.product.image,
             unitPrice: line.unitPrice,
             quantity: line.quantity,
@@ -197,14 +204,7 @@ export class OrdersService {
       customer: { name: `${customer.firstName} ${customer.lastName}`.trim(), phone: order.phone ?? customer.phone },
       addressText: order.addressText,
       deliveryFee: order.deliveryFee,
-      lines: lines.map((l) => ({
-        name: l.name,
-        options: l.options,
-        removedIngredients: l.removedIngredients,
-        image: l.image,
-        unitPrice: l.unitPrice,
-        quantity: l.quantity,
-      })),
+      lines: lines.map(toOrderLine),
       payoutOption: order.payoutOption,
       storeFromDriver: order.storeFromDriver,
       driver: driver ? { name: nameOf(driver) } : null,
@@ -228,7 +228,7 @@ export class OrdersService {
       await tx.insert(orderEvents).values({ orderId: id, status: next, byUserId: userId });
       return { status: next, row };
     });
-    this.live.toStore(store.id, ORDER_SOCKET_EVENTS.status, { id, status });
+    this.live.orderChanged(row, { id, status });
     if (status === 'preparing' && row.mode === 'delivery' && store.deliveredBy === 'platform') this.live.toDrivers(DRIVER_SOCKET_EVENTS.offer, { id });
     if (row.driverId !== null) this.live.toDriver(row.driverId, DRIVER_SOCKET_EVENTS.order, { id });
     return this.partnerDetails(store.id, id);
@@ -251,6 +251,47 @@ export class OrdersService {
       .limit(100);
     const counts = await this.counts(this.db, rows.map((r) => r.order.id));
     return rows.map(({ order, store }) => toCustomerOrder(order, store, counts.get(order.id) ?? 0));
+  }
+
+  /** "تفاصيل الطلب" (§8.8): one of the customer's own orders. */
+  async details(userId: number, id: number): Promise<CustomerOrderDetails> {
+    const [row] = await this.db
+      .select({
+        order: orders,
+        store: { id: stores.id, name: stores.name, logo: stores.logo },
+        driver: { firstName: driverUsers.firstName, lastName: driverUsers.lastName },
+      })
+      .from(orders)
+      .innerJoin(stores, eq(stores.id, orders.storeId))
+      .leftJoin(driverUsers, eq(driverUsers.id, orders.driverId))
+      .where(and(eq(orders.id, id), eq(orders.customerId, userId)));
+    if (!row) throw myOrderNotFound();
+    const lines = await this.db.select().from(orderLines).where(eq(orderLines.orderId, id)).orderBy(asc(orderLines.id));
+    const { order, store, driver } = row;
+    return {
+      ...toCustomerOrder(order, store, lines.reduce((n, l) => n + l.quantity, 0)),
+      addressText: order.addressText,
+      driver: order.driverId !== null && driver ? { name: nameOf(driver) } : null,
+      lines: lines.map(toOrderLine),
+      paymentMethod: 'cash',
+    };
+  }
+
+  /** "اطلب تاني" (§8.8): a finished order's lines back in the cart, with the same choices. */
+  async reorder(userId: number, id: number, input: ReorderInput): Promise<ReorderResult> {
+    const [order] = await this.db.select().from(orders).where(and(eq(orders.id, id), eq(orders.customerId, userId)));
+    if (!order) throw myOrderNotFound();
+    if (!canReorder(order.status)) {
+      throw new ApiException(HttpStatus.CONFLICT, 'ORDER_STATUS', `The order is ${order.status}; it can be ordered again once it is over`);
+    }
+    const lines = await this.db.select().from(orderLines).where(eq(orderLines.orderId, id)).orderBy(asc(orderLines.id));
+    const items = lines.flatMap((l) =>
+      l.productId === null
+        ? []
+        : [{ productId: l.productId, quantity: l.quantity, optionIds: l.optionIds ?? [], removedIngredientIds: l.removedIngredientIds ?? [] }],
+    );
+    const { cart, skipped } = await this.carts.reorder(userId, order.storeId, items, input.replaceCartId);
+    return { cart, skipped: skipped + lines.length - items.length };
   }
 
   /** The dashboard's الطلبات table: newest first, optionally one status tab. */
@@ -333,6 +374,17 @@ export class OrdersService {
 /** The address as the store and the delivery man read it: "شارع 2، مبنى 2، الدور 3، شقه 2، temp". */
 const addressText = (a: AddressRow) =>
   [a.street, a.building, a.floor && `الدور ${a.floor}`, a.apartment, a.landmark].filter((part) => part?.trim()).join('، ');
+
+const myOrderNotFound = () => new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'You have no order with this id');
+
+const toOrderLine = (l: OrderLineRow): OrderLine => ({
+  name: l.name,
+  options: l.options,
+  removedIngredients: l.removedIngredients,
+  image: l.image,
+  unitPrice: l.unitPrice,
+  quantity: l.quantity,
+});
 
 const orderNotFound = () => new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'No order of this store has this id');
 

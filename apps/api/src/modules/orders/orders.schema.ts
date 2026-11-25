@@ -66,6 +66,9 @@ export const orderLines = mysqlTable(
     /** The chosen options' names ("ربع كيلو") and the struck-out ingredients ("بدون: بصل"). */
     options: json('options').$type<string[]>().notNull(),
     removedIngredients: json('removed_ingredients').$type<string[]>().notNull(),
+    /** The same choices by id, for "اطلب تاني" (§8.8); null on lines placed before they were kept. */
+    optionIds: json('option_ids').$type<number[]>(),
+    removedIngredientIds: json('removed_ingredient_ids').$type<number[]>(),
     image: varchar('image', { length: 255 }),
     unitPrice: money('unit_price').notNull(),
     quantity: int('quantity', { unsigned: true }).notNull(),

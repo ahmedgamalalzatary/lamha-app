@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { type OnGatewayConnection, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { ORDER_SOCKET_EVENTS } from '@tawsela/shared';
 import type { Server, Socket } from 'socket.io';
 import type { AccessPayload } from '../auth/auth.service.js';
 import { UsersRepository } from '../users/users.repository.js';
@@ -9,12 +10,13 @@ const storeRoom = (storeId: number) => `store:${storeId}`;
 /** Every delivery man: new offers and offers gone. Whether he may take one is checked when he lists them. */
 const DRIVERS_ROOM = 'drivers';
 const driverRoom = (userId: number) => `driver:${userId}`;
+const customerRoom = (userId: number) => `customer:${userId}`;
 
 /**
  * Live orders (contract §12 S3). A partner's phone or /partner tab joins its own store's room, so a
  * store hears only its own orders. A delivery man joins the drivers' room (offers) and his own (his
- * orders). Anyone else is disconnected. "ready" tells the client it is listening. The client sends a
- * fresh token when it reconnects.
+ * orders). A customer joins their own (their orders' status, §8.8). Anyone else is disconnected.
+ * "ready" tells the client it is listening. The client sends a fresh token when it reconnects.
  */
 @WebSocketGateway()
 export class OrdersGateway implements OnGatewayConnection {
@@ -53,6 +55,12 @@ export class OrdersGateway implements OnGatewayConnection {
     this.server?.to(driverRoom(userId)).emit(event, payload);
   }
 
+  /** An order's status or captain changed: its store and its customer hear { id, status? }. */
+  orderChanged(order: { storeId: number; customerId: number }, payload: { id: number; status?: string }): void {
+    this.toStore(order.storeId, ORDER_SOCKET_EVENTS.status, payload);
+    this.server?.to(customerRoom(order.customerId)).emit(ORDER_SOCKET_EVENTS.status, payload);
+  }
+
   /** The rooms an account hears, checked like every HTTP call (AccessTokenGuard): a live, enabled account on its current session. */
   private async roomsOf(client: Socket): Promise<string[]> {
     const token: unknown = client.handshake.auth?.token;
@@ -63,6 +71,7 @@ export class OrdersGateway implements OnGatewayConnection {
     if (!row || row.disabledAt || row.sessionVersion !== payload.ver) return [];
     if (row.role === 'partner') return row.storeId ? [storeRoom(row.storeId)] : [];
     if (row.role === 'driver') return [DRIVERS_ROOM, driverRoom(row.id)];
+    if (row.role === 'customer') return [customerRoom(row.id)];
     return [];
   }
 }

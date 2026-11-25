@@ -11,3 +11,4 @@ export * from './address.js';
 export * from './audit.js';
 export * from './order.js';
 export * from './driver.js';
+export * from './customer-order.js';

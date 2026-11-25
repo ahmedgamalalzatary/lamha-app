@@ -4,18 +4,20 @@ import {
   type AdminOrder,
   type CheckoutQuote,
   type CustomerOrder,
+  type CustomerOrderDetails,
   PARTNER_ACTIONS,
   type PartnerAction,
   type PartnerOrder,
   type PartnerOrderCounts,
   type PartnerOrderDetails,
   type PlacedOrder,
+  type ReorderResult,
 } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { StoreRow } from '../catalog/catalog.schema.js';
 import { CurrentStore, PartnerArea } from '../partners/partner-store.guard.js';
-import { AdminOrdersQuery, CheckoutQuoteDto, PlaceOrderDto } from './orders.dto.js';
+import { AdminOrdersQuery, CheckoutQuoteDto, PlaceOrderDto, ReorderDto } from './orders.dto.js';
 import { OrdersService } from './orders.service.js';
 
 /** "إتمام الدفع" and طلباتي (contract §8.7, §8.8). Customers only. */
@@ -42,6 +44,21 @@ export class OrdersController {
   @Get('orders')
   mine(@CurrentUser() me: AuthUser): Promise<CustomerOrder[]> {
     return this.orders.mine(me.id);
+  }
+
+  @Get('orders/:id')
+  @ApiOperation({ summary: 'تفاصيل الطلب: lines, address, captain and payment' })
+  details(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<CustomerOrderDetails> {
+    return this.orders.details(me.id, id);
+  }
+
+  @Post('orders/:id/reorder')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'اطلب تاني: a finished order back in the cart, skipping lines gone from the menu (409 CART_STORE_CONFLICT, CART_STORE_CLOSED, CART_ITEM_UNAVAILABLE, ORDER_STATUS)',
+  })
+  reorder(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: ReorderDto): Promise<ReorderResult> {
+    return this.orders.reorder(me.id, id, body);
   }
 }
 

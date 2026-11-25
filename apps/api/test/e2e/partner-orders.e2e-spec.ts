@@ -110,7 +110,6 @@ describe('the store\'s orders, products and hours (e2e, contract §9, §11.1)', 
 
   it('a new order reaches only its own store\'s partners, live', async () => {
     await expect(connect(null)).rejects.toThrow();
-    await expect(connect(customer)).rejects.toThrow();
     const mine = await connect(partner);
     const theirs = await connect(rival);
     const heard: unknown[] = [];

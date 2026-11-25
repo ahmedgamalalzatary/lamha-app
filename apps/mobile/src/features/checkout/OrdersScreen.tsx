@@ -1,10 +1,12 @@
-import { type CustomerOrder, formatMoney, orderStatusLabel } from '@tawsela/shared';
+import { type CustomerOrder, customerStatusLabel, formatMoney } from '@tawsela/shared';
+import { router } from 'expo-router';
 import { ReceiptText } from 'lucide-react-native';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
+import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
@@ -12,8 +14,8 @@ import { useMyOrders } from './api';
 
 /**
  * طلباتي (contract §8.8, customer/orders/orders-empty-state.png): the title, then the orders, or "لا توجد
- * طلبات — ابدأ بطلب منتجاتك المفضلة الآن". [Open] The list's cards are not captured; Phase 14 adds the
- * order details, the delivered view and reordering.
+ * طلبات — ابدأ بطلب منتجاتك المفضلة الآن". [Open] The list's cards are not captured. A card opens
+ * "تفاصيل الطلب"; the status changes live (CustomerLive).
  */
 export function OrdersScreen() {
   const t = useT();
@@ -56,14 +58,19 @@ function OrderCard({ order }: { order: CustomerOrder }) {
   const t = useT();
   const locale = useLocale();
   return (
-    <View accessibilityLabel={t('orders.code', { code: order.code })} style={styles.card}>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={t('orders.code', { code: order.code })}
+      onPress={() => router.push(`/order/${order.id}`)}
+      style={styles.card}
+    >
       <View style={styles.row}>
         <AppText weight="bold" style={styles.grow}>
           {t('orders.code', { code: order.code })}
         </AppText>
         <View style={styles.status}>
           <AppText size={fontSizes.body} weight="semibold" color={colors.primary700}>
-            {orderStatusLabel(order.status, locale)}
+            {customerStatusLabel(order.status, order.mode, locale)}
           </AppText>
         </View>
       </View>
@@ -74,7 +81,7 @@ function OrderCard({ order }: { order: CustomerOrder }) {
         </AppText>
         <AppText weight="bold">{formatMoney(order.total, locale)}</AppText>
       </View>
-    </View>
+    </PressableScale>
   );
 }
 

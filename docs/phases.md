@@ -38,7 +38,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 11 | Checkout and placing an order (cash only) | 🔍 in-verify | none (#3, #11 decided) |
 | 12 | Partner: orders and products (mobile and `/partner`) | 🔍 in-verify | none (uncaptured screens marked [Open]) |
 | 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (driver home and current orders marked [Open], #9) |
-| 14 | Order status and the delivered view (live tracking out of scope) | ⬜ | none |
+| 14 | Order status and the delivered view (live tracking out of scope) | 🔍 in-verify | none (the active order view marked [Open]) |
 | 15 | Ratings, complaints and support | ⬜ | |
 | 16 | Notifications and push (Expo push) | ⬜ | none (#7 decided) |
 | 17 | Wallet (top-up excluded for now) | ⬜ | none |
@@ -370,6 +370,26 @@ Owner's answers before the phase (2026-11-25):
 ## Phase 14: Order status and the delivered view
 
 Contract §8.8: the order's status while it is active (no driver location: live tracking is out of scope); the plain details view once delivered; reorder inside طلباتي.
+
+- **Migration 0013:** order lines also keep the chosen options and struck-out ingredients by id, so "اطلب تاني" can rebuild them. Lines placed before this have none and come back without choices.
+- **Shared (TDD):** `customerSteps` (review → preparing → ready → out for delivery → delivered; a pickup has no "out for delivery"; none for a rejected or cancelled order), `customerStatusLabel` (a pickup reads "جاهز للاستلام" and "تم الاستلام"), `canReorder`; the details and reorder shapes.
+- **API:**
+  - `GET /v1/me/orders/:id`: the customer's own order with its lines, address, captain and payment (404 for anyone else's).
+  - `POST /v1/me/orders/:id/reorder` (`replaceCartId` optional): the order's lines back in the cart with their choices, added like "+" (up to the quantity limit). Lines gone from the menu or whose choices changed are left out and counted (`skipped`); none left is `CART_ITEM_UNAVAILABLE`. Another store's cart needs the customer's yes (`CART_STORE_CONFLICT`); a closed store is `CART_STORE_CLOSED`; an order still running is `ORDER_STATUS`.
+  - Live socket: a customer joins their own room and hears `order.status` when the store moves the order, a delivery man takes it or moves it, or the admin assigns one.
+- **App:**
+  - طلباتي: a card opens تفاصيل الطلب; the list and the open order refresh live.
+  - تفاصيل الطلب as in the photo: the arrow back, the green "تم التوصيل" pill with a tick, the store's logo, name, date and "رقم الطلب", عنوان التوصيل with a pin, معلومات المندوب (الاسم), the lines "2 × name" with prices and choices, المجموع, رسوم التوصيل, **قيمة الطلب**, طريقة الدفع, وقت التوصيل. No رسوم الخدمة (owner, 2026-11-25).
+  - "اطلب تاني" fills the cart and opens it; a cart from another store asks first; what was left out is said in a toast.
+- **[Open] not captured:** the order screen while it runs: the same details with a "حالة الطلب" list of steps (done, now, next) under the store.
+- **[Derived]**
+  - "اطلب تاني" shows once the order is over (delivered, rejected or cancelled), at the bottom of تفاصيل الطلب; never as a one-tap button outside طلباتي [Client].
+  - It adds to a cart of the same store rather than emptying it.
+  - A pickup shows "استلام من المحل" with the store's name instead of the address, and وقت الاستلام.
+- **Phone verification:**
+  - Place an order; open it from طلباتي and watch its steps move as the store accepts and marks it ready, and as a delivery man takes it (his name appears).
+  - Once delivered: the plain view matches the photo.
+  - "اطلب تاني": with an empty cart, with another store's cart (the question), and with an item turned off in the menu (the toast).
 
 ## Phase 15: Ratings, complaints and support
 

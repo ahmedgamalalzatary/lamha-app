@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { INestApplication } from '@nestjs/common';
-import { DRIVER_SOCKET_EVENTS, type DriverAccount, type DriverOffer, type WeekSchedule } from '@tawsela/shared';
+import { DRIVER_SOCKET_EVENTS, type DriverAccount, ORDER_SOCKET_EVENTS, type DriverOffer, type WeekSchedule } from '@tawsela/shared';
 import { io, type Socket } from 'socket.io-client';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -210,7 +210,10 @@ describe('delivery men: accounts, shifts, offers and steps (e2e, contract §10, 
     const off = await newDriver('01033333333', 'هاني');
     await startShift(a.auth).expect(200);
     await startShift(b.auth).expect(200);
-    await expect(connect(customer)).rejects.toThrow();
+    // The customer hears their own order's captain arrive (§8.8), never offers.
+    const shopper = await connect(customer);
+    const shopperHeard: string[] = [];
+    shopper.onAny((event: string) => shopperHeard.push(event));
     const [sa, sb] = [await connect(a.auth), await connect(b.auth)];
     const heardA = new Promise((resolve) => sa.once(DRIVER_SOCKET_EVENTS.offer, resolve));
     const heardB = new Promise((resolve) => sb.once(DRIVER_SOCKET_EVENTS.offer, resolve));
@@ -232,6 +235,8 @@ describe('delivery men: accounts, shifts, offers and steps (e2e, contract §10, 
     expect(results.find((r) => r.status === 409)!.body.code).toBe('OFFER_TAKEN');
     expect(await gone).toEqual({ id });
     expect(await offers(a.auth)).toEqual([]);
+    await expect.poll(() => shopperHeard).toContain(ORDER_SOCKET_EVENTS.status);
+    expect(shopperHeard).not.toContain(DRIVER_SOCKET_EVENTS.offer);
 
     expect((await http().get(`/v1/partner/orders/${id}`).set(partner).expect(200)).body.driver).toEqual({ name: winner === a ? 'كريم سعيد' : 'سامح سعيد' });
     const [row] = (await http().get('/v1/admin/orders?status=preparing').set(admin).expect(200)).body;

@@ -11,7 +11,7 @@ import {
   type Product,
   unitPrice,
 } from '@tawsela/shared';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { ApiException } from '../../common/api-exception.js';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { CatalogRepository, type Tx } from '../catalog/catalog.repository.js';
@@ -89,6 +89,62 @@ export class CartService {
         });
       }
     });
+  }
+
+  /**
+   * "اطلب تاني" (§8.8): puts an order's lines back in the cart, as adding them one by one would, and
+   * leaves out the ones gone from the menu or whose choices no longer fit. Another store's cart is
+   * replaced only when the customer agreed (replaceCartId); quantities stop at the limit.
+   */
+  async reorder(
+    userId: number,
+    storeId: number,
+    items: Omit<AddCartLine, 'replaceCartId'>[],
+    replaceCartId?: number,
+  ): Promise<{ cart: CustomerCart; skipped: number }> {
+    let skipped = 0;
+    const { cart } = await this.write(userId, async (tx, existing) => {
+      const [store] = await tx.select().from(stores).where(eq(stores.id, storeId));
+      if (!store?.active || !storeIsOpen(store, new Date())) throw closed();
+      const ids = [...new Set(items.map((i) => i.productId))];
+      const rows = ids.length ? await tx.select().from(products).where(and(inArray(products.id, ids), eq(products.storeId, storeId))) : [];
+      const choices = await this.catalog.choicesOf(rows.map((r) => r.id), tx);
+      const valid = items.filter((item) => {
+        const row = rows.find((r) => r.id === item.productId);
+        return row?.active && validSelection(toProduct(row, choices.get(row.id)), item.optionIds, item.removedIngredientIds);
+      });
+      skipped = items.length - valid.length;
+      if (!valid.length) throw unavailable();
+
+      let cartId = existing?.id;
+      if (existing) {
+        const [firstLine] = await tx.select({ id: cartLines.id }).from(cartLines).where(eq(cartLines.cartId, existing.id)).limit(1);
+        if (firstLine && existing.storeId !== storeId && existing.id !== replaceCartId) {
+          throw new ApiException(HttpStatus.CONFLICT, 'CART_STORE_CONFLICT', 'The cart contains items from another store');
+        }
+        if (!firstLine || existing.storeId !== storeId) {
+          await tx.delete(carts).where(eq(carts.id, existing.id));
+          cartId = undefined;
+        }
+      }
+      if (cartId === undefined) {
+        const [created] = await tx.insert(carts).values({ userId, storeId }).$returningId();
+        cartId = created!.id;
+      }
+      for (const item of valid) {
+        const selectionKey = createHash('sha256').update(lineKey(item.productId, item.optionIds, item.removedIngredientIds)).digest('hex');
+        const [line] = await tx.select().from(cartLines).where(and(eq(cartLines.cartId, cartId), eq(cartLines.selectionKey, selectionKey)));
+        const quantity = Math.min(CART_QUANTITY_LIMIT, (line?.quantity ?? 0) + item.quantity);
+        if (line) await tx.update(cartLines).set({ quantity }).where(eq(cartLines.id, line.id));
+        else {
+          await tx.insert(cartLines).values({
+            cartId, selectionKey, productId: item.productId, quantity,
+            optionIds: item.optionIds, removedIngredientIds: item.removedIngredientIds,
+          });
+        }
+      }
+    });
+    return { cart: cart!, skipped };
   }
 
   adjust(userId: number, lineId: number, delta: -1 | 1): Promise<CartResponse> {

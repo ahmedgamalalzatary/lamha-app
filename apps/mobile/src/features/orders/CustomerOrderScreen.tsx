@@ -1,0 +1,270 @@
+import { canReorder, type CustomerOrderDetails, customerStatusLabel, customerSteps, formatMoney } from '@tawsela/shared';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Check, CircleCheck, IdCard, MapPin } from 'lucide-react-native';
+import { type ReactNode, useState } from 'react';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
+import { Button } from '@/components/Button';
+import { Skeleton } from '@/components/Skeleton';
+import { toast } from '@/components/Toast';
+import { ApiRequestError, mediaUrl } from '@/core/api/client';
+import { errorMessage } from '@/core/api/error-message';
+import { session } from '@/core/auth/session';
+import { useLocale, useT } from '@/core/i18n';
+import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { useCart } from '@/features/cart/api/cart';
+import { CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
+import { LineChoices, orderDate, useWhen } from '@/features/partner/parts';
+import { ordersApi, useMyOrder } from './api';
+
+/**
+ * "تفاصيل الطلب" (contract §8.8, customer/orders/order-details-delivered-driver-fees-payment.jpg): the
+ * status pill, the store with the date and number, عنوان التوصيل, معلومات المندوب, the lines and the
+ * totals. No service fee (owner, 2026-11-25). While the order runs it also shows its steps [Open: the
+ * active screen is not captured; no live tracking, §15.2]; once over, "اطلب تاني" [Client].
+ */
+export function CustomerOrderScreen() {
+  const t = useT();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const order = useMyOrder(Number(id));
+
+  return (
+    <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
+      <View style={styles.header}>
+        <BackButton variant="plain" />
+        <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 2} style={styles.title}>
+          {t('orders.detailsTitle')}
+        </AppText>
+        <View style={styles.headerSide} />
+      </View>
+      {order.isPending ? (
+        <View style={styles.content}>
+          <Skeleton style={styles.skeleton} />
+        </View>
+      ) : order.isError ? (
+        <View style={styles.content}>
+          <AppText color={colors.danger}>{errorMessage(order.error)}</AppText>
+          <Button label={t('common.retry')} variant="soft" onPress={() => void order.refetch()} />
+        </View>
+      ) : (
+        <Details order={order.data} />
+      )}
+    </SafeAreaView>
+  );
+}
+
+function Section({ children, last }: { children: ReactNode; last?: boolean }) {
+  return <View style={[styles.section, last && styles.sectionLast]}>{children}</View>;
+}
+
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <View style={styles.row}>
+      <AppText size={fontSizes.listTitle + 1} weight={strong ? 'bold' : 'regular'} style={styles.grow}>
+        {label}
+      </AppText>
+      <AppText size={fontSizes.listTitle + 1} weight={strong ? 'bold' : 'semibold'} color={strong ? colors.ink : colors.ink2}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
+function Details({ order: o }: { order: CustomerOrderDetails }) {
+  const t = useT();
+  const locale = useLocale();
+  const when = useWhen();
+  const money = (n: number) => formatMoney(n, locale);
+  const delivered = o.status === 'delivered';
+  const over = o.status === 'rejected' || o.status === 'cancelled';
+  const steps = delivered ? null : customerSteps(o.status, o.mode);
+  const logo = mediaUrl(o.store.logo);
+
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      <View style={[styles.pill, delivered ? styles.pillOk : over ? styles.pillBad : null]}>
+        {delivered ? <CircleCheck size={18} color={colors.bg} fill={colors.success} /> : null}
+        <AppText weight="semibold" color={delivered ? colors.success : over ? colors.danger : colors.primary700}>
+          {customerStatusLabel(o.status, o.mode, locale)}
+        </AppText>
+      </View>
+
+      <Section>
+        <View style={styles.row}>
+          <View style={styles.storeLogo}>{logo ? <Image source={{ uri: logo }} style={styles.logoImage} accessibilityIgnoresInvertColors /> : null}</View>
+          <View style={styles.grow}>
+            <AppText weight="bold" size={fontSizes.sectionTitle + 1}>
+              {o.store.name}
+            </AppText>
+            <AppText color={colors.ink2}>{orderDate(o.createdAt)}</AppText>
+            <AppText color={colors.ink2}>{t('orders.number', { code: o.code })}</AppText>
+          </View>
+        </View>
+      </Section>
+
+      {steps ? (
+        <Section>
+          <AppText weight="bold" size={fontSizes.sectionTitle}>
+            {t('orders.status')}
+          </AppText>
+          {steps.map((s) => (
+            <View key={s.status} accessibilityLabel={customerStatusLabel(s.status, o.mode, locale)} accessibilityState={{ selected: s.state === 'current' }} style={styles.row}>
+              <View style={[styles.dot, s.state === 'done' ? styles.dotDone : s.state === 'current' ? styles.dotCurrent : null]}>
+                {s.state === 'done' ? <Check size={14} color={colors.bg} /> : null}
+              </View>
+              <AppText weight={s.state === 'current' ? 'bold' : 'regular'} color={s.state === 'next' ? colors.ink2 : colors.ink}>
+                {customerStatusLabel(s.status, o.mode, locale)}
+              </AppText>
+            </View>
+          ))}
+        </Section>
+      ) : null}
+
+      <Section>
+        <View style={styles.row}>
+          <AppText weight="bold" size={fontSizes.sectionTitle} style={styles.grow}>
+            {o.mode === 'delivery' ? t('orders.address') : t('cart.pickup')}
+          </AppText>
+          <MapPin size={24} color={colors.primary} />
+        </View>
+        <AppText color={colors.ink2} size={fontSizes.listTitle}>
+          {o.mode === 'delivery' ? o.addressText : o.store.name}
+        </AppText>
+      </Section>
+
+      {o.driver ? (
+        <Section>
+          <View style={styles.row}>
+            <AppText weight="bold" size={fontSizes.sectionTitle} style={styles.grow}>
+              {t('orders.driverInfo')}
+            </AppText>
+            <IdCard size={24} color={colors.primary} />
+          </View>
+          <AppText color={colors.ink2}>{t('orders.driverName')}</AppText>
+          <AppText weight="bold" size={fontSizes.listTitle + 1}>
+            {o.driver.name}
+          </AppText>
+        </Section>
+      ) : null}
+
+      <Section>
+        <AppText weight="bold" size={fontSizes.sectionTitle}>
+          {t('orders.detailsTitle')}
+        </AppText>
+        {o.lines.map((line, i) => (
+          <View key={i} style={styles.row}>
+            <View style={styles.grow}>
+              <AppText weight="semibold" size={fontSizes.listTitle + 1}>
+                {t('partner.line', { quantity: line.quantity, name: line.name })}
+              </AppText>
+              <LineChoices line={line} />
+            </View>
+            <AppText color={colors.ink2}>{money(line.unitPrice * line.quantity)}</AppText>
+          </View>
+        ))}
+      </Section>
+
+      <Section>
+        <Row label={t('orders.subtotal')} value={money(o.itemsTotal)} />
+        {o.mode === 'delivery' ? <Row label={t('orders.deliveryFee')} value={money(o.deliveryFee)} /> : null}
+      </Section>
+
+      <Section last>
+        <Row label={t('orders.total')} value={money(o.total)} strong />
+        <Row label={t('orders.paymentMethod')} value={t('checkout.cash')} strong />
+        <Row label={t(o.mode === 'delivery' ? 'orders.deliveryTime' : 'orders.pickupTime')} value={when(o.scheduledFor)} strong />
+      </Section>
+
+      {canReorder(o.status) ? <Reorder order={o} /> : null}
+    </ScrollView>
+  );
+}
+
+/**
+ * "اطلب تاني" [Client: only here, inside طلباتي]: the order goes back in the cart and the cart opens.
+ * A cart from another store is replaced only after the usual question; lines gone from the menu are
+ * left out with a note [Derived].
+ */
+function Reorder({ order }: { order: CustomerOrderDetails }) {
+  const t = useT();
+  const { query, run } = useCart();
+  const [busy, setBusy] = useState(false);
+  const [conflict, setConflict] = useState<{ id: number; name: string } | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+
+  async function send(replaceCartId?: number) {
+    const generation = session.generation();
+    setBusy(true);
+    try {
+      let skipped = 0;
+      await run(async () => {
+        const result = await ordersApi.reorder(order.id, { replaceCartId });
+        skipped = result.skipped;
+        return result;
+      });
+      if (session.generation() !== generation) return;
+      setConflict(null);
+      if (skipped > 0) toast.show(t('orders.skipped', { count: skipped }), 'error');
+      router.push('/customer/cart');
+    } catch (e) {
+      if (session.generation() !== generation) return;
+      if (e instanceof ApiRequestError && e.code === 'CART_STORE_CONFLICT' && replaceCartId === undefined) {
+        const latest = (await query.refetch()).data?.cart;
+        if (latest && latest.store.id !== order.store.id) {
+          setConflictError(null);
+          setConflict({ id: latest.id, name: latest.store.name });
+          return;
+        }
+      }
+      if (replaceCartId !== undefined) setConflictError(errorMessage(e));
+      else toast.show(errorMessage(e), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Button label={t('orders.reorder')} loading={busy && !conflict} onPress={() => void send()} />
+      <CartConflictDialog
+        storeName={conflict?.name}
+        busy={busy}
+        error={conflictError}
+        cancel={() => setConflict(null)}
+        replace={() => conflict && void send(conflict.id)}
+      />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  title: { flex: 1, textAlign: 'center' },
+  headerSide: { width: 48 },
+  content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
+  skeleton: { height: 400, borderRadius: radius.md },
+  pill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.primary50,
+  },
+  pillOk: { backgroundColor: colors.success50 },
+  pillBad: { backgroundColor: colors.input },
+  section: { gap: spacing.md, paddingBottom: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.line },
+  sectionLast: { borderBottomWidth: 0 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  grow: { flex: 1 },
+  storeLogo: { width: 64, height: 64, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.input },
+  logoImage: { width: '100%', height: '100%' },
+  dot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  dotDone: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dotCurrent: { borderColor: colors.primary },
+});

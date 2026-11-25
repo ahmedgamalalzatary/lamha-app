@@ -48,3 +48,11 @@ export class AdminOrdersQuery {
   @IsIn(ORDER_STATUSES)
   status?: OrderStatus;
 }
+
+/** POST /v1/me/orders/:id/reorder */
+export class ReorderDto {
+  @ApiPropertyOptional({ description: "Another store's cart the customer agreed to replace" })
+  @IsOptional()
+  @IsInt()
+  replaceCartId?: number;
+}
