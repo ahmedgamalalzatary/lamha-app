@@ -64,7 +64,7 @@ export function AccountInviteCard() {
 
 const styles = StyleSheet.create({
   grow: { flex: 1 },
-  card: { borderRadius: 24, backgroundColor: colors.primary700, padding: spacing.lg, gap: spacing.lg, marginTop: spacing.md },
+  card: { borderRadius: radius.xl, backgroundColor: colors.primary700, padding: spacing.lg, gap: spacing.lg, marginTop: spacing.md },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   gift: { width: 52, height: 52, borderRadius: radius.lg, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   bottom: { flexDirection: 'row', gap: spacing.md },

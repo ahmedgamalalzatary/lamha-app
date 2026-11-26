@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT, useTextStart } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { inviteActions, useInvite } from './api';
 
 
@@ -235,11 +235,11 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   centred: { textAlign: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  side: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.lg, gap: spacing.lg },
-  cardSkeleton: { height: 320, borderRadius: 24 },
+  cardSkeleton: { height: 320, borderRadius: radius.xl },
   rowSkeleton: { height: 100, borderRadius: radius.lg },
-  card: { borderRadius: 24, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.lg },
+  card: { borderRadius: radius.xl, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.lg },
   cardTop: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   giftTile: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   codeBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, borderRadius: radius.lg, paddingHorizontal: spacing.lg, minHeight: 64 },

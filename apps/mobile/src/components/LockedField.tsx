@@ -15,7 +15,7 @@ export function LockedField({ icon: Icon, label, value }: { icon: LucideIcon; la
           {label}
         </AppText>
       </View>
-      <AppText weight="semibold" size={17} color="#55575E" style={{ textAlign }}>
+      <AppText weight="semibold" size={17} color={colors.lockedText} style={{ textAlign }}>
         {value}
       </AppText>
     </View>
@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md + 2,
     borderWidth: 1,
     borderColor: colors.fieldBorder,
-    backgroundColor: '#EEEFF3',
+    backgroundColor: colors.locked,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md + 2,
     gap: spacing.sm,

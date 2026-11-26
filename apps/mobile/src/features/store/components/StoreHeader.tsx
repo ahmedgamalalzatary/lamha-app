@@ -115,7 +115,7 @@ function Info({ icon: Icon, label, value, color = colors.ink }: { icon: LucideIc
 
 const styles = StyleSheet.create({
   cover: { height: COVER_HEIGHT, backgroundColor: colors.ink, justifyContent: 'flex-end' },
-  shade: { backgroundColor: 'rgba(0,0,0,0.25)' },
+  shade: { backgroundColor: colors.coverShade },
   closedPill: {
     position: 'absolute',
     top: 140,

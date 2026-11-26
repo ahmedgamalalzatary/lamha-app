@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { type TranslationKey, useLocale, useT, useTextStart } from '@/core/i18n';
-import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fonts, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useDeliveryScope } from '@/features/addresses/chosen-address';
 import { useSearch, useSuggestions } from '@/features/stores/api/stores';
 import { StoreMeta } from '@/features/stores/components/StoreMeta';
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   prompt: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
   line: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   suggestion: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  lineIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
+  lineIcon: { width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
   lineIconOrange: { backgroundColor: colors.primary50 },
   result: { gap: spacing.lg, padding: spacing.lg },
   resultStore: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

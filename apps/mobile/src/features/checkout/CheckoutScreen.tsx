@@ -32,7 +32,7 @@ import { errorMessage } from '@/core/api/error-message';
 import { useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useLocale, useT, useTextStart } from '@/core/i18n';
-import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fonts, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useChosenAddress } from '@/features/addresses/chosen-address';
 import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { confirmOnMap, usePickedSpot } from '@/features/addresses/picked-spot';
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   section: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   skeleton: { height: 64, borderRadius: radius.lg },
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.md },
-  pin: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
+  pin: { width: sizes.icon, height: sizes.icon, borderRadius: sizes.icon / 2, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
   choices: { gap: spacing.md },
   choice: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 64, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, paddingHorizontal: spacing.lg },
   choiceOn: { borderWidth: 2, borderColor: colors.ink },

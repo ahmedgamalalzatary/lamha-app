@@ -15,7 +15,7 @@ import { toast } from '@/components/Toast';
 import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT, useTextStart } from '@/core/i18n';
-import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fonts, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { pharmacyApi, requestCheckout } from '../api';
 
 /** Sharp enough to read a prescription; the API keeps it at 1600 px at most. */
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   title: { flex: 1, textAlign: 'center' },
-  side: { width: 44 },
+  side: { width: sizes.iconLg },
   body: { padding: spacing.lg, gap: spacing.lg },
   prompt: { borderWidth: 1, borderColor: colors.primary400, borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.xl },
   camera: { alignSelf: 'flex-end', width: 84, height: 76, borderRadius: radius.md, borderWidth: 1.5, borderStyle: 'dashed',

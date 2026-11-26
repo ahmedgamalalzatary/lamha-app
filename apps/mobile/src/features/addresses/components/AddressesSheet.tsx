@@ -13,7 +13,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { toast } from '@/components/Toast';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useAddresses, useAddressActions } from '../api/addresses';
 import { useChosenAddress } from '../chosen-address';
 
@@ -141,7 +141,7 @@ function Action({ icon: Icon, label, color, onPress }: { icon: typeof Pencil; la
 
 const styles = StyleSheet.create({
   body: { gap: spacing.lg, minHeight: 560 },
-  close: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
+  close: { width: sizes.iconLg, height: sizes.iconLg, borderRadius: sizes.iconLg / 2, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
   list: { flexGrow: 1 },
   failed: { gap: spacing.md, alignItems: 'flex-start' },
   skeleton: { height: 72, borderRadius: radius.md },

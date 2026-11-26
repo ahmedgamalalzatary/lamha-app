@@ -14,7 +14,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { api } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useDeliveryScope } from '@/features/addresses/chosen-address';
 import { StoreRow, StoreRowSkeleton } from '@/features/stores/components/StoreRow';
 
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs, overflow: 'hidden' },
   art: { position: 'absolute', start: -spacing.lg, bottom: -spacing.lg, transform: [{ rotate: '-20deg' }] },
-  back: { alignSelf: 'flex-end', width: 48, height: 48, borderRadius: 24, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
+  back: { alignSelf: 'flex-end', width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
   pills: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   pill: {
     flex: 1,

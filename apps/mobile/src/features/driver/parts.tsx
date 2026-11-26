@@ -8,7 +8,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { toast } from '@/components/Toast';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, radius, spacing } from '@/core/theme';
+import { colors, radius, shadows, spacing } from '@/core/theme';
 import { useAcceptOffer, useSkipOffer } from './api';
 
 /** "8:30 PM" in Cairo time, as the slot list and the store's details read (Latin digits, §7). */
@@ -158,13 +158,7 @@ export function OfferCard({ offer }: { offer: DriverOffer }) {
   );
 }
 
-export const cardShadow = {
-  shadowColor: '#000',
-  shadowOpacity: 0.12,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 2 },
-  elevation: 3,
-} as const;
+export const cardShadow = shadows.card;
 
 const styles = StyleSheet.create({
   facts: { gap: spacing.sm },

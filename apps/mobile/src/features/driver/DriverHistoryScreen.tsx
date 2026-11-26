@@ -14,7 +14,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useDriverHistory } from './api';
 
 const CAIRO_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' });
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   grow: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
-  side: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
   dates: { flexDirection: 'row', gap: spacing.lg, paddingHorizontal: spacing.xl, marginTop: spacing.md },
   dateBox: {
     flex: 1,

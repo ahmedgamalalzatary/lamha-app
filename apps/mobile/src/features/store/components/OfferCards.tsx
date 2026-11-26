@@ -12,7 +12,7 @@ import { AppText } from "@/components/AppText";
 import { PressableScale } from "@/components/PressableScale";
 import { toast } from "@/components/Toast";
 import { useLocale, useT } from "@/core/i18n";
-import { colors, fontSizes, radius, spacing } from "@/core/theme";
+import { colors, fontSizes, radius, sizes, spacing } from "@/core/theme";
 import { discountText, voucherText } from "@/features/offers/offer-text";
 
 /**
@@ -203,8 +203,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tile: {
-    width: 48,
-    height: 48,
+    width: sizes.touch,
+    height: sizes.touch,
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",

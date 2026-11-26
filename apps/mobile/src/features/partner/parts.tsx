@@ -7,7 +7,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { toast } from '@/components/Toast';
 import { mediaUrl } from '@/core/api/client';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, shadows, spacing } from '@/core/theme';
 
 const CAIRO = 'Africa/Cairo';
 
@@ -107,11 +107,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     gap: spacing.md,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    ...shadows.card,
   },
   badge: {
     alignSelf: 'flex-start',
@@ -138,7 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },

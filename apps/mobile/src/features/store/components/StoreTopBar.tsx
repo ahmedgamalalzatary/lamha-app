@@ -7,7 +7,7 @@ import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, spacing } from '@/core/theme';
+import { colors, fontSizes, sizes, spacing } from '@/core/theme';
 
 export const BAR_HEIGHT = 64;
 
@@ -68,13 +68,13 @@ const styles = StyleSheet.create({
   bar: { height: BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md },
   title: { flex: 1, alignItems: 'center' },
   round: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: sizes.touch,
+    height: sizes.touch,
+    borderRadius: sizes.touch / 2,
     backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.08,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },

@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useAgo } from '@/features/partner/parts';
 import { useDriverPoints } from './api';
 
@@ -123,15 +123,15 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   grow: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  side: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, gap: spacing.md },
   top: { gap: spacing.lg, marginBottom: spacing.xs },
-  cardSkeleton: { height: 220, borderRadius: 24 },
-  card: { borderRadius: 24, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.sm },
+  cardSkeleton: { height: 220, borderRadius: radius.xl },
+  card: { borderRadius: radius.xl, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.sm },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  starCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
+  starCircle: { width: sizes.iconLg, height: sizes.iconLg, borderRadius: sizes.iconLg / 2, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   levels: { borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   level: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface, padding: spacing.md },
-  rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  rowIcon: { width: sizes.icon, height: sizes.icon, borderRadius: sizes.icon / 2, alignItems: 'center', justifyContent: 'center' },
 });

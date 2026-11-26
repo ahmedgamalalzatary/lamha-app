@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useAgo } from '@/features/partner/parts';
 import { useDriverMoney } from './api';
 
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   grow: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  side: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, gap: spacing.md },
   top: { gap: spacing.lg, marginBottom: spacing.xs },
   cardSkeleton: { height: 220, borderRadius: radius.lg },
@@ -129,5 +129,5 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   line: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.line, paddingTop: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface, padding: spacing.md },
-  rowIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.danger50, alignItems: 'center', justifyContent: 'center' },
+  rowIcon: { width: sizes.icon, height: sizes.icon, borderRadius: sizes.icon / 2, backgroundColor: colors.danger50, alignItems: 'center', justifyContent: 'center' },
 });

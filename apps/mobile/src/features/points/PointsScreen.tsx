@@ -11,7 +11,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useAgo } from '@/features/partner/parts';
 import { usePoints } from './api';
 
@@ -182,11 +182,11 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   grow: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  side: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  cardSkeleton: { height: 300, margin: spacing.lg, borderRadius: 24 },
-  card: { margin: spacing.lg, borderRadius: 24, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.lg },
+  side: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
+  cardSkeleton: { height: 300, margin: spacing.lg, borderRadius: radius.xl },
+  card: { margin: spacing.lg, borderRadius: radius.xl, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.lg },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  starCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
+  starCircle: { width: sizes.iconLg, height: sizes.iconLg, borderRadius: sizes.iconLg / 2, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   balance: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   track: { height: 10, borderRadius: 5, backgroundColor: colors.glass, overflow: 'hidden' },
   fill: { height: 10, borderRadius: 5, backgroundColor: colors.bg },
@@ -202,5 +202,5 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   emptyCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md },
-  rowIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  rowIcon: { width: sizes.icon, height: sizes.icon, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
 });

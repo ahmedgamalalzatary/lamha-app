@@ -17,7 +17,7 @@ import { ApiRequestError } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT, useTextStart } from '@/core/i18n';
-import { colors, fonts, radius, spacing } from '@/core/theme';
+import { colors, fonts, radius, sizes, spacing } from '@/core/theme';
 import { driversApi } from '../api/drivers';
 import { partnersApi } from '../api/partners';
 
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   tab: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.input },
   tabOn: { backgroundColor: colors.primary },
-  iconAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.bg },
+  iconAction: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.bg },
   footer: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   sheetBody: { gap: spacing.md, paddingVertical: spacing.md },
   stores: { gap: spacing.xs },

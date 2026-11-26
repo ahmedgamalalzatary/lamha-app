@@ -58,7 +58,47 @@ export const colors = {
   gold: '#A97A08',
   /** The "قسيمة" pill. */
   voucherPill: '#6B3FD8',
+  /** Every drop shadow; see `shadows` for the shared presets. */
+  shadow: '#000',
+  /** Grey labels and icons on the profile page's sections and the unselected gender. */
+  ink3: '#5B5F6B',
+  /** The value inside a locked field. */
+  lockedText: '#55575E',
+  /** A locked field's grey fill. */
+  locked: '#EEEFF3',
+  /** The default avatar's light-blue circle. */
+  avatar: '#97BBE2',
+  /** The square back button's edge and the phone field's boxes. */
+  boxBorder: '#E3E4E8',
+  /** The OTP boxes' resting border. */
+  otpBorder: '#BDBDBD',
+  /** The round "clear" button inside a text field. */
+  clearButton: '#B5B7BD',
+  /** The phone-change sheet's input fill. */
+  sheetInput: '#F4F6FA',
+  /** The sign-in pages' logo tile edge. */
+  logoBorder: '#ECECEE',
+  /** The invite-code box on sign-up. */
+  inviteTint: '#FFF9F3',
+  /** The welcome page's "continue with phone" button. */
+  softButton: '#F6F6FA',
+  softButtonBorder: '#DCDDE3',
+  /** The cart's "you may also like" strip. */
+  upsell: '#F6F3ED',
+  /** The map picker's pin. */
+  pin: '#CC5A00',
+  /** The dark wash over a store's cover. */
+  coverShade: 'rgba(0,0,0,0.25)',
+  /** An unselected rating star. */
+  starEmpty: '#D6D6D6',
+  /** The skeleton's moving highlight. */
+  shimmer: 'rgba(255,255,255,0.6)',
+  /** White at zero opacity: the start of a fade to white (plain 'transparent' fades through grey). */
+  bgClear: 'rgba(255,255,255,0)',
 } as const;
+
+/** The welcome page's pastel card tints, in order. */
+export const welcomeTints = ['#FFF1E0', '#F1E8F8', '#E6F6EC', '#E3F3FB', '#FDECEC', '#FFF7E0'] as const;
 
 /** Alexandria weights, loaded in the root layout. */
 export const fonts = {
@@ -77,6 +117,18 @@ export const fontSizes = {
   caption: 12,
 } as const;
 
-export const radius = { sm: 8, md: 12, lg: 16, pill: 999 } as const;
+/** `xl`: the big orange cards (wallet, points, invite) and the outline dialog. */
+export const radius = { sm: 8, md: 12, lg: 16, xl: 24, pill: 999 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+
+/** Square boxes for icons: header slots, round buttons, icon tiles. A circle's radius is `size / 2`. */
+export const sizes = { icon: 40, iconLg: 44, touch: 48 } as const;
+
+/** The two shadows that repeat across screens. Others are one-offs that use `colors.shadow`. */
+export const shadows = {
+  /** Lifted white cards: driver and partner order cards. */
+  card: { shadowColor: colors.shadow, shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  /** The wide soft glow under the welcome sheet and the empty store card. */
+  soft: { shadowColor: colors.shadow, shadowOpacity: 0.06, shadowRadius: 24, elevation: 3 },
+} as const;

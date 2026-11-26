@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { ArrowRight, ChevronRight } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 import { useT } from '@/core/i18n';
-import { colors, radius } from '@/core/theme';
+import { colors, radius, sizes } from '@/core/theme';
 import { DirectionalIcon } from './DirectionalIcon';
 import { PressableScale } from './PressableScale';
 
@@ -28,20 +28,20 @@ export function BackButton({ variant = 'circle', onPress }: { variant?: 'circle'
 }
 
 const styles = StyleSheet.create({
-  circle: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.iconCircle, alignItems: 'center', justifyContent: 'center' },
+  circle: { width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, backgroundColor: colors.iconCircle, alignItems: 'center', justifyContent: 'center' },
   square: {
-    width: 48,
-    height: 48,
+    width: sizes.touch,
+    height: sizes.touch,
     borderRadius: radius.md + 2,
     borderWidth: 1,
-    borderColor: '#E3E4E8',
+    borderColor: colors.boxBorder,
     backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   /** The phone step and "أهلاً بعودتك": a grey filled square with the chevron. */
   /** "تفاصيل الطلب": the arrow alone. */
-  plain: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  plain: { width: sizes.touch, height: sizes.touch, alignItems: 'center', justifyContent: 'center' },
   grey: {
     width: 52,
     height: 52,

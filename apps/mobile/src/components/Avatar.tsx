@@ -16,7 +16,7 @@ export function Avatar({ size = 84, photo = null }: { size?: number; photo?: str
         {uri ? (
           <Image source={{ uri }} contentFit="cover" style={StyleSheet.absoluteFill} transition={150} />
         ) : (
-          <UserRound size={size * 0.78} color="#FFFFFF" fill="#FFFFFF" strokeWidth={1} style={{ marginTop: size * 0.22 }} />
+          <UserRound size={size * 0.78} color={colors.bg} fill={colors.bg} strokeWidth={1} style={{ marginTop: size * 0.22 }} />
         )}
       </View>
     </View>
@@ -25,5 +25,5 @@ export function Avatar({ size = 84, photo = null }: { size?: number; photo?: str
 
 const styles = StyleSheet.create({
   ring: { backgroundColor: colors.primary50, borderWidth: 2, borderColor: colors.primary100, alignItems: 'center', justifyContent: 'center' },
-  circle: { backgroundColor: '#97BBE2', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' },
+  circle: { backgroundColor: colors.avatar, alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' },
 });

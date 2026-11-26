@@ -16,7 +16,7 @@ import { session, useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useLocale, useT } from '@/core/i18n';
 import { localePreference } from '@/core/i18n/locale';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { meApi } from '../api/me';
 import { AccountRow } from '../components/AccountRow';
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
-  bell: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.iconCircle, alignItems: 'center', justifyContent: 'center' },
+  bell: { width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, backgroundColor: colors.iconCircle, alignItems: 'center', justifyContent: 'center' },
   bellDot: { position: 'absolute', top: 10, end: 12, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.danger },
   profile: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.lg },
   profileText: { flex: 1, gap: spacing.xs },

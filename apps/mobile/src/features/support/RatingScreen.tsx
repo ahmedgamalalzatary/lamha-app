@@ -90,7 +90,7 @@ export function RatingScreen() {
                 onPress={() => pick(n)}
                 scaleTo={0.85}
               >
-                <Star size={44} color={n <= stars ? colors.primary : '#D6D6D6'} fill={n <= stars ? colors.primary : 'transparent'} strokeWidth={1.6} />
+                <Star size={44} color={n <= stars ? colors.primary : colors.starEmpty} fill={n <= stars ? colors.primary : 'transparent'} strokeWidth={1.6} />
               </PressableScale>
             ))}
           </View>

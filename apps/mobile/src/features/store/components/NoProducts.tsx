@@ -2,7 +2,7 @@ import { Archive } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { useT } from '@/core/i18n';
-import { colors, radius, spacing } from '@/core/theme';
+import { colors, radius, shadows, spacing } from '@/core/theme';
 
 /** Tawsilty's store with nothing on its menu: a white card with a box icon and "لا توجد منتجات حاليا". */
 export function NoProducts() {
@@ -28,10 +28,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
     borderRadius: radius.lg + 12,
     backgroundColor: colors.bg,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 24,
-    elevation: 3,
+    ...shadows.soft,
   },
   center: { textAlign: 'center' },
 });

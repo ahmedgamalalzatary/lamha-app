@@ -12,7 +12,7 @@ import { toast } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT, useTextStart } from '@/core/i18n';
-import { colors, fonts, radius, spacing } from '@/core/theme';
+import { colors, fonts, radius, sizes, spacing } from '@/core/theme';
 import { meApi } from '../api/me';
 import { EmailCodeSheet } from '../components/EmailCodeSheet';
 import { PhoneChangeSheet } from '../components/PhoneChangeSheet';
@@ -124,7 +124,7 @@ export function ProfileScreen() {
                     onPress={() => setGender(g)}
                     style={[styles.gender, on && styles.genderOn]}
                   >
-                    <AppText weight="bold" color={on ? colors.primary : '#5B5F6B'}>
+                    <AppText weight="bold" color={on ? colors.primary : colors.ink3}>
                       {label}
                     </AppText>
                   </Pressable>
@@ -155,8 +155,8 @@ function Section({ icon: Icon, label, last, children }: { icon: LucideIcon; labe
   return (
     <View style={[styles.section, !last && styles.sectionLine]}>
       <View style={styles.sectionHead}>
-        <Icon size={16} color="#5B5F6B" />
-        <AppText weight="semibold" size={14} color="#5B5F6B">
+        <Icon size={16} color={colors.ink3} />
+        <AppText weight="semibold" size={14} color={colors.ink3}>
           {label}
         </AppText>
       </View>
@@ -186,9 +186,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     end: 4,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: sizes.iconLg,
+    height: sizes.iconLg,
+    borderRadius: sizes.iconLg / 2,
     borderWidth: 3,
     borderColor: colors.bg,
     backgroundColor: colors.primary,

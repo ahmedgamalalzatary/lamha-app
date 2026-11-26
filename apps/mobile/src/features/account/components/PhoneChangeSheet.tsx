@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 60,
     borderRadius: radius.lg,
-    backgroundColor: '#F4F6FA',
+    backgroundColor: colors.sheetInput,
     paddingHorizontal: spacing.lg,
     fontFamily: fonts.regular,
     fontSize: 16,

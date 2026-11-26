@@ -11,7 +11,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useStorePage } from '../api/store';
 import { CartBar } from '../components/CartBar';
 import { ProductGrid } from '../components/ProductItems';
@@ -70,7 +70,7 @@ export function StoreProductsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   bar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  round: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  round: { width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1 },
   content: { paddingTop: spacing.md, paddingBottom: 140 },
   errorBox: { padding: spacing.lg, gap: spacing.md },

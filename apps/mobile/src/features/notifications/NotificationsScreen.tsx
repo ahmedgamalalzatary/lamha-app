@@ -12,7 +12,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useAgo } from '@/features/partner/parts';
 import { notificationsApi, notificationsKey, useNotifications } from './api';
 
@@ -121,13 +121,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  side: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.iconLg, height: sizes.iconLg, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, gap: spacing.md },
   skeleton: { height: 84, borderRadius: radius.md },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   emptyCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.violet50, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   row: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.bg, borderRadius: radius.md, padding: spacing.lg },
-  rowIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
+  rowIcon: { width: sizes.icon, height: sizes.icon, borderRadius: sizes.icon / 2, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
   grow: { flex: 1, gap: spacing.xs },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary, marginTop: spacing.xs },
 });

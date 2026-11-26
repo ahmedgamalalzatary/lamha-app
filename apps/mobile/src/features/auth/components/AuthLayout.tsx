@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: radius.lg + 4,
     borderWidth: 1,
-    borderColor: '#ECECEE',
+    borderColor: colors.logoBorder,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',

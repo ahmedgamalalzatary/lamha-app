@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   invite: {
     borderWidth: 1,
     borderColor: colors.primary100,
-    backgroundColor: '#FFF9F3',
+    backgroundColor: colors.inviteTint,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,

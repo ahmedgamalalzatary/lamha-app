@@ -9,7 +9,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { AccountRow } from '@/features/account/components/AccountRow';
 import { useSupportPhones } from './api';
 
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.15,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
   skeleton: { height: 72, borderRadius: radius.md },
   phones: { gap: spacing.md, paddingBottom: spacing.md },
   phone: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg },
-  phoneIcon: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: colors.blue50, alignItems: 'center', justifyContent: 'center' },
+  phoneIcon: { width: sizes.touch, height: sizes.touch, borderRadius: radius.md, backgroundColor: colors.blue50, alignItems: 'center', justifyContent: 'center' },
 });

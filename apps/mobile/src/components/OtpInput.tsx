@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     maxWidth: 78,
     borderWidth: 1,
-    borderColor: '#BDBDBD',
+    borderColor: colors.otpBorder,
     borderRadius: radius.md + 2,
     alignItems: 'center',
     justifyContent: 'center',

@@ -22,7 +22,7 @@ import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useReduceMotion } from '@/core/hooks/useReduceMotion';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { AddButton } from './AddButton';
 import { ProductPicture } from './ProductItems';
 import { ProductPrice } from './ProductPrice';
@@ -275,9 +275,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.md,
     start: spacing.md,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: sizes.touch,
+    height: sizes.touch,
+    borderRadius: sizes.touch / 2,
     backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',

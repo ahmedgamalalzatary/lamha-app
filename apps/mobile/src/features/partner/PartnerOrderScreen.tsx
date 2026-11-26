@@ -11,7 +11,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { usePartnerOrder, usePartnerStep } from './api';
 import { LineChoices, orderDate, useWhen } from './parts';
 import { PriceField, RequestDetails } from './RequestParts';
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerText: { flex: 1, alignItems: 'center', gap: spacing.xs },
-  headerSide: { width: 40 },
+  headerSide: { width: sizes.icon },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   skeleton: { height: 400, borderRadius: radius.md },

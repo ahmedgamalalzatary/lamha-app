@@ -8,11 +8,11 @@ import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
 import { useT } from '@/core/i18n';
-import { colors, radius, spacing } from '@/core/theme';
+import { colors, radius, shadows, spacing, welcomeTints } from '@/core/theme';
 import { useHome } from '@/features/home/api/home';
 
 /** The soft card colours behind the pictures, as on Tawsilty's welcome screen. */
-const TINTS = ['#FFF1E0', '#F1E8F8', '#E6F6EC', '#E3F3FB', '#FDECEC', '#FFF7E0'];
+const TINTS = welcomeTints;
 const COLUMNS = 3;
 const PER_COLUMN = 4;
 
@@ -45,7 +45,7 @@ export function WelcomeScreen() {
             })}
           </View>
         ))}
-        <LinearGradient colors={['rgba(255,255,255,0)', '#FFFFFF']} locations={[0.45, 0.8]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[colors.bgClear, colors.bg]} locations={[0.45, 0.8]} style={StyleSheet.absoluteFill} />
       </View>
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
         <View style={styles.sheet}>
@@ -86,10 +86,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     paddingBottom: spacing.xl,
     gap: spacing.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 24,
-    elevation: 3,
+    ...shadows.soft,
   },
   centred: { textAlign: 'center' },
   withPhone: {
@@ -101,7 +98,7 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#DCDDE3',
-    backgroundColor: '#F6F6FA',
+    borderColor: colors.softButtonBorder,
+    backgroundColor: colors.softButton,
   },
 });

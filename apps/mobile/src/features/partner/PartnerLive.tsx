@@ -6,7 +6,7 @@ import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { usePartnerOrder, usePartnerOrders, usePartnerStep } from './api';
 import { usePartnerLive } from './live';
 import { LineChoices, LineImage } from './parts';
@@ -143,7 +143,7 @@ function NewOrderPopup() {
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.backdrop, justifyContent: 'center', padding: spacing.lg },
   card: { backgroundColor: colors.bg, borderRadius: 4, maxHeight: '85%', paddingBottom: spacing.xl },
-  close: { position: 'absolute', top: spacing.sm, end: spacing.sm, zIndex: 1, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  close: { position: 'absolute', top: spacing.sm, end: spacing.sm, zIndex: 1, width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.xl, gap: spacing.lg },
   note: { gap: spacing.xs },
   line: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

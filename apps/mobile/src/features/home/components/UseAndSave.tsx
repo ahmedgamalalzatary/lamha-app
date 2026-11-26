@@ -5,7 +5,7 @@ import { AppText } from '@/components/AppText';
 import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 
 /**
  * "استخدم ووفر" (customer/home/home-use-and-save-points-wallet-banner-carousel.png): نقاطي and المحفظة,
@@ -57,6 +57,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     padding: spacing.md,
   },
-  icon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
+  icon: { width: sizes.icon, height: sizes.icon, borderRadius: radius.md, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
   chevron: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
 });

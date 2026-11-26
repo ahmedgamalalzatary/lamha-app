@@ -1,6 +1,6 @@
 import { Modal, StyleSheet, View } from 'react-native';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { AppText } from './AppText';
 import { PressableScale } from './PressableScale';
 
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row-reverse', justifyContent: 'flex-end', alignItems: 'center', gap: spacing.lg, marginTop: spacing.md },
   cancel: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   confirm: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl },
-  outlineCard: { borderRadius: 24, gap: spacing.lg },
+  outlineCard: { borderRadius: radius.xl, gap: spacing.lg },
   centred: { textAlign: 'center' },
   line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
   pills: { flexDirection: 'row', gap: spacing.lg },

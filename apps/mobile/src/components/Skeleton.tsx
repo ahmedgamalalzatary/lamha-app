@@ -18,7 +18,7 @@ export function Skeleton({ style }: { style?: StyleProp<ViewStyle> }) {
       {reduced ? null : (
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.sweep]}>
           <LinearGradient
-            colors={['transparent', 'rgba(255,255,255,0.6)', 'transparent']}
+            colors={['transparent', colors.shimmer, 'transparent']}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={StyleSheet.absoluteFill}

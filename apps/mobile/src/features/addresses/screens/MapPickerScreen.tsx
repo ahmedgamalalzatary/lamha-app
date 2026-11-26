@@ -244,7 +244,7 @@ function Round({ label, onPress, children }: { label: string; onPress: () => voi
   );
 }
 
-const shadow = { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 };
+const shadow = { shadowColor: colors.shadow, shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 };
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
@@ -259,9 +259,9 @@ const styles = StyleSheet.create({
   bannerText: { flex: 1 },
   pinWrap: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', paddingBottom: 60 },
   tip: { backgroundColor: colors.navy, borderRadius: radius.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginBottom: spacing.md },
-  pinHead: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#CC5A00', alignItems: 'center', justifyContent: 'center' },
+  pinHead: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.pin, alignItems: 'center', justifyContent: 'center' },
   pinDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: colors.bg },
-  pinStem: { width: 3, height: 18, backgroundColor: '#CC5A00' },
+  pinStem: { width: 3, height: 18, backgroundColor: colors.pin },
   bottom: { position: 'absolute', bottom: 0, start: 0, end: 0 },
   locateRow: { flexDirection: 'row', justifyContent: 'flex-end', padding: spacing.lg },
   card: { backgroundColor: colors.bg, borderTopLeftRadius: radius.lg + 8, borderTopRightRadius: radius.lg + 8, padding: spacing.xl, gap: spacing.lg },

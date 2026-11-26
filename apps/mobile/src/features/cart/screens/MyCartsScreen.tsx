@@ -19,7 +19,7 @@ import { errorMessage } from '@/core/api/error-message';
 import { useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { cartApi, cartKeys, useCarts } from '../api/cart';
 
 /**
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   grow: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md, minHeight: 64 },
-  trash: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  trash: { width: sizes.iconLg, height: sizes.iconLg, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, gap: spacing.md },
   center: { flex: 1, padding: spacing.xl, justifyContent: 'center', gap: spacing.lg },
   empty: { flex: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl },
@@ -136,5 +136,5 @@ const styles = StyleSheet.create({
   logo: { width: 80, height: 80, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.primary50,
     alignItems: 'center', justifyContent: 'center' },
   items: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
-  open: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
+  open: { width: sizes.iconLg, height: sizes.iconLg, borderRadius: radius.md, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
 });

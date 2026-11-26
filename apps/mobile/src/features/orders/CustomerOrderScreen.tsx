@@ -15,7 +15,7 @@ import { errorMessage } from '@/core/api/error-message';
 import { session } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useCart } from '@/features/cart/api/cart';
 import { LineChoices, orderDate, useWhen } from '@/features/partner/parts';
 import { RequestDetails } from '@/features/partner/RequestParts';
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   title: { flex: 1, textAlign: 'center' },
-  headerSide: { width: 48 },
+  headerSide: { width: sizes.touch },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   skeleton: { height: 400, borderRadius: radius.md },
   pill: {

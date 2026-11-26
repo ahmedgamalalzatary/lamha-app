@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   section: { gap: spacing.lg, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   lineSkeleton: { height: 132, borderRadius: radius.lg },
   noteSkeleton: { height: 66, borderRadius: radius.lg },
-  upsell: { backgroundColor: '#F6F3ED', paddingVertical: spacing.xl, gap: spacing.lg },
+  upsell: { backgroundColor: colors.upsell, paddingVertical: spacing.xl, gap: spacing.lg },
   upsellTitle: { paddingHorizontal: spacing.lg },
   upsellRail: { paddingHorizontal: spacing.lg, gap: spacing.md },
   suggestion: { width: 120, gap: spacing.xs },
