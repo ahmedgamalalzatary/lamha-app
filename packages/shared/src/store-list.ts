@@ -3,6 +3,7 @@
 import { distanceKm, type LatLng } from './address.js';
 import type { CatalogStore, Product } from './catalog.js';
 import type { Vertical } from './enums.js';
+import type { StoreOffers } from './offers.js';
 
 /** رتب حسب: الافتراضي · الأقرب إليك · الأعلى تقييماً · الأحدث. */
 export const STORE_SORTS = ['default', 'nearest', 'rating', 'newest'] as const;
@@ -21,10 +22,15 @@ export interface StoreFilter {
   fast?: boolean;
   /** الاستلام */
   pickup?: boolean;
+  /** خصومات (§6.3): stores with product discounts. */
+  discounts?: boolean;
+  /** عروض التوصيل: stores with free delivery. */
+  freeDelivery?: boolean;
 }
 
 export type ListedStore = Pick<CatalogStore, 'id' | 'rating' | 'ratingCount' | 'deliveryMinutes' | 'pickupAllowed'> & {
   location?: LatLng | null;
+  offers?: Pick<StoreOffers, 'discount' | 'freeDeliveryFrom'>;
 };
 
 const byRating = (a: ListedStore, b: ListedStore) => {
@@ -44,7 +50,9 @@ export function applyStoreFilter<T extends ListedStore>(stores: readonly T[], fi
     (s) =>
       (filter.minRating === undefined || (s.rating !== null && s.rating >= filter.minRating)) &&
       (!filter.fast || s.deliveryMinutes <= FAST_DELIVERY_MINUTES) &&
-      (!filter.pickup || s.pickupAllowed),
+      (!filter.pickup || s.pickupAllowed) &&
+      (!filter.discounts || !!s.offers?.discount) &&
+      (!filter.freeDelivery || (s.offers?.freeDeliveryFrom ?? null) !== null),
   );
   if (filter.sort === 'rating') return kept.sort(byRating);
   if (filter.sort === 'newest') return kept.sort((a, b) => b.id - a.id);

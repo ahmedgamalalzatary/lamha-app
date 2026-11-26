@@ -134,6 +134,13 @@
       "when": 1795673955694,
       "tag": "0018_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1795676396664,
+      "tag": "0019_offers",
+      "breakpoints": true
     }
   ]
 }

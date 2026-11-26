@@ -25,6 +25,7 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   SHIFT_NOT_OPEN: 'لا توجد نوبة عمل يمكن بدؤها الآن',
   WALLET_BALANCE: 'الرصيد أقل من مبلغ الخصم',
   POINTS_BALANCE: 'النقاط أقل من عدد الخصم',
+  COUPON_CODE_TAKEN: 'هذا الكود مستخدم في كوبون آخر',
 };
 
 export const GENERIC_ERROR = 'حدث خطأ، حاول مرة أخرى';

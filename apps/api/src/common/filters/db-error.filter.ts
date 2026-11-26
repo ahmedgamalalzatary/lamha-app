@@ -26,6 +26,9 @@ export function dbConflict(err: unknown): ApiException | undefined {
   if (found.code === 'ER_DUP_ENTRY' && /users_phone_unique/.test(found.message)) {
     return new ApiException(HttpStatus.CONFLICT, 'PHONE_TAKEN', 'This phone already has an account');
   }
+  if (found.code === 'ER_DUP_ENTRY' && /coupons_code_idx/.test(found.message)) {
+    return new ApiException(HttpStatus.CONFLICT, 'COUPON_CODE_TAKEN', 'This code is already in use');
+  }
   return new ApiException(HttpStatus.CONFLICT, 'CONFLICT', 'This changed at the same moment; try again');
 }
 

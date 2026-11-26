@@ -1,4 +1,4 @@
-import { CART_MODES, CART_NOTE_LIMIT, ORDER_STATUSES, PAYOUT_OPTIONS } from '@tawsela/shared';
+import { CART_MODES, CART_NOTE_LIMIT, COUPON, ORDER_STATUSES, PAID_BY, PAYOUT_OPTIONS } from '@tawsela/shared';
 import { char, datetime, decimal, index, int, json, mysqlEnum, mysqlTable, timestamp, uniqueIndex, varchar } from 'drizzle-orm/mysql-core';
 import { addresses, degrees } from '../addresses/addresses.schema.js';
 import { products, stores } from '../catalog/catalog.schema.js';
@@ -34,6 +34,16 @@ export const orders = mysqlTable(
     note: varchar('note', { length: CART_NOTE_LIMIT }).notNull().default(''),
     itemsTotal: money('items_total').notNull(),
     deliveryFee: money('delivery_fee').notNull(),
+    /** A free delivery's waived fee (§8.4) and who pays it; 0 and null without one. */
+    deliveryDiscount: money('delivery_discount').notNull().default(0),
+    deliveryPaidBy: mysqlEnum('delivery_paid_by', PAID_BY),
+    /** "وفر على طلبك" (§8.7): the code as it was, its discount and who pays it. */
+    couponId: id('coupon_id'),
+    couponCode: varchar('coupon_code', { length: COUPON.codeMaxLength }),
+    couponDiscount: money('coupon_discount').notNull().default(0),
+    couponPaidBy: mysqlEnum('coupon_paid_by', PAID_BY),
+    /** Of the items' discounts, what the app pays: the store is paid its full prices (§8.10). */
+    appProductSaving: money('app_product_saving').notNull().default(0),
     total: money('total').notNull(),
     /**
      * Paid from the customer's wallet (§8.15); the rest is cash. On a delivery by the app's captains the

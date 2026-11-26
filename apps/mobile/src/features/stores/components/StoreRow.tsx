@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { mediaUrl } from '@/core/api/client';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { OfferBadges } from '@/features/offers/OfferBadges';
 import { StoreMeta } from './StoreMeta';
 
 const SIZE = 96;
@@ -33,7 +34,7 @@ export function StorePicture({ store, size = SIZE }: { store: CatalogStore; size
   );
 }
 
-/** A store in a list (contract §8.3): picture, name, rating or "جديد", time, fee. Opens the store. */
+/** A store in a list (contract §8.3): picture, name, rating or "جديد", time, fee, its offers (§8.10). Opens the store. */
 export function StoreRow({ store }: { store: CatalogStore }) {
   return (
     <PressableScale
@@ -49,6 +50,7 @@ export function StoreRow({ store }: { store: CatalogStore }) {
           {store.name}
         </AppText>
         <StoreMeta store={store} />
+        <OfferBadges offers={store.offers} />
       </View>
     </PressableScale>
   );

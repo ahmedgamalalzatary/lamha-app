@@ -30,10 +30,17 @@ export const AUDIT_ACTIONS = [
   'customer.points',
   'settings.points',
   'settings.invites',
+  'coupon.create',
+  'coupon.update',
+  'coupon.delete',
+  'banner.create',
+  'banner.update',
+  'banner.delete',
+  'product.discount',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditTargetType = 'account' | 'store' | 'zone' | 'settings' | 'order' | 'ticket' | 'campaign';
+export type AuditTargetType = 'account' | 'store' | 'zone' | 'settings' | 'order' | 'ticket' | 'campaign' | 'coupon' | 'banner' | 'product';
 
 export interface AuditEntry {
   id: number;

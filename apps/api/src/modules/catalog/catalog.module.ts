@@ -5,12 +5,13 @@ import { UsersModule } from '../users/users.module.js';
 import { AdminCatalogController } from './admin-catalog.controller.js';
 import { AdminCatalogService } from './admin-catalog.service.js';
 import { InvitesModule } from '../invites/invites.module.js';
+import { OffersModule } from '../offers/offers.module.js';
 import { CatalogController } from './catalog.controller.js';
 import { CatalogRepository } from './catalog.repository.js';
 import { CatalogService } from './catalog.service.js';
 
 @Module({
-  imports: [UsersModule, AddressesModule, SettingsModule, InvitesModule],
+  imports: [UsersModule, AddressesModule, SettingsModule, InvitesModule, OffersModule],
   controllers: [CatalogController, AdminCatalogController],
   providers: [CatalogRepository, CatalogService, AdminCatalogService],
   exports: [CatalogRepository, CatalogService, AdminCatalogService],

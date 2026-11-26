@@ -5,6 +5,8 @@ import {
   DELIVERED_BY,
   type DeliveredBy,
   HOME_TILE_ROWS,
+  PAID_BY,
+  type PaidBy,
   PAYOUT_OPTIONS,
   type PayoutOption,
   PRODUCT_OPTIONS,
@@ -151,6 +153,18 @@ export class StoreFieldsDto {
   @ValidateNested()
   @Type(() => LatLngDto)
   location?: LatLngDto | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Free delivery from this items total (§8.4), 0 for every order; null for none' })
+  @IsOptional()
+  @IsNumber(MONEY)
+  @Min(0)
+  @Max(MAX_MONEY)
+  freeDeliveryFrom?: number | null;
+
+  @ApiPropertyOptional({ enum: PAID_BY, description: 'Who pays the waived fee' })
+  @IsOptional()
+  @IsIn(PAID_BY)
+  freeDeliveryPaidBy?: PaidBy;
 }
 
 /** The partner account made with the store: name and phone; the password is generated (contract §2). */
@@ -228,6 +242,18 @@ export class CatalogStoresQuery extends StoreListQuery {
   @Transform(queryBool)
   @IsBoolean()
   pickup?: boolean;
+
+  @ApiPropertyOptional({ description: 'خصومات: stores with product discounts' })
+  @IsOptional()
+  @Transform(queryBool)
+  @IsBoolean()
+  discounts?: boolean;
+
+  @ApiPropertyOptional({ description: 'عروض التوصيل: stores with free delivery' })
+  @IsOptional()
+  @Transform(queryBool)
+  @IsBoolean()
+  freeDelivery?: boolean;
 }
 
 /** GET /v1/catalog/search and …/suggestions (§8.13). */

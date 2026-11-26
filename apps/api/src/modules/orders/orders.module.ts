@@ -7,13 +7,14 @@ import { UsersModule } from '../users/users.module.js';
 import { WalletModule } from '../wallet/wallet.module.js';
 import { PointsModule } from '../points/points.module.js';
 import { InvitesModule } from '../invites/invites.module.js';
+import { OffersModule } from '../offers/offers.module.js';
 import { AdminOrdersController, OrdersController, PartnerOrdersController } from './orders.controller.js';
 import { OrdersGateway } from './orders.gateway.js';
 import { OrdersService } from './orders.service.js';
 
 @Module({
   // Users and Catalog for the partner store guard and the live socket's account check.
-  imports: [CartModule, AddressesModule, SettingsModule, UsersModule, CatalogModule, WalletModule, PointsModule, InvitesModule],
+  imports: [CartModule, AddressesModule, SettingsModule, UsersModule, CatalogModule, WalletModule, PointsModule, InvitesModule, OffersModule],
   controllers: [OrdersController, PartnerOrdersController, AdminOrdersController],
   providers: [OrdersService, OrdersGateway],
   exports: [OrdersService, OrdersGateway],

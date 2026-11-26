@@ -25,6 +25,7 @@ import { UsersModule } from './modules/users/users.module.js';
 import { WalletModule } from './modules/wallet/wallet.module.js';
 import { PointsModule } from './modules/points/points.module.js';
 import { InvitesModule } from './modules/invites/invites.module.js';
+import { OffersModule } from './modules/offers/offers.module.js';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { InvitesModule } from './modules/invites/invites.module.js';
     UsersModule,
     AdminsModule,
     CatalogModule,
+    OffersModule,
     CartModule,
     OrdersModule,
     DriversModule,

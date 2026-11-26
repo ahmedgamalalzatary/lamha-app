@@ -5,15 +5,18 @@ import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
 import { colors, spacing } from '@/core/theme';
 import { useHome } from '../api/home';
+import { BannerCarousel, BannerRail } from '../components/Banners';
 import { HomeHeader } from '../components/HomeHeader';
 import { HomeTiles, HomeTilesSkeleton } from '../components/HomeTiles';
 import { InviteCard } from '../components/InviteCard';
+import { OfferTiles } from '../components/OfferTiles';
 import { UseAndSave } from '../components/UseAndSave';
 import { useInviteDismissed } from '../invite-dismissed';
 
 /**
- * The customer's الرئيسية (contract §8.2): header with the address and search, the tiles, and the
- * invite card, then "استخدم ووفر" (Phase 18). Offers, banners and coloured sections join it in Phase 20.
+ * The customer's الرئيسية (contract §8.2): header with the address and search, the tiles, the invite
+ * card, "العروض والكوبونات", "استخدم ووفر", the banner carousel and the rails (Phase 20).
+ * [Open] Tawsilty's coloured store sections ("الأكثر طلبًا 🔥") are not built yet.
  */
 export function HomeScreen() {
   const t = useT();
@@ -38,7 +41,14 @@ export function HomeScreen() {
           <>
             <HomeTiles tiles={home.data.tiles} />
             {inviteDismissed === false ? <InviteCard rewards={home.data.invite} onClose={dismissInvite} /> : null}
+            <OfferTiles />
             <UseAndSave />
+            <BannerCarousel banners={home.data.banners.filter((b) => b.place === 'carousel')} />
+            {home.data.banners
+              .filter((b) => b.place === 'rail')
+              .map((b) => (
+                <BannerRail key={b.id} banner={b} />
+              ))}
           </>
         )}
       </ScrollView>

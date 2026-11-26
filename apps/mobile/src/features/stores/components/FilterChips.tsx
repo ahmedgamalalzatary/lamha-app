@@ -1,5 +1,5 @@
 import type { StoreFilter } from '@tawsela/shared';
-import { ChevronDown, Footprints, ListFilter, type LucideIcon, Star, Zap } from 'lucide-react-native';
+import { Bike, ChevronDown, Footprints, ListFilter, type LucideIcon, Star, Tag, Zap } from 'lucide-react-native';
 import { ScrollView, StyleSheet } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
@@ -26,8 +26,7 @@ function Chip({ icon: Icon, label, on, menu, onPress }: { icon: LucideIcon; labe
 }
 
 /**
- * The filter chips (contract §6.3): رتب حسب ▾ · التقييم ▾ · توصيل سريع · الاستلام.
- * خصومات and عروض التوصيل join them with the offers (Phase 20).
+ * The filter chips (contract §6.3): رتب حسب ▾ · التقييم ▾ · توصيل سريع · الاستلام · خصومات · عروض التوصيل.
  */
 export function FilterChips({
   filter,
@@ -47,6 +46,8 @@ export function FilterChips({
       <Chip icon={Star} label={t('stores.rating')} menu on={filter.minRating !== undefined} onPress={onRating} />
       <Chip icon={Zap} label={t('stores.fast')} on={!!filter.fast} onPress={() => onChange({ ...filter, fast: !filter.fast })} />
       <Chip icon={Footprints} label={t('stores.pickup')} on={!!filter.pickup} onPress={() => onChange({ ...filter, pickup: !filter.pickup })} />
+      <Chip icon={Tag} label={t('stores.discounts')} on={!!filter.discounts} onPress={() => onChange({ ...filter, discounts: !filter.discounts })} />
+      <Chip icon={Bike} label={t('stores.freeDelivery')} on={!!filter.freeDelivery} onPress={() => onChange({ ...filter, freeDelivery: !filter.freeDelivery })} />
     </ScrollView>
   );
 }

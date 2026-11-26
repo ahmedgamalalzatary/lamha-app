@@ -52,6 +52,16 @@ describe('applyStoreFilter (contract §8.3: sort sheet, rating sheet, chips)', (
     expect(ids(applyStoreFilter(stores, { pickup: true }))).toEqual([3]);
   });
 
+  it('keeps stores with product discounts (خصومات) and with free delivery (عروض التوصيل)', () => {
+    const offered = [
+      store(1, { offers: { discount: { upTo: 30, same: true }, freeDeliveryFrom: null } }),
+      store(2, { offers: { discount: null, freeDeliveryFrom: 0 } }),
+      store(3, { offers: { discount: null, freeDeliveryFrom: null } }),
+    ];
+    expect(ids(applyStoreFilter(offered, { discounts: true }))).toEqual([1]);
+    expect(ids(applyStoreFilter(offered, { freeDelivery: true }))).toEqual([2]);
+  });
+
   it('combines filters and sort', () => {
     expect(ids(applyStoreFilter(stores, { fast: true, sort: 'rating' }))).toEqual([3, 4]);
   });

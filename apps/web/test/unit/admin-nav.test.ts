@@ -71,7 +71,7 @@ describe('filterNav ("ابحث عن شاشة…")', () => {
   });
 
   it('keeps a whole section when its own name matches', () => {
-    expect(labels(filterNav(ADMIN_NAV, 'التسويق'))).toEqual([['التسويق والعروض', 'الإشعارات التفاعلية', 'مكافآت الدعوة']]);
+    expect(labels(filterNav(ADMIN_NAV, 'التسويق'))).toEqual([['التسويق والعروض', 'الإشعارات التفاعلية', 'مكافآت الدعوة', 'البنرات', 'الكوبونات والقسائم', 'خصومات المنتجات']]);
   });
 
   it('ignores alef and taa marbuta spelling differences', () => {

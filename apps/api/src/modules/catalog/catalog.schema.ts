@@ -1,4 +1,4 @@
-import { DELIVERED_BY, HOME_TILE_ROWS, PAYOUT_OPTIONS, STORE_LAYOUTS, VERTICALS } from '@tawsela/shared';
+import { DELIVERED_BY, HOME_TILE_ROWS, PAID_BY, PAYOUT_OPTIONS, STORE_LAYOUTS, VERTICALS } from '@tawsela/shared';
 import {
   type AnyMySqlColumn,
   boolean,
@@ -44,6 +44,9 @@ export const stores = mysqlTable('stores', {
   zoneId: int('zone_id', { unsigned: true }).references(() => zones.id),
   lat: degrees('lat'),
   lng: degrees('lng'),
+  /** Free delivery from this items total, 0 for every order; null for none (§8.4). Admin only. */
+  freeDeliveryFrom: money('free_delivery_from'),
+  freeDeliveryPaidBy: mysqlEnum('free_delivery_paid_by', PAID_BY).notNull().default('store'),
   /** The customers' stars so far (§8.8): the lists show the average, or "جديد" with none. */
   ratingSum: int('rating_sum', { unsigned: true }).notNull().default(0),
   ratingCount: int('rating_count', { unsigned: true }).notNull().default(0),
@@ -106,6 +109,9 @@ export const products = mysqlTable(
     name: varchar('name', { length: 120 }).notNull(),
     description: text('description'),
     price: money('price').notNull(),
+    /** The price before its discount (§8.4), set by the admin only; null for none. */
+    oldPrice: money('old_price'),
+    discountPaidBy: mysqlEnum('discount_paid_by', PAID_BY).notNull().default('store'),
     unit: varchar('unit', { length: 40 }),
     image: varchar('image', { length: 255 }),
     active: boolean('active').notNull().default(true),

@@ -44,7 +44,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 17 | Wallet (top-up excluded for now) | 🔍 in-verify | none (movement rows and the العملاء page marked [Open]) |
 | 18 | Points | 🔍 in-verify | none (movement rows and the checkout row marked [Open]) |
 | 19 | Invite friends | 🔍 in-verify | none (friends' rows and the share message marked [Open]) |
-| 20 | Offers, coupons and banners | ⬜ | |
+| 20 | Offers, coupons and banners | 🔍 in-verify | none (dashboard pages and code error texts marked [Open]) |
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
 | 22 | Pharmacy: prescriptions and product photos | ⬜ | |
 | 23 | Send anything (اطلب دليفري) | ⬜ | |
@@ -583,6 +583,46 @@ Owner's answers before the phase (2026-11-26):
 ## Phase 20: Offers, coupons and banners
 
 Contract §8.2 and §8.10: offer banners, the mart banner with its product row, offer tiles, coupons, offers grouped by the customer's coupon, "عروض التوصيل" and "خصومات" filters; dashboard management.
+
+Owner's answers before the phase (2026-11-26):
+- Vouchers (قسائم) and checkout coupons are one kind of code: one naming a store shows in its قسائمي sheet; any code can be typed at checkout.
+- Who pays a discount (the app or the store) is set per offer.
+- The admin sets how often a customer may use a code, and an optional total for everyone.
+- The admin alone makes offers, codes and banners; stores cannot.
+- A code takes a fixed amount or a percentage with an optional cap.
+- A product discount is a new price per product, with the old price struck through.
+- At checkout the code comes first, then the wallet, then points, then cash.
+- A banner opens a store, or the store's products as one grid (the mart banner).
+
+- **Migration 0019:** `coupons` (the code as typed and as matched, its store or none, amount or percentage, cap, minimum, dates, uses per customer and in all, who pays, on/off), `coupon_uses` (one per order; a rejection deletes it), `banners` (image, carousel or rail, store, what it opens, order, on/off); `products.old_price` and `discount_paid_by`; `stores.free_delivery_from` and `free_delivery_paid_by`; on `orders` the code, its discount and payer, the waived delivery fee and its payer, and the product discounts the app pays; audit targets for codes, banners and products.
+- **Shared (TDD):** `couponDiscount`, `couponProblem` (not found, other store, below the minimum, used, used up), `couponInputProblem`, `normalizeCode`, `deliveryDiscount`, `productSaving`, `discountRange`, `storeItemsBase` (what the store is paid on, by who pays each discount), `hasOffer`; the `خصومات` and `عروض التوصيل` filters; `formatDay` ("30 نوفمبر 2026").
+- **API:**
+  - `GET|POST /v1/admin/coupons`, `PATCH|DELETE /v1/admin/coupons/:id` (a code matching another however it is typed is 409 `COUPON_CODE_TAKEN`); `GET|POST /v1/admin/banners`, `PATCH|DELETE /v1/admin/banners/:id`; `PUT /v1/admin/products/:id/discount`; the store's free delivery on `PATCH /v1/admin/stores/:id`. Each change is in سجل التغييرات. A partner's product form refuses an old price.
+  - Every store a customer sees carries its offers: its newest own code, its free delivery and its product discounts. The store page adds قسائمي: the codes that work there now, its own first, then the app's.
+  - `GET /v1/catalog/offers?kind=&scope=` lists the stores with that kind of offer; `/v1/catalog/stores` takes `discounts` and `freeDelivery`.
+  - `GET /v1/catalog/home` adds the active banners of visible stores; a rail brings the store's first 10 products.
+  - The quote and the order take `couponCode`: a code that cannot be used is 422 with its reason; placing locks the code, so a limited code's last use goes once. Free delivery waives the fee and the quote shows the usual one. The store is paid on its full prices less what it pays itself; points are earned on the items less the code.
+- **Dashboard:** التسويق والعروض › البنرات, الكوبونات والقسائم and خصومات المنتجات; the store form's توصيل مجاني; the store's order details show "خصم الكوبون".
+- **App:**
+  - الرئيسية: "العروض والكوبونات" (three tiles opening the offers screen on their tab), the banner carousel with its dots, and the rails with their products' "+".
+  - The offers screen as in the photos: the orange header following the tab, خصومات · كوبونات · عروض التوصيل and الكل · مطاعم · متاجر أخرى.
+  - Store rows: the lime discount, the green free delivery and the voucher badge; free delivery on every order strikes the fee through beside "مجاني". The chips خصومات and عروض التوصيل.
+  - The store page: the voucher, free-delivery and discount cards; قسائمي with copy; the market's "العروض" rail with "وفر …" and the struck old price; one grid for "عرض الكل" and "عرض المنتجات".
+  - Checkout: "وفر على طلبك" with تطبيق and "من فضلك أدخل الكوبون أولا"; "خصم الكوبون" in the summary; the usual fee struck through on a free delivery. The order details show the code's discount.
+- **[Open]**
+  - The dashboard pages, the code error texts and "المزيد من المعلومات" (not captured; it shows the rule).
+  - Tawsilty's coloured store sections ("الأكثر طلبًا 🔥") and the market's themed rails are not built.
+  - "Offers grouped by the customer's coupon" is read as the كوبونات tab: the stores with their own codes.
+- **[Derived]**
+  - The row's voucher is the store's newest own code; codes for every store show only in قسائمي.
+  - Free delivery from 0 is every order; it counts the items after product discounts, before the code.
+  - A store-paid free delivery costs the store the fee only when the app's captains deliver.
+  - "صالح حتى" ends at the end of that day in Cairo.
+  - An applied code reads "إزالة"; a code that stops working is taken off with its reason.
+- **Phone verification:**
+  - The admin adds a carousel banner and a rail for the mart: الرئيسية slides the banner, the rail shows the products, and the rail's banner opens them as one grid.
+  - The admin makes "Black Friday" (6 ج.م from 150 ج.م) for a store: its row shows the voucher badge; its page shows the card; قسائمي copies the code; at checkout it takes 6 ج.م off, and a second order is told it was used.
+  - The admin sets free delivery from 300 ج.م and an old price on one product: the row shows both badges, the product shows "وفر …", and an order of 300 ج.م has the fee struck through.
 
 ## Phase 21: Lucky wheel
 

@@ -249,6 +249,11 @@ function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails
         <Row label="كلفة التوصيل">{formatMoney(o.deliveryFee)}</Row>
         <Row label="رسوم طريقة الدفع">{formatMoney(0)}</Row>
         {/* A discount shows in red (§9): here what the wallet paid; المجموع is what the customer still pays. */}
+        {o.couponDiscount > 0 ? (
+          <Row label="خصم الكوبون">
+            <span className="text-tw-danger">-{formatMoney(o.couponDiscount)}</span>
+          </Row>
+        ) : null}
         {o.walletPaid - o.invitePaid > 0 ? (
           <Row label="المدفوع من المحفظة">
             <span className="text-tw-danger">-{formatMoney(o.walletPaid - o.invitePaid)}</span>

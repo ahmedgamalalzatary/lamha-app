@@ -4,8 +4,8 @@ import { useT } from '@/core/i18n';
 import { colors, radius, spacing } from '@/core/theme';
 
 /**
- * A delivery fee of 0: Tawsilty's green "مجاني" pill. Its struck-through usual fee beside it comes
- * with the free-delivery offers (Phase 20); a store whose own fee is 0 has none to strike.
+ * A delivery fee of 0: Tawsilty's green "مجاني" pill. A free delivery (§8.10) shows the usual fee
+ * struck through beside it; a store whose own fee is 0 has none to strike.
  */
 export function FreeFee({ size = 14 }: { size?: number }) {
   const t = useT();

@@ -36,6 +36,13 @@ const ACTIONS: Record<AuditAction, string> = {
   'customer.points': 'تعديل نقاط عميل',
   'settings.points': 'تعديل إعدادات النقاط',
   'settings.invites': 'تعديل مكافآت الدعوة',
+  'coupon.create': 'إضافة كوبون',
+  'coupon.update': 'تعديل كوبون',
+  'coupon.delete': 'حذف كوبون',
+  'banner.create': 'إضافة بنر',
+  'banner.update': 'تعديل بنر',
+  'banner.delete': 'حذف بنر',
+  'product.discount': 'خصم منتج',
 };
 
 /** The fields' names as the forms show them; any other field keeps its own name. */

@@ -57,6 +57,10 @@ export const ADMIN_NAV: NavGroup[] = [
       { label: 'الإشعارات التفاعلية', href: '/marketing/notifications' },
       // Phase 19: the invite rewards, limits and cap (§8.17, A17) [Open: name and layout ours].
       { label: 'مكافآت الدعوة', href: '/marketing/invites' },
+      // Phase 20: banners, codes and product discounts (§8.2, §8.10, A14–A15) [Open: names and layout ours].
+      { label: 'البنرات', href: '/marketing/banners' },
+      { label: 'الكوبونات والقسائم', href: '/marketing/coupons' },
+      { label: 'خصومات المنتجات', href: '/marketing/discounts' },
     ],
   },
   { label: 'التقارير', icon: ChartLine, items: [{ label: 'التقارير', href: '/reports' }] },

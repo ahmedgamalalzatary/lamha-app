@@ -1,4 +1,4 @@
-import type { Category, StorePage } from '@tawsela/shared';
+import { type Category, productSaving, type StorePage } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { type Href, router, useLocalSearchParams } from 'expo-router';
 import { LayoutGrid } from 'lucide-react-native';
@@ -19,7 +19,9 @@ import { CartBar } from '../components/CartBar';
 import { CategoriesSheet } from '../components/CategoriesSheet';
 import { CategoryTabs, TABS_HEIGHT } from '../components/CategoryTabs';
 import { NoProducts } from '../components/NoProducts';
-import { type ProductActions, ProductRow } from '../components/ProductItems';
+import { OfferCards } from '../components/OfferCards';
+import { ProductCard, type ProductActions, ProductRow } from '../components/ProductItems';
+import { VouchersSheet } from '@/features/offers/VouchersSheet';
 import { ProductSheet } from '../components/ProductSheet';
 import { SectionTitle } from '../components/SectionTitle';
 import { COVER_HEIGHT, StoreHeader } from '../components/StoreHeader';
@@ -32,9 +34,9 @@ const BOTTOM_ROOM = 140;
 /**
  * A store page (contract §8.4). The admin's layout decides the body: the restaurant layout lists the
  * products under sticky category tabs; the market layout shows the "الأقسام" grid, each opening its
- * category page. The bottom bar shows the minimum order, then the cart.
- * [Open] The voucher, free-delivery and discount cards under the info row arrive with offers (Phase 20);
- * the market's "العروض" and themed rails too.
+ * category page. The bottom bar shows the minimum order, then the cart. The offer cards sit under the
+ * info row (Phase 20); the market layout lists its discounted products in "العروض" over its categories.
+ * [Open] The market's themed rails (banner + products) are not built.
  */
 export function StoreScreen() {
   const t = useT();
@@ -48,6 +50,7 @@ export function StoreScreen() {
   const toggle = useToggleFavorite();
   const { cart, actions, sheet, setSheet, conflict } = useProductTaps(storeId);
   const [solid, setSolid] = useState(false);
+  const [vouchersOpen, setVouchersOpen] = useState(false);
 
   const isFavorite = favorites.data?.some((s) => s.id === storeId) ?? false;
   const store = page.data;
@@ -105,6 +108,7 @@ export function StoreScreen() {
           actions={actions}
           solid={solid}
           onScrollY={trackCover}
+          onVouchers={() => setVouchersOpen(true)}
           renderTopBar={(tabs) => (
             <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/search` as Href)}>
               {tabs}
@@ -115,6 +119,8 @@ export function StoreScreen() {
         <>
           <ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: BOTTOM_ROOM }}>
             <StoreHeader store={store} />
+            <OfferCards store={store} onVouchers={() => setVouchersOpen(true)} />
+            <Deals store={store} actions={actions} />
             <CategoryGrid store={store} />
           </ScrollView>
           <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/search` as Href)} />
@@ -122,6 +128,7 @@ export function StoreScreen() {
       )}
       <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
       <ProductSheet product={shown} conflict={conflict} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
+      <VouchersSheet visible={vouchersOpen} vouchers={store.vouchers} onClose={() => setVouchersOpen(false)} />
     </View>
   );
 }
@@ -135,6 +142,7 @@ function MenuList({
   actions,
   solid,
   onScrollY,
+  onVouchers,
   renderTopBar,
 }: {
   store: StorePage;
@@ -142,6 +150,7 @@ function MenuList({
   solid: boolean;
   /** Hands each scroll offset to the screen (the bar over the cover). */
   onScrollY: (y: number) => void;
+  onVouchers: () => void;
   renderTopBar: (tabs: ReactNode) => ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -177,6 +186,7 @@ function MenuList({
     <>
       <ScrollView ref={scroll} onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: BOTTOM_ROOM }}>
         <StoreHeader store={store} />
+        <OfferCards store={store} onVouchers={onVouchers} />
         {sections.length ? (
           <View onLayout={(e) => (tabsY.current = e.nativeEvent.layout.y)}>{tabs}</View>
         ) : (
@@ -206,6 +216,32 @@ function MenuList({
     </>
   );
 }
+
+/** The market layout's "العروض" (§8.4): its discounted products side by side; "عرض الكل" opens them as one grid. */
+function Deals({ store, actions }: { store: StorePage; actions: ProductActions }) {
+  const t = useT();
+  const deals = store.categories.flatMap((c) => c.products).filter((p) => p.active && productSaving(p) > 0);
+  if (!deals.length) return null;
+  return (
+    <View testID="store-deals" style={styles.deals}>
+      <View style={styles.dealsHead}>
+        <SectionTitle title={t('offers.deals')} bar={false} />
+        <PressableScale accessibilityRole="button" accessibilityLabel={t('offers.seeAll')} onPress={() => router.push(`/store/${store.id}/products?offers=1` as Href)} hitSlop={8}>
+          <AppText weight="semibold" style={styles.underline}>
+            {t('offers.seeAll')}
+          </AppText>
+        </PressableScale>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dealsRow}>
+        {deals.map((p) => (
+          <ProductCard key={p.id} product={p} actions={actions} width={DEAL_WIDTH} />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const DEAL_WIDTH = 150;
 
 /** The market layout's "الأقسام" (contract §8.4): main categories as pictures; each opens its page. */
 function CategoryGrid({ store }: { store: StorePage }) {
@@ -268,4 +304,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   center: { textAlign: 'center' },
+  deals: { gap: spacing.sm, marginBottom: spacing.lg },
+  dealsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingEnd: spacing.lg },
+  dealsRow: { gap: spacing.md, paddingHorizontal: spacing.lg },
+  underline: { textDecorationLine: 'underline' },
 });

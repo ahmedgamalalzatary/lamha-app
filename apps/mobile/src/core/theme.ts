@@ -46,6 +46,14 @@ export const colors = {
   navy: '#1D2333',
   /** Underlined fields and the OTP boxes' focus ring. */
   lineStrong: '#9E9E9E',
+  /** The lime "خصم 30 ج.م على منتجات" badge and the "وفر 5.0 ج.م" tag (§8.4, §8.10). */
+  lime: '#DDF94C',
+  /** The voucher badge and the قسائمي copy button: cream with a gold edge and gold text. */
+  voucher50: '#FFF7E6',
+  voucherLine: '#F2D79B',
+  gold: '#A97A08',
+  /** The "قسيمة" pill. */
+  voucherPill: '#6B3FD8',
 } as const;
 
 /** Alexandria weights, loaded in the root layout. */

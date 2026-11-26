@@ -19,6 +19,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useRef, useState } from 'react';
+import { PAID_BY_LABEL } from '@/features/offers/offer-text';
 import { errorMessage } from '@/core/api/error-message';
 import { ImageField, useUploading } from '@/components/ImageField';
 import { PasswordShown } from '@/components/PasswordShown';
@@ -34,10 +35,12 @@ const LAYOUT_LABELS = { list: 'قائمة (مطاعم)', grid: 'شبكة (مار
 const DELIVERED_BY_LABELS = { platform: 'توصيلة', store: 'المتجر نفسه' } as const;
 
 /** The form's text boxes hold strings; numbers are read on save. An empty percentage follows الإعدادات. */
-interface Draft extends Omit<StoreInput, 'deliveryMinutes' | 'minimumOrder' | 'appPercent'> {
+interface Draft extends Omit<StoreInput, 'deliveryMinutes' | 'minimumOrder' | 'appPercent' | 'freeDeliveryFrom'> {
   deliveryMinutes: string;
   minimumOrder: string;
   appPercent: string;
+  /** Empty: no free delivery; 0: every order. */
+  freeDeliveryFrom: string;
 }
 
 const EMPTY: Draft = {
@@ -59,6 +62,8 @@ const EMPTY: Draft = {
   cuisineIds: [],
   zoneId: null,
   location: null,
+  freeDeliveryFrom: '',
+  freeDeliveryPaidBy: 'store',
 };
 
 /** Only the fields the admin edits; the API refuses the read-only ones (id, partners…). */
@@ -81,6 +86,8 @@ const toDraft = (s: AdminStore): Draft => ({
   minimumOrder: String(s.minimumOrder),
   payoutOption: s.payoutOption,
   appPercent: s.appPercent === null ? '' : String(s.appPercent),
+  freeDeliveryFrom: s.freeDeliveryFrom === null ? '' : String(s.freeDeliveryFrom),
+  freeDeliveryPaidBy: s.freeDeliveryPaidBy,
 });
 
 /** The select's value for "حسب الإعدادات العامة". */
@@ -122,6 +129,7 @@ function StoreForm({ store }: { store?: AdminStore }) {
     minutes >= 1 &&
     isMoney(draft.minimumOrder) &&
     (draft.appPercent.trim() === '' || isPercent(draft.appPercent)) &&
+    (draft.freeDeliveryFrom.trim() === '' || isMoney(draft.freeDeliveryFrom)) &&
     isTimeOfDay(draft.opensAt) &&
     isTimeOfDay(draft.closesAt) &&
     // Every store delivers in a zone (review F21, owner).
@@ -134,6 +142,7 @@ function StoreForm({ store }: { store?: AdminStore }) {
     deliveryMinutes: minutes,
     minimumOrder: Number(draft.minimumOrder),
     appPercent: draft.appPercent.trim() === '' ? null : Number(draft.appPercent),
+    freeDeliveryFrom: draft.freeDeliveryFrom.trim() === '' ? null : Number(draft.freeDeliveryFrom),
     cuisineIds: draft.vertical === 'restaurant' ? draft.cuisineIds : [],
   });
 
@@ -238,6 +247,25 @@ function StoreForm({ store }: { store?: AdminStore }) {
           placeholder="حسب الإعدادات العامة"
           value={draft.appPercent}
           onChange={(e) => set('appPercent', e.target.value)}
+        />
+      </Section>
+
+      {/* Phase 20: free delivery is the admin's offer (§8.4, §8.10) [Owner, 2026-11-26: who pays is set per offer]. */}
+      <Section title="توصيل مجاني" note="اتركه فارغاً لعدم وجود توصيل مجاني، أو 0 ليكون التوصيل مجانياً لكل الطلبات.">
+        <TextField
+          label="توصيل مجاني للطلبات من (ج.م)"
+          type="number"
+          min={0}
+          step="0.01"
+          placeholder="بدون توصيل مجاني"
+          value={draft.freeDeliveryFrom}
+          onChange={(e) => set('freeDeliveryFrom', e.target.value)}
+        />
+        <SelectField
+          label="يتحمل رسوم التوصيل"
+          value={draft.freeDeliveryPaidBy}
+          options={(['store', 'app'] as const).map((v) => ({ value: v, label: PAID_BY_LABEL[v] }))}
+          onChange={(v) => set('freeDeliveryPaidBy', v)}
         />
       </Section>
 

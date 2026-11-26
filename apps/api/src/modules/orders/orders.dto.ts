@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ORDER_STATUSES, type OrderStatus } from '@tawsela/shared';
-import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, IsOptional, IsUUID, Max, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { COUPON, ORDER_STATUSES, type OrderStatus } from '@tawsela/shared';
+import { Transform, Type } from 'class-transformer';
+import { IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 import { LatLngDto } from '../addresses/dto/addresses.dto.js';
 
 /** POST /v1/me/checkout/quote */
@@ -16,6 +16,13 @@ export class CheckoutQuoteDto {
   @ValidateNested()
   @Type(() => LatLngDto)
   location?: LatLngDto;
+
+  @ApiPropertyOptional({ maxLength: COUPON.codeMaxLength, example: 'Black Friday', description: '"وفر على طلبك": a code, as typed; empty is none' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() || undefined : value))
+  @IsString()
+  @MaxLength(COUPON.codeMaxLength)
+  couponCode?: string;
 }
 
 /** POST /v1/me/orders */

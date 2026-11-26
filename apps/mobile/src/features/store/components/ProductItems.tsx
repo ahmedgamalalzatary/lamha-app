@@ -1,11 +1,11 @@
-import { isCustomizable, type Product } from '@tawsela/shared';
+import { formatMoney, isCustomizable, type Product, productSaving } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { UtensilsCrossed } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
-import { useT } from '@/core/i18n';
+import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { AddButton } from './AddButton';
 import { ProductPrice } from './ProductPrice';
@@ -20,11 +20,13 @@ export interface ProductActions {
 
 /**
  * A product's picture, or a soft placeholder when it has none. A switched-off product is grey with a
- * white "غير متوفر" pill on it, as in Tawsilty.
+ * white "غير متوفر" pill on it, as in Tawsilty; a discounted one has the lime "وفر 5.00 ج.م" tag (§8.4).
  */
 export function ProductPicture({ product, size }: { product: Product; size?: number }) {
   const t = useT();
+  const locale = useLocale();
   const uri = mediaUrl(product.image);
+  const saving = productSaving(product);
   return (
     <View style={[styles.picture, size ? { width: size, height: size } : styles.square]}>
       {uri ? (
@@ -32,6 +34,13 @@ export function ProductPicture({ product, size }: { product: Product; size?: num
       ) : (
         <UtensilsCrossed size={28} color={colors.line} />
       )}
+      {product.active && saving > 0 ? (
+        <View style={styles.saveTag}>
+          <AppText weight="bold" size={fontSizes.caption}>
+            {t('offers.save', { amount: formatMoney(saving, locale) })}
+          </AppText>
+        </View>
+      ) : null}
       {product.active ? null : (
         <View style={styles.offPill}>
           <AppText weight="semibold" size={fontSizes.body}>
@@ -154,6 +163,15 @@ const styles = StyleSheet.create({
   },
   square: { width: '100%', aspectRatio: 1 },
   grey: { filter: [{ grayscale: 1 }] },
+  saveTag: {
+    position: 'absolute',
+    top: spacing.sm,
+    end: spacing.sm,
+    backgroundColor: colors.lime,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
   offPill: {
     backgroundColor: colors.bg,
     borderRadius: radius.pill,

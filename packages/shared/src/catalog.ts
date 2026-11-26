@@ -3,6 +3,7 @@ import type { LatLng } from './address.js';
 import type { CreatedAccount, StaffAccount } from './auth.js';
 import type { Vertical } from './enums.js';
 import type { PayoutOption } from './order.js';
+import type { HomeBanner, PaidBy, StoreOffers, Voucher } from './offers.js';
 import type { Ingredient, OptionGroup } from './product.js';
 
 /** How a store page shows its products (contract §8.4, set by the admin per store). */
@@ -90,6 +91,10 @@ export interface StoreInput extends StoreHours {
   cuisineIds: number[];
   /** The delivery zone it serves (§8.9): customers see it only when their address is in this zone. */
   zoneId: number | null;
+  /** Free delivery from this items total (§8.4), 0 for every order; null for none. Admin only (§8.10). */
+  freeDeliveryFrom: number | null;
+  /** Who pays the waived fee [Owner, 2026-11-26: set per offer]. */
+  freeDeliveryPaidBy: PaidBy;
   /** Where the store is: "الأقرب إليك" and the delivery distance. Required for delivery orders. */
   location: LatLng | null;
 }
@@ -139,6 +144,8 @@ export interface CatalogStore {
   ratingCount: number;
   cuisineIds: number[];
   location: LatLng | null;
+  /** Its offers (§8.10): the badges on its rows and the cards on its page. */
+  offers: StoreOffers;
 }
 
 export interface Category {
@@ -163,6 +170,10 @@ export interface Product {
   name: string;
   description: string | null;
   price: number;
+  /** The price before its discount, struck through beside the price; null for none (§8.4 "وفر 5.0 ج.م"). */
+  oldPrice: number | null;
+  /** Who pays the discount [Owner, 2026-11-26: set per offer]; set by the admin only. */
+  discountPaidBy: PaidBy;
   /** "كيلو", "شريط 20 قرص"… */
   unit: string | null;
   image: string | null;
@@ -190,6 +201,15 @@ export interface AdminProduct extends Product {
 /** GET /v1/catalog/stores/:id: the store with its categories and their active products. */
 export interface StorePage extends CatalogStore {
   categories: (Category & { products: Product[] })[];
+  /** قسائمي (§8.4): the codes that work here now, the store's own and the app's. */
+  vouchers: Voucher[];
+}
+
+/** PUT /v1/admin/products/:id/discount: a product discount is the admin's (§8.10) [Owner, 2026-11-26]. */
+export interface ProductDiscountInput {
+  /** Above the price; null ends the discount. */
+  oldPrice: number | null;
+  paidBy: PaidBy;
 }
 
 /** Cuisine circles on the restaurants list (§8.3). */
@@ -209,10 +229,12 @@ export interface InviteRewards {
 }
 
 
-/** GET /v1/catalog/home: what the customer home shows (§8.2). Banners and sections arrive in Phase 20. */
+/** GET /v1/catalog/home: what the customer home shows (§8.2). */
 export interface HomeScreen {
   tiles: HomeTile[];
   invite: InviteRewards;
+  /** The admin's banners in order: the carousel's slides and the rails (§8.2). */
+  banners: HomeBanner[];
 }
 
 /** A home tile (§8.2): it opens a vertical's list or one pinned store. */

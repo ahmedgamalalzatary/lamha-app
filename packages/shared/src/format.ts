@@ -50,3 +50,16 @@ export function formatMinutes(minutes: number, locale: Locale = 'ar'): string {
 export function formatMinutesRange(from: number, to: number, locale: Locale = 'ar'): string {
   return `${from} - ${to} ${MINUTES[locale]}`;
 }
+
+const MONTHS: Record<Locale, string[]> = {
+  ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
+const CAIRO_DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'numeric', year: 'numeric' });
+
+/** "30 نوفمبر 2026": the day in Cairo (§7), the month by name, Latin digits. */
+export function formatDay(iso: string, locale: Locale = 'ar'): string {
+  const parts = CAIRO_DAY.formatToParts(new Date(iso));
+  const part = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  return `${part('day')} ${MONTHS[locale][part('month') - 1]} ${part('year')}`;
+}

@@ -53,7 +53,24 @@ export function StoreHeader({ store }: { store: CatalogStore }) {
       <View style={styles.info}>
         <Info icon={Clock} label={t('store.deliveryTime')} value={formatMinutes(store.deliveryMinutes, locale)} color={colors.info} />
         <View style={styles.divider} />
-        <Info icon={Bike} label={t('store.deliveryFee')} value={store.deliveryFee === 0 ? <FreeFee size={16} /> : formatAmount(store.deliveryFee, locale)} />
+        <Info
+          icon={Bike}
+          label={t('store.deliveryFee')}
+          value={
+            store.deliveryFee === 0 ? (
+              <FreeFee size={16} />
+            ) : store.offers.freeDeliveryFrom === 0 ? (
+              <View style={styles.freeRow}>
+                <AppText color={colors.danger} style={styles.struck} accessibilityLabel={t('stores.usualFee', { amount: formatAmount(store.deliveryFee, locale) })}>
+                  {formatAmount(store.deliveryFee, locale)}
+                </AppText>
+                <FreeFee size={16} />
+              </View>
+            ) : (
+              formatAmount(store.deliveryFee, locale)
+            )
+          }
+        />
         <View style={styles.divider} />
         <Info icon={StoreIcon} label={t('store.deliveredBy')} value={t(`store.deliveredBy.${store.deliveredBy}`)} color={colors.info} />
       </View>
@@ -124,5 +141,7 @@ const styles = StyleSheet.create({
   },
   infoItem: { flex: 1, alignItems: 'center', gap: spacing.sm },
   infoLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  freeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  struck: { textDecorationLine: 'line-through' },
   divider: { width: StyleSheet.hairlineWidth, backgroundColor: colors.line },
 });

@@ -3,8 +3,10 @@ import {
   applyStoreFilter,
   type CatalogStore,
   type Cuisine,
+  hasOffer,
   type HomeScreen,
   inSearchScope,
+  type OffersQuery,
   type LatLng,
   type SearchResult,
   type SearchScope,
@@ -19,6 +21,7 @@ import { CatalogRepository } from './catalog.repository.js';
 import type { StoreRow } from './catalog.schema.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { InvitesService } from '../invites/invites.service.js';
+import { OffersService } from '../offers/offers.service.js';
 import { feeFrom, toCatalogStore, toCategory, toCuisine, toHomeTile } from './store-view.js';
 
 /** Suggestions shown while typing. */
@@ -35,6 +38,7 @@ export class CatalogService {
     private readonly addresses: AddressesService,
     private readonly settings: SettingsService,
     private readonly invites: InvitesService,
+    private readonly offers: OffersService,
   ) {}
 
   /** The chosen address's zone and spot; none chosen lists every store (§8.9). */
@@ -46,10 +50,17 @@ export class CatalogService {
 
   /** A store list (§8.3): its type, cuisine and search box, then the sort sheet, rating sheet and chips. */
   async stores(userId: number, query: { vertical?: Vertical; cuisineId?: number; q?: string; addressId?: number } & StoreFilter): Promise<CatalogStore[]> {
-    const { sort, minRating, fast, pickup, addressId, ...where } = query;
+    const { sort, minRating, fast, pickup, discounts, freeDelivery, addressId, ...where } = query;
     const { zoneId, from } = await this.deliverTo(userId, addressId);
     const rows = await this.catalog.listStores({ ...where, zoneId, activeOnly: true });
-    return applyStoreFilter(await this.toStores(rows, from), { sort, minRating, fast, pickup }, from);
+    return applyStoreFilter(await this.toStores(rows, from), { sort, minRating, fast, pickup, discounts, freeDelivery }, from);
+  }
+
+  /** The offers screen (§8.10): the stores with this kind of offer, in a tab's scope. */
+  async offerStores(userId: number, query: OffersQuery): Promise<CatalogStore[]> {
+    const { zoneId, from } = await this.deliverTo(userId, query.addressId);
+    const rows = (await this.catalog.listStores({ zoneId, activeOnly: true })).filter((r) => inSearchScope(r.vertical, query.scope));
+    return (await this.toStores(rows, from)).filter((s) => hasOffer(s.offers, query.kind));
   }
 
   /** Search (§8.13): stores whose name matches, and stores with matching products, each with those products. */
@@ -89,9 +100,9 @@ export class CatalogService {
 
   /** With `from` (the chosen address's spot), each store's delivery fee to it (§8.7). */
   private async toStores(rows: StoreRow[], from?: LatLng): Promise<CatalogStore[]> {
-    const [cuisineIds, rule] = await Promise.all([this.catalog.cuisineIdsOf(rows.map((r) => r.id)), this.settings.delivery()]);
+    const [cuisineIds, rule, offers] = await Promise.all([this.catalog.cuisineIdsOf(rows.map((r) => r.id)), this.settings.delivery(), this.offers.storeOffers(rows)]);
     const now = new Date();
-    return rows.map((row) => toCatalogStore(row, cuisineIds.get(row.id) ?? [], now, feeFrom(row, from, rule)));
+    return rows.map((row) => toCatalogStore(row, cuisineIds.get(row.id) ?? [], now, feeFrom(row, from, rule), offers.get(row.id)!));
   }
 
   /**
@@ -103,12 +114,14 @@ export class CatalogService {
     const row = await this.catalog.findStore(id);
     if (!row?.active) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'No store has this id');
     const { from } = userId === undefined ? {} : await this.deliverTo(userId, addressId);
-    const [cuisineIds, categories, rows, rule] = await Promise.all([
+    const [cuisineIds, categories, rows, rule, offers, vouchers] = await Promise.all([
       this.catalog.cuisineIdsOf([id]),
       this.catalog.listCategories(id),
       // Switched-off products come too: the app greys them with "غير متوفر", as Tawsilty does.
       this.catalog.listProducts(id),
       this.settings.delivery(),
+      this.offers.storeOffers([row]),
+      this.offers.vouchersFor(id),
     ]);
     const products = await this.catalog.withChoices(rows);
     const all = categories.map((c) => {
@@ -116,13 +129,27 @@ export class CatalogService {
       return { ...toCategory(c, items.length), products: items };
     });
     const filled = new Set(all.filter((c) => c.products.length).flatMap((c) => (c.parentId ? [c.id, c.parentId] : [c.id])));
-    return { ...toCatalogStore(row, cuisineIds.get(id) ?? [], new Date(), feeFrom(row, from, rule)), categories: all.filter((c) => filled.has(c.id)) };
+    return {
+      ...toCatalogStore(row, cuisineIds.get(id) ?? [], new Date(), feeFrom(row, from, rule), offers.get(id)!),
+      categories: all.filter((c) => filled.has(c.id)),
+      vouchers,
+    };
   }
 
-  /** The customer home (§8.2): the tiles customers may open and the invite card's rewards. */
+  /** The customer home (§8.2): the tiles customers may open, the invite card's rewards and the banners. */
   async home(): Promise<HomeScreen> {
     const tiles = (await this.catalog.listVisibleHomeTiles()).map(toHomeTile);
-    return { tiles, invite: await this.invites.rewards() };
+    const banners = await Promise.all(
+      (await this.offers.homeBanners()).map(async ({ banner, store }) => ({
+        id: banner.id,
+        image: banner.image,
+        place: banner.place,
+        opens: banner.opens,
+        store,
+        products: banner.place === 'rail' ? await this.catalog.withChoices(await this.offers.railProducts(store.id)) : [],
+      })),
+    );
+    return { tiles, invite: await this.invites.rewards(), banners };
   }
 
   async cuisines(): Promise<Cuisine[]> {

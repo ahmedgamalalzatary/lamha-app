@@ -249,6 +249,41 @@ describe('checkout (contract §8.7; real API)', () => {
     expect(order).toMatchObject({ mode: 'pickup', delivery_fee: '0.00' });
     expect(order!.scheduled_for).not.toBeNull();
   });
+
+  it('"وفر على طلبك" asks for a code first, says when one cannot be used, and takes a good one off the total', async () => {
+    await sql(
+      "INSERT INTO coupons (code, code_key, title, store_id, kind, value, min_order, per_customer, paid_by, active) VALUES ('Black Friday', 'black friday', 'Black Friday', ?, 'amount', 6, 150, 1, 'app', true)",
+      [store],
+    );
+    const { cart } = await cartApi.get();
+    await cartApi.edit({ cartId: cart!.id, mode: 'pickup' });
+    await openCheckout();
+    expect(await screen.findAllByText('170.00 ج.م')).toHaveLength(3);
+
+    await press('تطبيق');
+    expect(await screen.findByText('من فضلك أدخل الكوبون أولا')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('أدخل كود الخصم'), 'NOPE');
+    await press('تطبيق');
+    expect(await screen.findByText('هذا الكوبون غير صالح')).toBeTruthy();
+
+    await fireEvent.changeText(screen.getByLabelText('أدخل كود الخصم'), 'black friday');
+    await press('تطبيق');
+    expect(await screen.findByText('خصم الكوبون')).toBeTruthy();
+    expect(screen.getByText('-6.00 ج.م')).toBeTruthy();
+    expect(screen.getAllByText('164.00 ج.م')).toHaveLength(2);
+
+    await press('تنفيذ الطلب');
+    expect(await screen.findByText('تم إرسال طلبك')).toBeTruthy();
+    expect(await sql('SELECT total, coupon_code, coupon_discount FROM orders')).toEqual([{ total: '164.00', coupon_code: 'Black Friday', coupon_discount: '6.00' }]);
+  });
+
+  it('a free delivery strikes the usual fee through and shows "مجاني"', async () => {
+    await sql('UPDATE stores SET free_delivery_from = 0 WHERE id = ?', [store]);
+    await openCheckout();
+    expect(await screen.findByText('30.00 ج.م')).toBeTruthy();
+    expect(screen.getByText('مجاني')).toBeTruthy();
+    expect(screen.getAllByText('170.00 ج.م')).toHaveLength(3);
+  });
 });
 
 describe('طلباتي (contract §8.8)', () => {

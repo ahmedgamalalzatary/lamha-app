@@ -368,11 +368,12 @@ Built in Phase 5: the header, the rotating search (every 3 seconds), the two til
 
 Built in Phase 6: the list, opened from a home tile, with the tile's label as its title ("ابحث عن حلويات و desserts"). The search box narrows this list by name.
 
+- Phase 20 adds the offer badges to the rows (lime discount, green free delivery, the "قسيمة" voucher) and the خصومات and عروض التوصيل chips; free delivery on every order strikes the fee through beside "مجاني".
 - [Open] **توصيل سريع** means delivery in 30 minutes or less (`FAST_DELIVERY_MINUTES`). Tawsilty does not say.
 - **الأقرب إليك** sorts by straight-line distance from the chosen address; stores with no location go last (§8.9).
 - Lists and search show only the stores of the chosen address's zone (§8.9). With no address saved, every store shows.
 - New stores show "جديد", so every rating floor leaves them out until ratings exist (Phase 15).
-- The "خصومات" and "عروض التوصيل" chips, and the voucher and free-delivery badges on the rows, arrive with the offers (Phase 20).
+- The "خصومات" and "عروض التوصيل" chips and the offer badges on the rows came with Phase 20.
 - "اطلب من جديد" arrives once customers have past orders.
 - The pharmacy list's "سهلنا الطلب عليك" card arrives in Phase 22.
 - [Open] A closed store's picture is darkened with "مغلق" on it, not turned grey: the app has no greyscale image filter.
@@ -395,11 +396,11 @@ Built in Phase 7: the store page at `/store/<id>` with both layouts, the categor
 - Phase 10 stores one cart per customer on the server (§8.6). [Open] Tapping a simple product's count badge adds one more.
 - [Tawsilty, `customer/store/store-search-*`] The search button opens **"البحث"** (`/store/<id>/search`): the title in orange, a white box "ابحث عن كل ما تريد عند <store>", and the matching products two to a row as you type. Nothing typed or nothing matching leaves the page blank. [Open] The bottom bar shows there once something is in the cart.
 - [Tawsilty, `store-unavailable-products-grey.png`] A switched-off product (منتجات غير فعالة, §11) still shows on the store page, its picture grey with a white "غير متوفر" pill; it has no add button, does not open, and is never offered in "تُطلب معًا". Search leaves it out.
-- [Tawsilty, `store-no-products-free-delivery.png`] A store with nothing on its menu shows a white card with a box icon and "لا توجد منتجات حاليا". A delivery fee of 0 shows a green "مجاني"; the struck-through usual fee beside it comes with the free-delivery offers (Phase 20).
+- [Tawsilty, `store-no-products-free-delivery.png`] A store with nothing on its menu shows a white card with a box icon and "لا توجد منتجات حاليا". A delivery fee of 0 shows a green "مجاني"; a free delivery on every order (Phase 20) strikes the usual fee through beside it.
 - [Open] A store with no minimum order shows no bottom bar until something is in the cart.
 - [Tawsilty] "التوصيل بواسطة" names the platform ("توصيلتي" there, "توصيلة" here) or "المتجر" when the store delivers.
 - [Tawsilty] The heart turns red and filled once the store is a favourite.
-- The voucher, free-delivery and discount cards, the قسائمي sheet, the market's "العروض" rail and its themed rails arrive with the offers and banners (Phase 20).
+- Phase 20 adds the voucher, free-delivery and discount cards, the قسائمي sheet and the market's "العروض" rail. [Open] The market's themed rails are not built.
 - [Open] A closed store's cover is darkened, not turned grey (as in the store lists).
 
 ### 8.5 Product sheet [Tawsilty]
@@ -443,7 +444,7 @@ Built in Phase 7: the admin sets each product's option groups (title, required, 
 
 [Owner, 2026-11-25] Also for Phase 11:
 - **Later delivery:** today only. The slots run every half hour, starting at least 30 minutes from now, until the store closes.
-- **Wallet and coupon:** "رصيدك" and "وفر على طلبك" stay hidden until the wallet (Phase 17) and coupons (Phase 20) are built.
+- **Wallet and coupon:** "رصيدك" came with the wallet (Phase 17) and "وفر على طلبك" with the codes (Phase 20).
 - **Stores delivering with their own people:** "delivered by: store" pays the same delivery fee rule.
 7. Bottom button "تنفيذ الطلب <total>".
 
@@ -505,6 +506,8 @@ Whatever the customer paid with points (§8.16), the app owes to the party that 
 - [Tawsilty] Offer tiles: عروض حصرية لك · استخدم كوبون · عروض التوصيل. Each opens one offers screen with an orange header (title and subtitle change: "خصومات على المنتجات", "كوبونات وقسائم", "عروض التوصيل"), three pill tabs خصومات · كوبونات · عروض التوصيل, and sub-tabs الكل · مطاعم · متاجر أخرى, listing the stores that have that kind of offer with their badges (§6.3).
 - [Client] Offers are grouped by the coupon the customer holds.
 
+Built in Phase 20 (see the phase's owner answers, [Open] and [Derived] notes in phases.md): one kind of code for قسائم and checkout coupons, made by the admin only, an amount or a percentage with a cap, uses per customer and in all, and who pays set per offer; product discounts as an old price per product; free delivery per store from an amount (0 for every order); banners (carousel or a rail over the store's products); the offers screen at `/offers?kind=`. [Open] "Grouped by the coupon" is read as the كوبونات tab. [Open] The coloured store sections are not built.
+
 ### 8.11 Pharmacy [Tawsilty]
 
 - "سهلنا الطلب عليك" card with "توصيل فوري" and "30 - 60 دقيقة", and two actions: **روشتة طبية** (upload a prescription) and **صورة المنتج** (photo of a product).
@@ -526,7 +529,7 @@ Built in Phase 6, from the home search box. A store matches by its name or by on
 - [Tawsilty, `customer/search/search-no-results-no-stores.png`] Searching with no match shows the empty state "لا توجد متاجر متاحة" with "لم نجد متاجر قريبة منك حالياً" and "جرّب تغيير الموقع أو البحث مرة أخرى".
 - [Tawsilty, `search-suggestions-in-stores-basket.png`] A suggestion from a restaurant reads "في المطاعم" with the cutlery icon; from any other store type "في المتاجر" with a basket.
 - Product prices use two decimals ("110.00 ج.م", §7), where Tawsilty's search shows "110.0".
-- A product opens its store until the product sheet arrives (Phase 7). The voucher on results arrives in Phase 20.
+- A product opens its store until the product sheet arrives (Phase 7). [Open] Search results show no voucher yet.
 
 ### 8.14 Account (حسابي) [Tawsilty]
 
@@ -843,3 +846,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | Phase 17 built (§8.15, §8.7, §9, §10, §11 A3, A5), migration 0016: حركة المحفظة as in the photos without top-up; محفظتي on حسابي; "رصيدك" at checkout paying as much as the wallet holds [Owner]; a rejected order's wallet money back at once [Owner]; the delivery man collects the cash part only, the app owes him the rest [Owner]; العملاء in the dashboard with add and deduct, never below 0 [Owner]. The movement rows and the العملاء page are not captured [Open]. |
 | 2026-11-26 | Phase 18 built (§8.16, §8.2, §8.7, §11 A5, A21), migration 0017: نقاطي as in the photo; نقاطي on حسابي and "استخدم ووفر" on الرئيسية; two point settings [Owner] in الإعدادات › النقاط; points earned on the items once delivered, the wallet counting as cash [Owner]; spent at checkout after the wallet [Owner], down to the minimum; a rejected order's points back; the admin adds or deducts points in العملاء. The delivery man's speed points moved to Phase 24 [Owner]. |
 | 2026-11-26 | Phase 19 built (§8.17, §8.1, §8.2, §8.14, §11 A17), migration 0018: ادعُ أصدقاءك as in the photos; حسابي's invite card; Tawsilty's rules as admin settings [Owner] with the cap in ج.م [Owner] and an expiry switch [Owner]; the friend's welcome money at sign-up; the inviter's reward on the friend's first delivered order in time; invite money kept piece by piece in the wallet, first to pay, within its per-order limit, for restaurant and market orders only, back on a rejection, and taken out when it expires. The friends' rows are not captured [Open]. |
+| 2026-11-26 | Phase 20 built (§8.2, §8.3, §8.4, §8.7, §8.10, §11 A14–A15), migration 0019: one kind of code for قسائم and checkout coupons [Owner], made by the admin only [Owner], an amount or a percentage with a cap [Owner], uses per customer set by the admin [Owner], who pays set per offer [Owner]; product discounts as an old price [Owner]; free delivery per store; the code before the wallet and points [Owner]; banners opening a store or its products [Owner]; the offers screen, the row badges, the store page's cards and قسائمي, the market's "العروض", and "وفر على طلبك". The dashboard pages and the code error texts are not captured [Open]; the coloured store sections are not built. |

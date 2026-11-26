@@ -82,6 +82,8 @@ export interface CheckoutQuoteInput {
   addressId?: number;
   /** The spot confirmed on the map, when it differs from the saved address's. */
   location?: LatLng;
+  /** "وفر على طلبك" (§8.7): a code from the قسائمي sheet or anywhere else, as typed. */
+  couponCode?: string;
 }
 
 export interface CheckoutQuote {
@@ -89,8 +91,13 @@ export interface CheckoutQuote {
   mode: CartMode;
   count: number;
   itemsTotal: number;
-  /** 0 for a pickup. */
+  /** 0 for a pickup or a free delivery (§8.4). */
   deliveryFee: number;
+  /** The fee before a free delivery: struck through beside "مجاني" when it differs. */
+  usualDeliveryFee: number;
+  /** The code taken off the items (§8.7 "وفر على طلبك"); null without one. */
+  coupon: { code: string; title: string; discount: number } | null;
+  /** Items plus the fee, less the code [Owner, 2026-11-26: the code first, then the wallet and points]. */
   total: number;
   /** Store to customer, straight line; null for a pickup. */
   distanceKm: number | null;
@@ -137,6 +144,9 @@ export interface CustomerOrder {
   count: number;
   itemsTotal: number;
   deliveryFee: number;
+  /** A code's discount (§8.7) and the code; 0 and null without one. */
+  couponDiscount: number;
+  couponCode: string | null;
   total: number;
   /** Paid from the wallet (§8.15); the rest, cashDue, is paid in cash. */
   walletPaid: number;
@@ -201,6 +211,8 @@ export interface PartnerOrder {
   scheduledFor: string | null;
   count: number;
   itemsTotal: number;
+  /** "خصم الكوبون": taken off the total. */
+  couponDiscount: number;
   total: number;
   /** Paid from the wallet: "المدفوع من المحفظة"; المجموع is what is left to collect (cashDue). */
   walletPaid: number;

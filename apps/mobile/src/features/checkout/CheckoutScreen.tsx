@@ -1,9 +1,9 @@
 import { cashDue, type CheckoutQuote, type CustomerCart, formatMoney, type LatLng, pointsPay, pointsToGo, pointsWorth, slotLabel, walletPays } from '@tawsela/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Banknote, Lock, MapPin, ShoppingCart, Star, Wallet } from 'lucide-react-native';
+import { Banknote, Lock, MapPin, ShoppingCart, Star, TicketPercent, Wallet } from 'lucide-react-native';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { BackButton } from '@/components/BackButton';
@@ -17,13 +17,14 @@ import { ApiRequestError } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { useSession } from '@/core/auth/session';
 import { useSubmit } from '@/core/hooks/useSubmit';
-import { useLocale, useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { useLocale, useT, useTextStart } from '@/core/i18n';
+import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useChosenAddress } from '@/features/addresses/chosen-address';
 import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { confirmOnMap, usePickedSpot } from '@/features/addresses/picked-spot';
 import { useCart } from '@/features/cart/api/cart';
 import { useStorePage } from '@/features/store/api/store';
+import { FreeFee } from '@/features/stores/components/FreeFee';
 import { pointsKey } from '@/features/points/api';
 import { walletKey } from '@/features/wallet/api';
 import { checkoutApi, newRequestId } from './api';
@@ -85,17 +86,53 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
   const [payWallet, setPayWallet] = useState(false);
   /** "نقاطي": off until switched on [Derived]; it pays what the wallet left [Owner, 2026-11-26]. */
   const [payPoints, setPayPoints] = useState(false);
+  /** "وفر على طلبك": what is typed, and the code the bill was priced with (§8.7). */
+  const [codeText, setCodeText] = useState('');
+  const [couponCode, setCouponCode] = useState<string>();
+  const [applying, setApplying] = useState(false);
+  const textAlign = useTextStart();
   const requestId = useRef(newRequestId());
   /** Stops listening for the map's "تأكيد الموقع", while the map is open. */
   const awaitingMap = useRef<(() => void) | null>(null);
 
-  const quoteKey = ['checkout', userId, cart.id, cart.total, cart.mode, addressId ?? null, location?.lat ?? null, location?.lng ?? null];
+  const quoteKey = ['checkout', userId, cart.id, cart.total, cart.mode, addressId ?? null, location?.lat ?? null, location?.lng ?? null, couponCode ?? null];
   const quote = useQuery({
     queryKey: quoteKey,
-    queryFn: () => checkoutApi.quote({ addressId, location }),
+    // A code that stopped working (the cart dropped below its minimum, it ran out) is taken off, and
+    // the bill is asked again without it.
+    queryFn: async () => {
+      try {
+        return await checkoutApi.quote({ addressId, location, couponCode });
+      } catch (e) {
+        if (couponCode && e instanceof ApiRequestError && e.code?.startsWith('COUPON_')) {
+          toast.show(errorMessage(e), 'error');
+          setCouponCode(undefined);
+        }
+        throw e;
+      }
+    },
     enabled: !delivery || addressId !== undefined,
   });
   const bill = quote.data;
+
+  /** تطبيق: prices the bill with the code; a code that cannot be used says why and changes nothing. */
+  const applyCode = async () => {
+    const code = codeText.trim();
+    if (!code) {
+      toast.show(t('checkout.couponEmpty'), 'error');
+      return;
+    }
+    setApplying(true);
+    try {
+      const priced = await checkoutApi.quote({ addressId, location, couponCode: code });
+      client.setQueryData([...quoteKey.slice(0, 8), code], priced);
+      setCouponCode(code);
+    } catch (e) {
+      toast.show(errorMessage(e), 'error');
+    } finally {
+      setApplying(false);
+    }
+  };
 
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ['cart', userId] });
@@ -105,9 +142,9 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
   /** `picked`: a spot just confirmed on the map, for this address; it is kept once the server prices it. */
   const submit = useSubmit(async (shown: CheckoutQuote, spot?: LatLng, picked?: number) => {
     // The map may have moved the spot: price it before placing, and stop if the bill changed.
-    const current = spot && picked !== undefined ? await checkoutApi.quote({ addressId: picked, location: spot }) : shown;
+    const current = spot && picked !== undefined ? await checkoutApi.quote({ addressId: picked, location: spot, couponCode }) : shown;
     if (spot && picked !== undefined) {
-      client.setQueryData([...quoteKey.slice(0, 5), picked, spot.lat, spot.lng], current);
+      client.setQueryData([...quoteKey.slice(0, 5), picked, spot.lat, spot.lng, couponCode ?? null], current);
       setConfirmed({ addressId: picked, spot });
     }
     const pay = (bill: CheckoutQuote) => paidFrom(bill, payWallet, payPoints);
@@ -125,6 +162,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
         expectedTotal: current.total,
         expectedWalletPaid: walletPaid,
         expectedPointsSpent: points.points,
+        couponCode,
         requestId: requestId.current,
       });
     } catch (e) {
@@ -315,6 +353,44 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
 
         <View style={styles.section}>
           <AppText accessibilityRole="header" weight="bold" size={fontSizes.listTitle}>
+            {t('checkout.saveOnOrder')}
+          </AppText>
+          {/* customer/checkout/checkout-coupon-and-summary-fees.png; [Derived] an applied code reads "إزالة". */}
+          <View style={styles.coupon}>
+            <TicketPercent size={20} color={colors.ink2} />
+            <TextInput
+              value={couponCode ?? codeText}
+              onChangeText={setCodeText}
+              editable={!couponCode}
+              accessibilityLabel={t('checkout.couponPlaceholder')}
+              placeholder={t('checkout.couponPlaceholder')}
+              placeholderTextColor={colors.ink2}
+              autoCapitalize="none"
+              returnKeyType="done"
+              onSubmitEditing={() => void applyCode()}
+              style={[styles.couponInput, { textAlign }]}
+            />
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={couponCode ? t('checkout.removeCoupon') : t('checkout.apply')}
+              accessibilityState={{ disabled: applying, busy: applying }}
+              disabled={applying}
+              onPress={() => {
+                if (!couponCode) return void applyCode();
+                setCouponCode(undefined);
+                setCodeText('');
+              }}
+              style={styles.apply}
+            >
+              <AppText weight="bold" color={colors.primary}>
+                {couponCode ? t('checkout.removeCoupon') : t('checkout.apply')}
+              </AppText>
+            </PressableScale>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <AppText accessibilityRole="header" weight="bold" size={fontSizes.listTitle}>
             {t('checkout.summary')}
           </AppText>
           {bill ? (
@@ -418,7 +494,22 @@ function Summary({ bill, walletPaid, pointsPaid, toPay, locale }: { bill: Checko
   return (
     <View style={styles.summary}>
       {row(t('checkout.subtotal'), formatMoney(bill.itemsTotal, locale))}
-      {bill.mode === 'delivery' ? row(t('checkout.deliveryFee'), formatMoney(bill.deliveryFee, locale)) : null}
+      {bill.mode === 'delivery' ? (
+        bill.usualDeliveryFee > bill.deliveryFee ? (
+          <View style={styles.summaryRow}>
+            <AppText color={colors.ink2}>{t('checkout.deliveryFee')}</AppText>
+            <View style={styles.free}>
+              <AppText color={colors.ink2} style={styles.struck} accessibilityLabel={t('stores.usualFee', { amount: formatMoney(bill.usualDeliveryFee, locale) })}>
+                {formatMoney(bill.usualDeliveryFee, locale)}
+              </AppText>
+              {bill.deliveryFee === 0 ? <FreeFee /> : <AppText>{formatMoney(bill.deliveryFee, locale)}</AppText>}
+            </View>
+          </View>
+        ) : (
+          row(t('checkout.deliveryFee'), formatMoney(bill.deliveryFee, locale))
+        )
+      ) : null}
+      {bill.coupon ? row(t('checkout.couponDiscount'), `-${formatMoney(bill.coupon.discount, locale)}`, colors.danger) : null}
       {walletPaid > 0 ? row(t('wallet.paid'), `-${formatMoney(walletPaid, locale)}`, colors.danger) : null}
       {pointsPaid > 0 ? row(t('points.paid'), `-${formatMoney(pointsPaid, locale)}`, colors.danger) : null}
       <View style={[styles.summaryRow, styles.total]}>
@@ -456,6 +547,20 @@ const styles = StyleSheet.create({
   secure: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   failed: { gap: spacing.md },
   summary: { gap: spacing.md },
+  coupon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
+    paddingStart: spacing.md,
+    padding: spacing.xs,
+  },
+  couponInput: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.body, color: colors.ink, minHeight: 48 },
+  apply: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.md, backgroundColor: colors.primary50 },
+  free: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  struck: { textDecorationLine: 'line-through' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
   total: { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line, paddingTop: spacing.md },
   footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.sm },

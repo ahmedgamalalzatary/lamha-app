@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatAmount,
+  formatDay,
   formatMinutes,
   formatMinutesRange,
   formatMoney,
@@ -98,5 +99,16 @@ describe('formatMinutes', () => {
   it('formats a range for pharmacies', () => {
     expect(formatMinutesRange(30, 60)).toBe('30 - 60 دقيقة');
     expect(formatMinutesRange(30, 60, 'en')).toBe('30 - 60 min');
+  });
+});
+
+describe('formatDay (contract §8.4 "صالح حتى 30 نوفمبر 2026")', () => {
+  it('writes the Cairo day with the month name and Latin digits', () => {
+    expect(formatDay('2026-11-30T12:00:00.000Z')).toBe('30 نوفمبر 2026');
+    expect(formatDay('2026-11-30T12:00:00.000Z', 'en')).toBe('30 November 2026');
+  });
+
+  it('counts the day in Cairo: 23:30 UTC is the next day there', () => {
+    expect(formatDay('2026-01-31T23:30:00.000Z')).toBe('1 فبراير 2026');
   });
 });

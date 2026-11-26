@@ -31,6 +31,9 @@ import {
   pointsPay,
   pointsEarned,
   earnBase,
+  deliveryDiscount,
+  productSaving,
+  storeItemsBase,
 } from '@tawsela/shared';
 import { and, asc, count as countRows, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
@@ -49,6 +52,7 @@ import { users } from '../users/users.schema.js';
 import { WalletService } from '../wallet/wallet.service.js';
 import { PointsService } from '../points/points.service.js';
 import { InvitesService } from '../invites/invites.service.js';
+import { type AppliedCoupon, OffersService } from '../offers/offers.service.js';
 import { nameOf } from '../audit/audit.service.js';
 import { OrdersGateway } from './orders.gateway.js';
 
@@ -69,6 +73,8 @@ interface Bill extends CheckoutQuote {
   store: StoreRow;
   address: AddressRow | null;
   spot: LatLng | null;
+  /** The code typed, once it passed its checks. */
+  applied: AppliedCoupon | null;
 }
 
 /** Checkout and orders (contract §8.7, §11 الطلبات). Cash on delivery only (§15.1 #2). */
@@ -86,11 +92,12 @@ export class OrdersService {
     private readonly wallet: WalletService,
     private readonly points: PointsService,
     private readonly invites: InvitesService,
+    private readonly offers: OffersService,
   ) {}
 
   quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
     return this.db.transaction(async (tx) => {
-      const { cart: _cart, store: _store, address: _address, spot: _spot, ...quote } = await this.bill(tx, userId, input);
+      const { cart: _cart, store: _store, address: _address, spot: _spot, applied: _applied, ...quote } = await this.bill(tx, userId, input);
       return quote;
     });
   }
@@ -122,7 +129,7 @@ export class OrdersService {
         return { order: await this.customerOrder(tx, placed.id) };
       }
 
-      const bill = await this.bill(tx, userId, input);
+      const bill = await this.bill(tx, userId, input, true);
       if (bill.cartId !== input.cartId) {
         throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_CART_CHANGED', 'The cart changed since the checkout screen loaded');
       }
@@ -153,7 +160,19 @@ export class OrdersService {
       const rule = await this.settings.delivery(tx);
       const payoutOption = bill.store.payoutOption ?? rule.payoutOption;
       const appPercent = bill.store.appPercent ?? rule.appPercent;
-      const { address, spot } = bill;
+      const { address, spot, applied } = bill;
+      // Who pays each discount [Owner, 2026-11-26: set per offer]: the store is paid on its full prices
+      // less what it pays itself. A store bringing its own orders keeps no fee to waive.
+      const appProductSaving = bill.cart.lines.reduce((n, l) => (l.product.discountPaidBy === 'app' ? n + productSaving(l.product) * l.quantity : n), 0);
+      const waived = cents(bill.usualDeliveryFee - bill.deliveryFee);
+      const delivery = waived > 0 ? { discount: waived, paidBy: bill.store.freeDeliveryPaidBy } : null;
+      const coupon = applied ? { discount: applied.discount, paidBy: applied.row.paidBy } : null;
+      const base = storeItemsBase({
+        itemsTotal: bill.itemsTotal,
+        appProductSaving: cents(appProductSaving),
+        coupon,
+        delivery: bill.store.deliveredBy === 'platform' ? delivery : null,
+      });
       const [created] = await tx
         .insert(orders)
         .values({
@@ -171,20 +190,29 @@ export class OrdersService {
           note: bill.cart.note,
           itemsTotal: bill.itemsTotal,
           deliveryFee: bill.deliveryFee,
+          deliveryDiscount: waived,
+          deliveryPaidBy: delivery?.paidBy ?? null,
+          couponId: applied?.row.id ?? null,
+          couponCode: applied?.row.code ?? null,
+          couponDiscount: coupon?.discount ?? 0,
+          couponPaidBy: coupon?.paidBy ?? null,
+          appProductSaving: cents(appProductSaving),
           total: bill.total,
           walletPaid,
           invitePaid: cents((plan?.credits ?? []).reduce((n, c) => n + c.amount, 0)),
           pointsSpent: spent.points,
           pointsPaid: spent.value,
-          pointsEarned: pointsEarned(earnBase(bill.itemsTotal, spent.value), bill.points.earnEvery),
+          // Points are earned on what the items cost the customer (§8.16): less the code and the points.
+          pointsEarned: pointsEarned(earnBase(cents(bill.itemsTotal - (coupon?.discount ?? 0)), spent.value), bill.points.earnEvery),
           payoutOption,
           appPercent,
-          ...payout(bill.itemsTotal, payoutOption, appPercent),
+          ...payout(base, payoutOption, appPercent),
         })
         .$returningId();
       const orderId = created!.id;
       await this.wallet.pay(tx, userId, orderId, plan);
       await this.points.spend(tx, userId, orderId, spent.points);
+      if (applied) await this.offers.use(tx, applied.row.id, userId, orderId);
       await tx.insert(orderLines).values(
         bill.cart.lines.map((line) => {
           const options = line.product.optionGroups.flatMap((g) => g.options.filter((o) => line.optionIds.includes(o.id)).map((o) => o.name));
@@ -299,6 +327,7 @@ export class OrdersService {
       if (next === 'rejected' || next === 'cancelled') {
         await this.wallet.refund(tx, row.customerId, id, row.walletPaid);
         await this.points.refund(tx, row.customerId, id, row.pointsSpent);
+        await this.offers.release(tx, id);
       }
       // Points come once the order is delivered (§8.16).
       if (next === 'delivered') await this.delivered(tx, row);
@@ -418,8 +447,12 @@ export class OrdersService {
     }));
   }
 
-  /** The bill for the customer's ready cart: the distance fee for a delivery, none for a pickup. */
-  private async bill(tx: Tx, userId: number, input: CheckoutQuoteInput): Promise<Bill> {
+  /**
+   * The bill for the customer's ready cart: the distance fee for a delivery (none for a pickup or a
+   * free delivery), less the code [Owner, 2026-11-26: the code first, then the wallet and points].
+   * Placing (`lock`) locks the code's row.
+   */
+  private async bill(tx: Tx, userId: number, input: CheckoutQuoteInput, lock = false): Promise<Bill> {
     const cart = await this.carts.ready(tx, userId);
     const [store] = await tx.select().from(stores).where(eq(stores.id, cart.store.id));
     if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
@@ -428,9 +461,12 @@ export class OrdersService {
     const walletBalance = (await this.wallet.plan(tx, userId, store.vertical)).paid;
     const pointsBalance = await this.points.balanceOf(tx, userId);
     const points = await this.points.settings(tx);
-    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, walletBalance, pointsBalance, points, cart, store };
+    const applied = input.couponCode ? await this.offers.apply(tx, userId, store.id, cart.total, input.couponCode, lock) : null;
+    const couponOff = applied?.discount ?? 0;
+    const coupon = applied ? { code: applied.row.code, title: applied.row.title, discount: couponOff } : null;
+    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, walletBalance, pointsBalance, points, cart, store, applied, coupon };
     if (cart.mode === 'pickup') {
-      return { ...base, deliveryFee: 0, total: cart.total, distanceKm: null, address: null, spot: null };
+      return { ...base, deliveryFee: 0, usualDeliveryFee: 0, total: cents(cart.total - couponOff), distanceKm: null, address: null, spot: null };
     }
     if (input.addressId === undefined) throw new BadRequestException('addressId is required for a delivery');
     const address = await this.addresses.findOf(userId, input.addressId);
@@ -443,8 +479,9 @@ export class OrdersService {
     const from = locationOf(store);
     if (!from) throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_NO_STORE_LOCATION', 'The store has no location on the map');
     const km = distanceKm(from, spot);
-    const deliveryFee = deliveryFeeFor(km, await this.settings.delivery(tx));
-    return { ...base, deliveryFee, total: cents(cart.total + deliveryFee), distanceKm: km, address, spot };
+    const usualDeliveryFee = deliveryFeeFor(km, await this.settings.delivery(tx));
+    const deliveryFee = cents(usualDeliveryFee - deliveryDiscount(store.freeDeliveryFrom, cart.total, usualDeliveryFee));
+    return { ...base, deliveryFee, usualDeliveryFee, total: cents(cart.total + deliveryFee - couponOff), distanceKm: km, address, spot };
   }
 
   private async customerOrder(tx: Db | Tx, id: number): Promise<CustomerOrder> {
@@ -493,6 +530,7 @@ function toPartnerOrder(row: OrderRow, count: number): PartnerOrder {
     scheduledFor: row.scheduledFor?.toISOString() ?? null,
     count,
     itemsTotal: row.itemsTotal,
+    couponDiscount: row.couponDiscount,
     total: row.total,
     walletPaid: row.walletPaid,
     invitePaid: row.invitePaid,
@@ -514,6 +552,8 @@ function toCustomerOrder(row: OrderRow, store: CustomerOrder['store'], count: nu
     count,
     itemsTotal: row.itemsTotal,
     deliveryFee: row.deliveryFee,
+    couponDiscount: row.couponDiscount,
+    couponCode: row.couponCode,
     total: row.total,
     walletPaid: row.walletPaid,
     invitePaid: row.invitePaid,

@@ -36,6 +36,13 @@ export function StoreMeta({ store, time = true }: { store: CatalogStore; time?: 
       <Bike size={15} color={colors.ink2} />
       {store.deliveryFee === 0 ? (
         <FreeFee />
+      ) : store.offers.freeDeliveryFrom === 0 ? (
+        <>
+          <AppText color={colors.ink2} size={fontSizes.body} style={styles.struck} accessibilityLabel={t('stores.usualFee', { amount: formatAmount(store.deliveryFee, locale) })}>
+            {formatAmount(store.deliveryFee, locale)}
+          </AppText>
+          <FreeFee />
+        </>
       ) : (
         <AppText color={colors.ink2} size={fontSizes.body}>
           {formatAmount(store.deliveryFee, locale)}
@@ -47,5 +54,6 @@ export function StoreMeta({ store, time = true }: { store: CatalogStore; time?: 
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
+  struck: { textDecorationLine: 'line-through' },
   dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.line, marginHorizontal: 2 },
 });

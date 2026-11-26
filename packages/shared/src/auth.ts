@@ -128,6 +128,18 @@ export type ApiErrorCode =
   | 'WALLET_BALANCE'
   /** The admin's deduction is more points than the customer has. */
   | 'POINTS_BALANCE'
+  /** "وفر على طلبك" (§8.7): no such code now (unknown, switched off or out of its dates). */
+  | 'COUPON_NOT_FOUND'
+  /** The code is for another store. */
+  | 'COUPON_STORE'
+  /** The items are below the code's minimum order. */
+  | 'COUPON_MIN_ORDER'
+  /** This customer used it as many times as it allows. */
+  | 'COUPON_USED'
+  /** Everyone together used it up. */
+  | 'COUPON_GONE'
+  /** The admin's new code matches another one, however it is typed. */
+  | 'COUPON_CODE_TAKEN'
   /** Another delivery man took the offer first, or the admin assigned it. */
   | 'OFFER_TAKEN'
   /** "بدء نوبة العمل" outside its window (30 min before to 15 min after), or no shift to start. */

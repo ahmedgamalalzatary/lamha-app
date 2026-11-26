@@ -170,6 +170,7 @@ function Details({ order: o }: { order: CustomerOrderDetails }) {
       <Section>
         <Row label={t('orders.subtotal')} value={money(o.itemsTotal)} />
         {o.mode === 'delivery' ? <Row label={t('orders.deliveryFee')} value={money(o.deliveryFee)} /> : null}
+        {o.couponDiscount > 0 ? <Row label={t('checkout.couponDiscount')} value={`-${money(o.couponDiscount)}`} /> : null}
         {o.walletPaid - o.invitePaid > 0 ? <Row label={t('wallet.paid')} value={`-${money(o.walletPaid - o.invitePaid)}`} /> : null}
         {o.invitePaid > 0 ? <Row label={t('wallet.invitePaid')} value={`-${money(o.invitePaid)}`} /> : null}
         {o.pointsPaid > 0 ? <Row label={`${t('points.paid')} (${t('points.count', { count: o.pointsSpent })})`} value={`-${money(o.pointsPaid)}`} /> : null}

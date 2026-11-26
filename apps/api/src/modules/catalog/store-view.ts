@@ -12,6 +12,7 @@ import {
   type OptionGroup,
   type Product,
   type StoreInput,
+  type StoreOffers,
 } from '@tawsela/shared';
 import type { CategoryRow, CuisineRow, HomeTileRow, ProductRow, StoreRow } from './catalog.schema.js';
 
@@ -51,6 +52,8 @@ export function toStoreInput(row: StoreRow, cuisineIds: number[]): StoreInput {
     cuisineIds,
     zoneId: row.zoneId,
     location: locationOf(row),
+    freeDeliveryFrom: row.freeDeliveryFrom,
+    freeDeliveryPaidBy: row.freeDeliveryPaidBy,
   };
 }
 
@@ -67,7 +70,7 @@ export function feeFrom(row: Pick<StoreRow, 'lat' | 'lng'>, to: LatLng | undefin
 }
 
 /** A store as the apps list it: the average of its ratings (§8.8), or "جديد" (null) with none. */
-export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date, deliveryFee: number): CatalogStore {
+export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date, deliveryFee: number, offers: StoreOffers): CatalogStore {
   return {
     id: row.id,
     vertical: row.vertical,
@@ -85,6 +88,7 @@ export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date, d
     ratingCount: row.ratingCount,
     cuisineIds,
     location: locationOf(row),
+    offers,
   };
 }
 
@@ -113,6 +117,8 @@ export const toProduct = (row: ProductRow, choices: Choices = NO_CHOICES): Produ
   name: row.name,
   description: row.description,
   price: row.price,
+  oldPrice: row.oldPrice,
+  discountPaidBy: row.discountPaidBy,
   unit: row.unit,
   image: row.image,
   active: row.active,
