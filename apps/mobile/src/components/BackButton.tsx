@@ -28,7 +28,7 @@ export function BackButton({ variant = 'circle', onPress }: { variant?: 'circle'
 }
 
 const styles = StyleSheet.create({
-  circle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F2F2F4', alignItems: 'center', justifyContent: 'center' },
+  circle: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.iconCircle, alignItems: 'center', justifyContent: 'center' },
   square: {
     width: 48,
     height: 48,
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: radius.md + 2,
-    backgroundColor: '#F2F2F4',
+    backgroundColor: colors.iconCircle,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  current: { borderColor: '#9E9E9E' },
+  current: { borderColor: colors.lineStrong },
   caret: { width: 2, height: 30, backgroundColor: colors.primary },
   hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
 });

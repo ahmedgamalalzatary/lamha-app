@@ -10,7 +10,6 @@ export interface RadioOption<T> {
   icon?: LucideIcon;
 }
 
-const STAR = '#F5A623';
 
 /**
  * Tawsilty's radio sheets (contract §6.3, "رتب حسب" and "التقييم"): the checked row is orange with a
@@ -48,7 +47,7 @@ export function RadioSheet<T>({
               }}
               style={styles.row}
             >
-              {Icon ? <Icon size={18} color={STAR} fill={STAR} /> : null}
+              {Icon ? <Icon size={18} color={colors.star} fill={colors.star} /> : null}
               <AppText weight={on ? 'bold' : 'regular'} color={on ? colors.primary : colors.ink} size={fontSizes.listTitle} style={styles.label}>
                 {label}
               </AppText>

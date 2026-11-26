@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  chipOn: { backgroundColor: '#1D2333', borderColor: '#1D2333' },
+  chipOn: { backgroundColor: colors.navy, borderColor: colors.navy },
   pair: { flexDirection: 'row', gap: spacing.md },
   country: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, alignSelf: 'center' },
   defaultRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

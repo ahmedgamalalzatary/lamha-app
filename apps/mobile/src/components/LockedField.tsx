@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
   box: {
     borderRadius: radius.md + 2,
     borderWidth: 1,
-    borderColor: '#E9EAEE',
+    borderColor: colors.fieldBorder,
     backgroundColor: '#EEEFF3',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md + 2,

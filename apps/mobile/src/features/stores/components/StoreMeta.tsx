@@ -6,7 +6,6 @@ import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, spacing } from '@/core/theme';
 import { FreeFee } from './FreeFee';
 
-const STAR = '#F5A623';
 
 const Dot = () => <View style={styles.dot} />;
 
@@ -16,7 +15,7 @@ export function StoreMeta({ store, time = true }: { store: CatalogStore; time?: 
   const t = useT();
   return (
     <View style={styles.row}>
-      <Star size={15} color={STAR} fill={STAR} />
+      <Star size={15} color={colors.star} fill={colors.star} />
       {store.rating === null ? (
         <AppText weight="bold" size={fontSizes.body}>
           {t('stores.new')}

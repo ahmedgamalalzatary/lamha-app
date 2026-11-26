@@ -9,7 +9,6 @@ import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { inviteActions, useInvite } from './api';
 
-const GLASS = 'rgba(255,255,255,0.22)';
 
 /**
  * حسابي's invite card (customer/account/account-top-wallet-points-invite-50.jpg): "اربح <n> عن كل
@@ -67,9 +66,9 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   card: { borderRadius: 24, backgroundColor: colors.primary700, padding: spacing.lg, gap: spacing.lg, marginTop: spacing.md },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  gift: { width: 52, height: 52, borderRadius: radius.lg, backgroundColor: GLASS, alignItems: 'center', justifyContent: 'center' },
+  gift: { width: 52, height: 52, borderRadius: radius.lg, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   bottom: { flexDirection: 'row', gap: spacing.md },
-  codeBox: { flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.lg, borderWidth: 1, borderColor: GLASS, backgroundColor: GLASS, paddingHorizontal: spacing.md, minHeight: 52 },
+  codeBox: { flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.glass, backgroundColor: colors.glass, paddingHorizontal: spacing.md, minHeight: 52 },
   code: { flex: 1, textAlign: 'center', letterSpacing: 3 },
   share: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, borderRadius: radius.lg, backgroundColor: colors.bg, minHeight: 52 },
 });

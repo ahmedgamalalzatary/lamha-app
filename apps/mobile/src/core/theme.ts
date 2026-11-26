@@ -24,6 +24,28 @@ export const colors = {
   black: '#141414',
   backdrop: 'rgba(0,0,0,0.45)',
   toastDark: '#2B2B2B',
+  /** The pale grey page behind white cards (wallet, points' lists, invite, notifications, profile). */
+  page: '#F5F6FA',
+  /** See-through white on orange cards and the home header: icon tiles, tracks, ghost buttons. */
+  glass: 'rgba(255,255,255,0.22)',
+  /** Pale red tiles: deductions, sign-out, a blocked delivery man, a disabled account. */
+  danger50: '#FDEDED',
+  /** Rating stars in store lists and headers. */
+  star: '#F5A623',
+  /** The wallet icon's blue (محفظتي) and its pale tile (تواصل معنا). */
+  blue: '#2F6FED',
+  blue50: '#E6EEFC',
+  /** الإشعارات' empty state. */
+  violet: '#4F46B8',
+  violet50: '#EEEDFB',
+  /** Round grey icon buttons: back, the bell. */
+  iconCircle: '#F2F2F4',
+  /** Input and locked-field borders. */
+  fieldBorder: '#E9EAEE',
+  /** Dark chips and the map tip. */
+  navy: '#1D2333',
+  /** Underlined fields and the OTP boxes' focus ring. */
+  lineStrong: '#9E9E9E',
 } as const;
 
 /** Alexandria weights, loaded in the root layout. */

@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 58,
     borderWidth: 1,
-    borderColor: '#E9EAEE',
+    borderColor: colors.fieldBorder,
     borderRadius: radius.md + 2,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,

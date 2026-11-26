@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   field: { gap: spacing.md },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: '#9E9E9E',
+    borderBottomColor: colors.lineStrong,
     paddingVertical: spacing.md,
     minHeight: 64,
     fontFamily: fonts.regular,

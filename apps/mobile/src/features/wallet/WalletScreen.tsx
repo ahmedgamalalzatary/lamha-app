@@ -15,9 +15,6 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useAgo } from '@/features/partner/parts';
 import { useWallet } from './api';
 
-/** The pale page and the red tile of "لا توجد خصومات", as captured. */
-const PAGE = '#F5F6FA';
-const DANGER_50 = '#FDEDED';
 
 /**
  * حركة المحفظة (contract §8.15; customer/account/wallet-balance-card.png, wallet-additions-empty.png,
@@ -78,7 +75,7 @@ export function WalletScreen() {
         tab === 'add' ? (
           <Empty icon={ArrowDownLeft} color={colors.success} tile={colors.success50} title={t('wallet.noAdditions')} message={t('wallet.noAdditionsBody')} />
         ) : (
-          <Empty icon={ArrowUpRight} color={colors.danger} tile={DANGER_50} title={t('wallet.noDeductions')} message={t('wallet.noDeductionsBody')} />
+          <Empty icon={ArrowUpRight} color={colors.danger} tile={colors.danger50} title={t('wallet.noDeductions')} message={t('wallet.noDeductionsBody')} />
         )
       ) : (
         <FlatList
@@ -138,7 +135,7 @@ function Row({ entry: e }: { entry: WalletEntry }) {
   const Icon = add ? ArrowDownLeft : ArrowUpRight;
   return (
     <View accessible accessibilityLabel={`${title}، ${amount}`} style={styles.row}>
-      <View style={[styles.rowIcon, { backgroundColor: add ? colors.success50 : DANGER_50 }]}>
+      <View style={[styles.rowIcon, { backgroundColor: add ? colors.success50 : colors.danger50 }]}>
         <Icon size={20} color={add ? colors.success : colors.danger} />
       </View>
       <View style={styles.grow}>
@@ -155,7 +152,7 @@ function Row({ entry: e }: { entry: WalletEntry }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: PAGE },
+  screen: { flex: 1, backgroundColor: colors.page },
   grow: { flex: 1 },
   header: {
     flexDirection: 'row',

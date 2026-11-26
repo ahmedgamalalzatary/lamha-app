@@ -16,11 +16,6 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useAgo } from '@/features/partner/parts';
 import { notificationsApi, notificationsKey, useNotifications } from './api';
 
-/** The violet of this screen's empty state, as captured (customer/account/notifications-empty-state.png). */
-const VIOLET = '#4F46B8';
-const VIOLET_50 = '#EEEDFB';
-const PAGE = '#F4F5F9';
-
 /**
  * الإشعارات (contract §8.14, customer/account/notifications-empty-state.png): the white header with
  * the title and the back chevron, a pale grey page, and "لا توجد إشعارات — ستظهر هنا إشعاراتك عند
@@ -69,7 +64,7 @@ export function NotificationsScreen() {
       ) : list.data.items.length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyCircle}>
-            <Bell size={30} color={VIOLET} />
+            <Bell size={30} color={colors.violet} />
           </View>
           <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle}>
             {t('notifications.empty')}
@@ -117,7 +112,7 @@ function Row({ item: n }: { item: AppNotification }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: PAGE },
+  screen: { flex: 1, backgroundColor: colors.page },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -130,7 +125,7 @@ const styles = StyleSheet.create({
   list: { padding: spacing.lg, gap: spacing.md },
   skeleton: { height: 84, borderRadius: radius.md },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
-  emptyCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: VIOLET_50, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  emptyCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.violet50, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   row: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.bg, borderRadius: radius.md, padding: spacing.lg },
   rowIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
   grow: { flex: 1, gap: spacing.xs },

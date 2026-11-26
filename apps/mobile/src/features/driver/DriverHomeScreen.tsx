@@ -193,6 +193,6 @@ const styles = StyleSheet.create({
   inner: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   start: { backgroundColor: colors.black },
-  blocked: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#FDECEA', borderRadius: radius.md, padding: spacing.md },
+  blocked: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.danger50, borderRadius: radius.md, padding: spacing.md },
   grow: { flex: 1 },
 });

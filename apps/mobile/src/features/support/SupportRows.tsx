@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
   skeleton: { height: 72, borderRadius: radius.md },
   phones: { gap: spacing.md, paddingBottom: spacing.md },
   phone: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg },
-  phoneIcon: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: '#E6EEFC', alignItems: 'center', justifyContent: 'center' },
+  phoneIcon: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: colors.blue50, alignItems: 'center', justifyContent: 'center' },
 });

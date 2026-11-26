@@ -11,7 +11,6 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { FreeFee } from '@/features/stores/components/FreeFee';
 
 export const COVER_HEIGHT = 300;
-const STAR = '#F5A623';
 
 /**
  * The top of a store page (contract §8.4): the cover with the "مغلق" pill, the logo, name and rating,
@@ -43,7 +42,7 @@ export function StoreHeader({ store }: { store: CatalogStore }) {
               {store.name}
             </AppText>
             <View style={styles.rating}>
-              <Star size={15} color={STAR} fill={STAR} />
+              <Star size={15} color={colors.star} fill={colors.star} />
               <AppText weight="semibold" color={colors.bg}>
                 {store.rating === null ? t('stores.new') : `${store.rating.toFixed(2)} (${store.ratingCount})`}
               </AppText>

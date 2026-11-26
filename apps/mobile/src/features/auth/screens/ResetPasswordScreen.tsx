@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: '#E9EAEE',
+    borderColor: colors.fieldBorder,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     padding: spacing.md,

@@ -27,9 +27,6 @@ import { useWallet } from '@/features/wallet/api';
 import { usePoints } from '@/features/points/api';
 import { AccountInviteCard } from '@/features/invite/AccountInviteCard';
 
-/** The wallet icon's blue, as captured. */
-const WALLET_BLUE = '#2F6FED';
-
 /** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
 function OrdersMadeRow() {
   const t = useT();
@@ -56,7 +53,7 @@ function MoneyTiles() {
   return (
     <View style={styles.tiles}>
       <Tile label={t('wallet.tile')} value={wallet.data ? formatMoney(wallet.data.balance, locale) : ''} onPress={() => router.push('/wallet')}>
-        <Wallet size={22} color={WALLET_BLUE} />
+        <Wallet size={22} color={colors.blue} />
       </Tile>
       <Tile label={t('points.title')} value={points.data ? String(points.data.balance) : ''} onPress={() => router.push('/points')}>
         <View style={styles.starCircle}>
@@ -250,7 +247,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
-  bell: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F2F2F4', alignItems: 'center', justifyContent: 'center' },
+  bell: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.iconCircle, alignItems: 'center', justifyContent: 'center' },
   bellDot: { position: 'absolute', top: 10, end: 12, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.danger },
   profile: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.lg },
   profileText: { flex: 1, gap: spacing.xs },
@@ -263,7 +260,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxl,
     paddingVertical: spacing.lg + 2,
     borderRadius: radius.lg,
-    backgroundColor: '#FDEDED',
+    backgroundColor: colors.danger50,
   },
   sheet: { gap: spacing.lg, paddingTop: spacing.sm },
   tiles: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },

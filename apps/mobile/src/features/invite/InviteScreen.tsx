@@ -13,9 +13,6 @@ import { useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { inviteActions, useInvite } from './api';
 
-const PAGE = '#F5F6FA';
-/** The see-through white of the gift tile and the share button, as captured. */
-const GLASS = 'rgba(255,255,255,0.22)';
 
 /**
  * ادعُ أصدقاءك (contract §8.17; customer/account/invite-friends-code-share.png and
@@ -234,7 +231,7 @@ function Friend({ friend: f }: { friend: InvitedFriend }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: PAGE },
+  screen: { flex: 1, backgroundColor: colors.page },
   grow: { flex: 1 },
   centred: { textAlign: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
@@ -244,14 +241,14 @@ const styles = StyleSheet.create({
   rowSkeleton: { height: 100, borderRadius: radius.lg },
   card: { borderRadius: 24, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.lg },
   cardTop: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
-  giftTile: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: GLASS, alignItems: 'center', justifyContent: 'center' },
+  giftTile: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   codeBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, borderRadius: radius.lg, paddingHorizontal: spacing.lg, minHeight: 64 },
   code: { flex: 1, letterSpacing: 4 },
   copy: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   actions: { flexDirection: 'row', gap: spacing.md },
   action: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, minHeight: 56, borderRadius: radius.lg },
   actionWhite: { backgroundColor: colors.bg },
-  actionGlass: { backgroundColor: GLASS },
+  actionGlass: { backgroundColor: colors.glass },
   panel: { backgroundColor: colors.bg, borderRadius: 20, borderWidth: 1, borderColor: colors.line, padding: spacing.xl, gap: spacing.lg },
   stats: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.lg },
   stat: { flex: 1, alignItems: 'center', gap: spacing.xs },

@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   banner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.bg, borderRadius: radius.lg, padding: spacing.lg, ...shadow },
   bannerText: { flex: 1 },
   pinWrap: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', paddingBottom: 60 },
-  tip: { backgroundColor: '#1D2333', borderRadius: radius.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginBottom: spacing.md },
+  tip: { backgroundColor: colors.navy, borderRadius: radius.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginBottom: spacing.md },
   pinHead: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#CC5A00', alignItems: 'center', justifyContent: 'center' },
   pinDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: colors.bg },
   pinStem: { width: 3, height: 18, backgroundColor: '#CC5A00' },

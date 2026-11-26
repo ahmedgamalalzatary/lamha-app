@@ -15,9 +15,6 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useAgo } from '@/features/partner/parts';
 import { usePoints } from './api';
 
-/** The see-through white of the card's track, icon circle and inner box, as captured. */
-const GLASS = 'rgba(255,255,255,0.22)';
-const DANGER_50 = '#FDEDED';
 
 /**
  * نقاطي (contract §8.16, customer/account/points-balance-progress.png): the orange card with رصيد
@@ -165,7 +162,7 @@ function Row({ entry: e }: { entry: PointsEntry }) {
   const Icon = add ? ArrowDownLeft : ArrowUpRight;
   return (
     <View accessible accessibilityLabel={`${title}، ${amount}`} style={styles.row}>
-      <View style={[styles.rowIcon, { backgroundColor: add ? colors.success50 : DANGER_50 }]}>
+      <View style={[styles.rowIcon, { backgroundColor: add ? colors.success50 : colors.danger50 }]}>
         <Icon size={20} color={add ? colors.success : colors.danger} />
       </View>
       <View style={styles.grow}>
@@ -189,13 +186,13 @@ const styles = StyleSheet.create({
   cardSkeleton: { height: 300, margin: spacing.lg, borderRadius: 24 },
   card: { margin: spacing.lg, borderRadius: 24, backgroundColor: colors.primary, padding: spacing.xl, gap: spacing.lg },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  starCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: GLASS, alignItems: 'center', justifyContent: 'center' },
+  starCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   balance: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  track: { height: 10, borderRadius: 5, backgroundColor: GLASS, overflow: 'hidden' },
+  track: { height: 10, borderRadius: 5, backgroundColor: colors.glass, overflow: 'hidden' },
   fill: { height: 10, borderRadius: 5, backgroundColor: colors.bg },
-  inner: { flexDirection: 'row', borderRadius: radius.lg, backgroundColor: GLASS, padding: spacing.lg },
+  inner: { flexDirection: 'row', borderRadius: radius.lg, backgroundColor: colors.glass, padding: spacing.lg },
   half: { flex: 1, alignItems: 'center', gap: spacing.sm },
-  divider: { width: 1, backgroundColor: GLASS },
+  divider: { width: 1, backgroundColor: colors.glass },
   tabs: { flexDirection: 'row', paddingHorizontal: spacing.lg },
   tab: { flex: 1, alignItems: 'center', paddingTop: spacing.md, gap: spacing.md },
   tabLine: { height: 3, width: '60%', borderRadius: 2, backgroundColor: 'transparent' },
