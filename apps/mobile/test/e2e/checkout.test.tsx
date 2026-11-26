@@ -115,8 +115,12 @@ describe('checkout (contract §8.7; real API)', () => {
     expect(screen.getByText('temp')).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'سيصل خلال 25 دقيقة' }).props.accessibilityState).toMatchObject({ checked: true });
     expect(screen.getByRole('radio', { name: 'الدفع عند الاستلام' })).toBeTruthy();
-    // No wallet or coupon yet (Phases 17, 20), and no service fee (owner, 2026-11-25).
-    expect(screen.queryByText('رصيدك')).toBeNull();
+    // An empty wallet cannot be switched on; no top-up (excluded), no coupon yet (Phase 20), and
+    // no service fee (owner, 2026-11-25).
+    expect(screen.getByText('رصيدك')).toBeTruthy();
+    expect(await screen.findByText('لا يوجد رصيد متاح')).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'رصيد المحفظة' }).props.accessibilityState).toMatchObject({ disabled: true });
+    expect(screen.queryByText('شحن المحفظة')).toBeNull();
     expect(screen.queryByText('رسوم الخدمة')).toBeNull();
     expect(await screen.findByText('30.00 ج.م')).toBeTruthy();
     expect(screen.getByText('170.00 ج.م')).toBeTruthy();
@@ -163,6 +167,29 @@ describe('checkout (contract §8.7; real API)', () => {
     await press('تنفيذ الطلب');
     expect(await screen.findByText('تم إرسال طلبك')).toBeTruthy();
     expect(await sql<{ total: string }[]>('SELECT total FROM orders')).toEqual([{ total: '205.00' }]);
+  });
+
+  it('"رصيد المحفظة" pays what the wallet holds; the rest is cash [Owner, 2026-11-26]', async () => {
+    const [{ id: me }] = await sql<{ id: number }[]>("SELECT id FROM users WHERE phone = '01554459196'");
+    await sql('UPDATE users SET wallet_balance = 50 WHERE id = ?', [me]);
+    const { cart } = await cartApi.get();
+    await cartApi.edit({ cartId: cart!.id, mode: 'pickup' });
+    await openCheckout();
+    expect(await screen.findByText('المتاح 50.00 ج.م')).toBeTruthy();
+    const wallet = screen.getByRole('switch', { name: 'رصيد المحفظة' });
+    expect(wallet.props.value).toBe(false);
+    expect(screen.queryByText('المدفوع من المحفظة')).toBeNull();
+
+    fireEvent(wallet, 'valueChange', true);
+    expect(await screen.findByText('المدفوع من المحفظة')).toBeTruthy();
+    expect(screen.getByText('-50.00 ج.م')).toBeTruthy();
+    // The total and "تنفيذ الطلب 120.00 ج.م": what is left to pay in cash.
+    expect(screen.getAllByText('120.00 ج.م')).toHaveLength(2);
+
+    await press('تنفيذ الطلب');
+    expect(await screen.findByText('تم إرسال طلبك')).toBeTruthy();
+    expect(await sql('SELECT total, wallet_paid FROM orders')).toEqual([{ total: '170.00', wallet_paid: '50.00' }]);
+    expect(await sql('SELECT wallet_balance FROM users WHERE id = ?', [me])).toEqual([{ wallet_balance: '0.00' }]);
   });
 
   it('a pickup has no address or fee, and can be for a later time today', async () => {

@@ -35,6 +35,11 @@ export const orders = mysqlTable(
     itemsTotal: money('items_total').notNull(),
     deliveryFee: money('delivery_fee').notNull(),
     total: money('total').notNull(),
+    /**
+     * Paid from the customer's wallet (§8.15); the rest is cash. On a delivery by the app's captains the
+     * app owes it to the delivery man [Owner, 2026-11-26].
+     */
+    walletPaid: money('wallet_paid').notNull().default(0),
     payoutOption: mysqlEnum('payout_option', PAYOUT_OPTIONS).notNull(),
     appPercent: decimal('app_percent', { precision: 5, scale: 2, mode: 'number' }).notNull(),
     appShare: money('app_share').notNull(),

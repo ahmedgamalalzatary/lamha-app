@@ -1,9 +1,9 @@
-import { type CheckoutQuote, type CustomerCart, formatMoney, type LatLng, slotLabel } from '@tawsela/shared';
+import { cashDue, type CheckoutQuote, type CustomerCart, formatMoney, type LatLng, slotLabel, walletPays } from '@tawsela/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Banknote, Lock, MapPin, ShoppingCart } from 'lucide-react-native';
+import { Banknote, Lock, MapPin, ShoppingCart, Wallet } from 'lucide-react-native';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { BackButton } from '@/components/BackButton';
@@ -24,6 +24,7 @@ import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { confirmOnMap, usePickedSpot } from '@/features/addresses/picked-spot';
 import { useCart } from '@/features/cart/api/cart';
 import { useStorePage } from '@/features/store/api/store';
+import { walletKey } from '@/features/wallet/api';
 import { checkoutApi, newRequestId } from './api';
 
 /** "سيصل خلال 30 دقيقة" when the store page has not said its own time yet. */
@@ -32,8 +33,8 @@ const DEFAULT_MINUTES = 30;
 /**
  * Tawsilty's "إتمام الدفع" (contract §8.7, customer/checkout/*): the delivery address with "تغيير", now or
  * a later slot today, cash on delivery, the bill (products and the distance delivery fee, no service
- * fee) and "تنفيذ الطلب <total>". A delivery is confirmed on the map first [Client, §8.6]. The wallet
- * and the coupon box join in Phases 17 and 20.
+ * fee) and "تنفيذ الطلب <total>". A delivery is confirmed on the map first [Client, §8.6]. "رصيدك"
+ * pays from the wallet (Phase 17); the coupon box joins in Phase 20.
  */
 export function CheckoutScreen() {
   const t = useT();
@@ -79,6 +80,8 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
   const [slotsOpen, setSlotsOpen] = useState(false);
   const [picking, setPicking] = useState<number | null>(null);
   const [addressesOpen, setAddressesOpen] = useState(false);
+  /** "رصيد المحفظة": off until the customer switches it on [Derived]. */
+  const [payWallet, setPayWallet] = useState(false);
   const requestId = useRef(newRequestId());
   /** Stops listening for the map's "تأكيد الموقع", while the map is open. */
   const awaitingMap = useRef<(() => void) | null>(null);
@@ -104,15 +107,27 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
       client.setQueryData([...quoteKey.slice(0, 5), picked, spot.lat, spot.lng], current);
       setConfirmed({ addressId: picked, spot });
     }
-    if (current.total !== shown.total) throw new ApiRequestError(409, 'The bill changed', 'CHECKOUT_TOTAL_CHANGED');
+    const walletPaid = payWallet ? walletPays(current.walletBalance, current.total) : 0;
+    if (current.total !== shown.total || walletPaid !== (payWallet ? walletPays(shown.walletBalance, shown.total) : 0)) {
+      throw new ApiRequestError(409, 'The bill changed', 'CHECKOUT_TOTAL_CHANGED');
+    }
     try {
-      await checkoutApi.place({ cartId: current.cartId, addressId, location: spot, slot, expectedTotal: current.total, requestId: requestId.current });
+      await checkoutApi.place({
+        cartId: current.cartId,
+        addressId,
+        location: spot,
+        slot,
+        expectedTotal: current.total,
+        expectedWalletPaid: walletPaid,
+        requestId: requestId.current,
+      });
     } catch (e) {
       if (e instanceof ApiRequestError && e.status === 409) refresh();
       throw e;
     }
     client.setQueryData(['cart', userId], { cart: null });
     void client.invalidateQueries({ queryKey: ['orders', userId] });
+    if (walletPaid > 0) void client.invalidateQueries({ queryKey: [...walletKey, userId] });
     toast.show(t('checkout.placed'), 'success');
     router.replace('/customer/orders');
   });
@@ -142,6 +157,8 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
 
   const minutes = page.data?.deliveryMinutes ?? DEFAULT_MINUTES;
   const slots = bill?.slots ?? [];
+  const walletPaid = bill && payWallet ? walletPays(bill.walletBalance, bill.total) : 0;
+  const toPay = bill ? cashDue({ total: bill.total, walletPaid }) : 0;
 
   return (
     <>
@@ -201,6 +218,42 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
 
         <View style={styles.section}>
           <AppText accessibilityRole="header" weight="bold" size={fontSizes.listTitle}>
+            {t('checkout.yourBalance')}
+          </AppText>
+          {/* customer/checkout/checkout-address-time-wallet-payment.png, without "شحن المحفظة" (top-up excluded). */}
+          <View style={styles.walletCard}>
+            <View style={styles.pin}>
+              <Wallet size={20} color={colors.primary} />
+            </View>
+            <View style={styles.grow}>
+              <AppText weight="semibold">{t('wallet.balance')}</AppText>
+              {bill ? (
+                bill.walletBalance > 0 ? (
+                  <AppText color={colors.ink2} size={fontSizes.body}>
+                    {t('checkout.available', { amount: formatMoney(bill.walletBalance, locale) })}
+                  </AppText>
+                ) : (
+                  <AppText color={colors.danger} size={fontSizes.body}>
+                    {t('checkout.noBalance')}
+                  </AppText>
+                )
+              ) : null}
+            </View>
+            <Switch
+              accessibilityRole="switch"
+              accessibilityLabel={t('wallet.balance')}
+              accessibilityState={{ disabled: !bill || bill.walletBalance <= 0, checked: payWallet }}
+              value={payWallet && !!bill && bill.walletBalance > 0}
+              disabled={!bill || bill.walletBalance <= 0}
+              trackColor={{ true: colors.primary100, false: colors.line }}
+              thumbColor={payWallet ? colors.primary : colors.bg}
+              onValueChange={setPayWallet}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <AppText accessibilityRole="header" weight="bold" size={fontSizes.listTitle}>
             {t('checkout.payment')}
           </AppText>
           <View accessibilityRole="radiogroup" style={styles.payments}>
@@ -227,7 +280,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
             {t('checkout.summary')}
           </AppText>
           {bill ? (
-            <Summary bill={bill} locale={locale} />
+            <Summary bill={bill} walletPaid={walletPaid} toPay={toPay} locale={locale} />
           ) : quote.isError ? (
             <View style={styles.failed}>
               <AppText color={colors.danger}>{errorMessage(quote.error)}</AppText>
@@ -253,7 +306,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
           </AppText>
           {bill ? (
             <AppText weight="bold" color={colors.bg}>
-              {formatMoney(bill.total, locale)}
+              {formatMoney(toPay, locale)}
             </AppText>
           ) : null}
         </PressableScale>
@@ -306,24 +359,26 @@ function Choice({ label, checked, onPress }: { label: string; checked: boolean; 
   );
 }
 
-function Summary({ bill, locale }: { bill: CheckoutQuote; locale: 'ar' | 'en' }) {
+/** The wallet's part shows in red under the fee, and الإجمالي is what is left to pay in cash [Derived]. */
+function Summary({ bill, walletPaid, toPay, locale }: { bill: CheckoutQuote; walletPaid: number; toPay: number; locale: 'ar' | 'en' }) {
   const t = useT();
-  const row = (label: string, value: number): ReactNode => (
+  const row = (label: string, value: string, color?: string): ReactNode => (
     <View style={styles.summaryRow}>
       <AppText color={colors.ink2}>{label}</AppText>
-      <AppText>{formatMoney(value, locale)}</AppText>
+      <AppText color={color}>{value}</AppText>
     </View>
   );
   return (
     <View style={styles.summary}>
-      {row(t('checkout.subtotal'), bill.itemsTotal)}
-      {bill.mode === 'delivery' ? row(t('checkout.deliveryFee'), bill.deliveryFee) : null}
+      {row(t('checkout.subtotal'), formatMoney(bill.itemsTotal, locale))}
+      {bill.mode === 'delivery' ? row(t('checkout.deliveryFee'), formatMoney(bill.deliveryFee, locale)) : null}
+      {walletPaid > 0 ? row(t('wallet.paid'), `-${formatMoney(walletPaid, locale)}`, colors.danger) : null}
       <View style={[styles.summaryRow, styles.total]}>
         <AppText weight="bold" size={fontSizes.listTitle}>
           {t('checkout.total')}
         </AppText>
         <AppText weight="bold" size={fontSizes.listTitle}>
-          {formatMoney(bill.total, locale)}
+          {formatMoney(toPay, locale)}
         </AppText>
       </View>
     </View>
@@ -347,6 +402,7 @@ const styles = StyleSheet.create({
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.ink },
   radioPayment: { borderColor: colors.primary },
   radioDotPayment: { backgroundColor: colors.primary },
+  walletCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.md },
   payments: { borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.xs },
   payment: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, borderRadius: radius.md, backgroundColor: colors.primary50, paddingHorizontal: spacing.md },
   secure: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },

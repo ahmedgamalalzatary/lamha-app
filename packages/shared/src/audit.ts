@@ -26,6 +26,7 @@ export const AUDIT_ACTIONS = [
   'ticket.done',
   'settings.support',
   'campaign.send',
+  'customer.wallet',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

@@ -210,7 +210,7 @@ export interface DriverOffer {
   itemsTotal: number;
   /** ادفع نقداً للبائع. */
   storeFromDriver: number;
-  /** تحصيل النقود. */
+  /** تحصيل النقود: the cash the customer still pays, after the wallet (cashDue). */
   total: number;
   deliveryFee: number;
   distanceKm: number | null;
@@ -233,6 +233,7 @@ export interface DriverOrder {
   atStore: boolean;
   store: { name: string };
   area: string | null;
+  /** تحصيل النقود: the cash to collect, after the wallet (cashDue). */
   total: number;
   createdAt: string;
 }
@@ -249,6 +250,11 @@ export interface DriverOrderDetails extends DriverOrder {
   itemsTotal: number;
   deliveryFee: number;
   storeFromDriver: number;
+  /**
+   * Paid from the customer's wallet: he collects that much less, and the app owes it to him
+   * [Owner, 2026-11-26; settled outside the app for now].
+   */
+  walletPaid: number;
 }
 
 /** المندوبين in the dashboard and the admin's app (§11, §11.2). */

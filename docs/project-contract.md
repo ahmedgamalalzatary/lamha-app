@@ -557,6 +557,12 @@ Sub-screens [Tawsilty]:
 
 Orange balance card ("0.0 ج.م"), "شحن المحفظة"; tabs الإضافات / الخصومات with their empty states. Top-up: "حدد طريقة الشحن" → محفظة الكترونية → amount sheet (min 10, max 10,000 ج.م) → "تأكيد البيانات" → payment provider. [Owner, 2026-11-23] **Top-up is excluded for now**, so "شحن المحفظة" is not shown. The wallet still holds invite credit and admin additions and deductions, and pays at checkout.
 
+[Owner, 2026-11-26] Before Phase 17:
+- **Paying:** "رصيد المحفظة" pays as much as the wallet holds, up to the order total; cash on delivery pays the rest.
+- **Rejected or cancelled:** the wallet's part goes back to the wallet at once.
+- **The delivery man:** he collects only the cash part; the app owes him the wallet part, settled outside the app for now.
+- **The admin:** adds or deducts with a reason (العملاء, §11 A5); a deduction never takes the balance below 0.
+
 ### 8.16 Points (نقاطي) [Tawsilty]
 
 Orange card: balance, progress bar, "باقي <n> نقطة للاستبدال", قيمة نقاطك (EGP value) and الحد الأدنى للاستبدال (240 نقطة). Tabs المكتسبة / المنفقة. Points are earned per order.
@@ -823,3 +829,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-25 | Phase 14 built (§8.8, §12 S3), migration 0013: تفاصيل الطلب as in the photo (no service fee); the order's steps while it runs [Open], refreshed live for the customer; "اطلب تاني" inside the details once the order is over [Derived], with another store's cart asked first and missing items left out. |
 | 2026-11-25 | Phase 15 built (§8.8, §8.14, §11), migration 0014: the rating screen as in the photo with the owner's split (1-3 bad, 4-5 good), opened once by itself after delivery and from the details; the store's average in the lists; complaints (عامة or a past order, and from the order's details) and suggestions; التواصل معنا from the admin's numbers; الشكاوى والاقتراحات (mark done, no in-app reply) and أرقام التواصل in the dashboard [Owner]. Good chips and star words 2-5 marked [Open]. |
 | 2026-11-25 | Phase 16 built (§8.14, §9, §10, §11, §15.1 #7), migration 0015: push through Expo's HTTP API with no SDK; tokens per phone; الإشعارات with the unread dot; إعدادات الإشعارات (تفعيل الإشعار only); the owner's push events; الإشعارات التفاعلية sent now to every customer or one zone [Owner]. Real pushes wait for the Expo project ID [Open]. |
+| 2026-11-26 | Phase 17 built (§8.15, §8.7, §9, §10, §11 A3, A5), migration 0016: حركة المحفظة as in the photos without top-up; محفظتي on حسابي; "رصيدك" at checkout paying as much as the wallet holds [Owner]; a rejected order's wallet money back at once [Owner]; the delivery man collects the cash part only, the app owes him the rest [Owner]; العملاء in the dashboard with add and deduct, never below 0 [Owner]. The movement rows and the العملاء page are not captured [Open]. |

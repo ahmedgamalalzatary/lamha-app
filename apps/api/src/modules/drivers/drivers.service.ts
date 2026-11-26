@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   canStartShift,
+  cashDue,
   type CreatedAccount,
   type DriverAccount,
   type DriverAction,
@@ -210,7 +211,7 @@ export class DriversService {
       count: counts.get(order.id) ?? 0,
       itemsTotal: order.itemsTotal,
       storeFromDriver: order.storeFromDriver,
-      total: order.total,
+      total: cashDue(order),
       deliveryFee: order.deliveryFee,
       distanceKm: order.distanceKm,
       offeredAt: (accepted.get(order.id) ?? order.createdAt).toISOString(),
@@ -334,6 +335,7 @@ export class DriversService {
       itemsTotal: order.itemsTotal,
       deliveryFee: order.deliveryFee,
       storeFromDriver: order.storeFromDriver,
+      walletPaid: order.walletPaid,
     };
   }
 
@@ -557,7 +559,8 @@ function toDriverOrder(order: OrderRow, store: { name: string }, area: string | 
     atStore: order.atStoreAt !== null,
     store: { name: store.name },
     area,
-    total: order.total,
+    // تحصيل النقود: what the wallet did not pay.
+    total: cashDue(order),
     createdAt: order.createdAt.toISOString(),
   };
 }

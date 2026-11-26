@@ -1,5 +1,5 @@
 import { GENDERS, ROLES } from '@tawsela/shared';
-import { boolean, datetime, int, mysqlEnum, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
+import { boolean, datetime, decimal, int, mysqlEnum, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
 import { stores } from '../catalog/catalog.schema.js';
 
 /**
@@ -24,6 +24,8 @@ export const users = mysqlTable('users', {
   locale: mysqlEnum('locale', ['ar', 'en']).notNull().default('ar'),
   /** "تفعيل الإشعار" (§8.14). */
   notificationsEnabled: boolean('notifications_enabled').notNull().default(true),
+  /** رصيد المحفظة (§8.15): the sum of wallet_transactions, never below 0. */
+  walletBalance: decimal('wallet_balance', { precision: 10, scale: 2, mode: 'number' }).notNull().default(0),
   inviteCode: varchar('invite_code', { length: 12 }).unique(),
   invitedById: int('invited_by_id', { unsigned: true }),
   /** Partners only: the store the account runs (contract §2). */

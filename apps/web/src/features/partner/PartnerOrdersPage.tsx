@@ -1,6 +1,6 @@
 'use client';
 
-import { formatMoney, type OrderLine, type OrderStatus, orderStatusLabel, type PartnerAction, type PartnerOrderDetails } from '@tawsela/shared';
+import { cashDue, formatMoney, type OrderLine, type OrderStatus, orderStatusLabel, type PartnerAction, type PartnerOrderDetails } from '@tawsela/shared';
 import { CalendarDays, ClipboardList, MapPin, NotebookText, Phone, Printer } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { mediaUrl } from '@/core/api/client';
@@ -248,10 +248,16 @@ function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails
         <Row label="الإجمالى">{formatMoney(o.itemsTotal)}</Row>
         <Row label="كلفة التوصيل">{formatMoney(o.deliveryFee)}</Row>
         <Row label="رسوم طريقة الدفع">{formatMoney(0)}</Row>
+        {/* A discount shows in red (§9): here what the wallet paid; المجموع is what the customer still pays. */}
+        {o.walletPaid > 0 ? (
+          <Row label="المدفوع من المحفظة">
+            <span className="text-tw-danger">-{formatMoney(o.walletPaid)}</span>
+          </Row>
+        ) : null}
       </div>
       <div className="flex flex-col gap-1.5 border-t border-tw-line pt-3">
-        <Row label="المجموع">{formatMoney(o.total)}</Row>
-        <Row label="طريقة الدفع">الدفع عند الاستلام</Row>
+        <Row label="المجموع">{formatMoney(cashDue(o))}</Row>
+        <Row label="طريقة الدفع">{cashDue(o) === 0 ? 'مدفوع بالكامل' : 'الدفع عند الاستلام'}</Row>
       </div>
       {o.driver ? <Row label="معلومات المندوب">{o.driver.name}</Row> : null}
       {collects ? (

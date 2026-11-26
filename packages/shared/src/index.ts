@@ -14,3 +14,4 @@ export * from './driver.js';
 export * from './customer-order.js';
 export * from './support.js';
 export * from './notification.js';
+export * from './wallet.js';

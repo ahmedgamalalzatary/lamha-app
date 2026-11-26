@@ -20,7 +20,15 @@ export interface NavGroup {
 export const ADMIN_NAV: NavGroup[] = [
   { label: 'الرئيسية', icon: House, href: '/', items: [] },
   { label: 'الطلبات', icon: ClipboardList, items: [{ label: 'الطلبات', href: '/orders' }] },
-  { label: 'العملاء', icon: Users, items: [{ label: 'الشكاوى والاقتراحات', href: '/customers/complaints' }] },
+  {
+    label: 'العملاء',
+    icon: Users,
+    items: [
+      // Phase 17: the list with each wallet, add and deduct (§11 A3, A5) [Open: layout ours].
+      { label: 'العملاء', href: '/customers' },
+      { label: 'الشكاوى والاقتراحات', href: '/customers/complaints' },
+    ],
+  },
   { label: 'الموردين', icon: Store, items: [{ label: 'الموردين', href: '/stores' }] },
   {
     label: 'المندوبين',

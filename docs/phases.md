@@ -41,7 +41,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 14 | Order status and the delivered view (live tracking out of scope) | 🔍 in-verify | none (the active order view marked [Open]) |
 | 15 | Ratings, complaints and support | 🔍 in-verify | none (good chips and star words marked [Open]) |
 | 16 | Notifications and push (Expo push) | 🔍 in-verify | none (Expo project made; real pushes need a workflow-built app and FCM) |
-| 17 | Wallet (top-up excluded for now) | ⬜ | none |
+| 17 | Wallet (top-up excluded for now) | 🔍 in-verify | none (movement rows and the العملاء page marked [Open]) |
 | 18 | Points | ⬜ | none (#4 decided) |
 | 19 | Invite friends | ⬜ | |
 | 20 | Offers, coupons and banners | ⬜ | |
@@ -473,6 +473,40 @@ Owner's answers before the phase (2026-11-25):
 ## Phase 17: Wallet
 
 Contract §8.15: balance, additions and deductions, paying with the wallet. E-wallet top-up is excluded for now (§15.1 #2).
+
+Owner's answers before the phase (2026-11-26):
+- "رصيد المحفظة" pays as much as the wallet holds, up to the order total; cash on delivery pays the rest.
+- A rejected or cancelled order's wallet money goes back to the wallet at once.
+- The delivery man collects only the cash part; the app owes him the wallet part (settled outside the app for now).
+- The admin adds or deducts with a reason; a deduction never takes the balance below 0.
+
+- **Migration 0016:** `wallet_transactions` (add or deduct; admin, order or refund; the amount, the reason, the order, who added it); `users.wallet_balance`; `orders.wallet_paid`.
+- **Shared (TDD):** `walletPays` (as much as it holds, up to the total, in piastres), `cashDue`, `adjustProblem` (above 0, up to 10,000, piastres, a reason, never over the balance); the API shapes; the audit action `customer.wallet`.
+- **API:**
+  - `GET /v1/me/wallet`: the balance and the movements, newest first.
+  - The checkout quote gives `walletBalance`; `POST /v1/me/orders` takes `expectedWalletPaid`, and a balance that moved since the screen loaded is a changed bill (409 CHECKOUT_TOTAL_CHANGED). The payment and the order are saved together, with the customer's row locked; a retried tap takes nothing more.
+  - A store's رفض gives the wallet money back in the same save.
+  - Orders carry `walletPaid` for the customer, the store and the admin; the delivery man's "تحصيل النقود" is the cash part only.
+  - `GET /v1/admin/customers?q=` (name, phone or email) and `POST /v1/admin/customers/:id/wallet` (422 WALLET_BALANCE over the balance), recorded in سجل التغييرات.
+- **Dashboard:** العملاء › العملاء: the customers with their wallet balance and the search; the wallet button adds or deducts with the amount and the reason. The store's order details show "المدفوع من المحفظة" in red and المجموع as what is left to collect ("مدفوع بالكامل" when nothing is); the admin's الطلبات shows the wallet's part under the total.
+- **App:**
+  - حسابي: the محفظتي tile with the balance opens حركة المحفظة.
+  - حركة المحفظة as in the photos, without "شحن المحفظة": the orange "رصيد المحفظة" card, الإضافات and الخصومات with their empty states (the green and the red arrow).
+  - إتمام الدفع: "رصيدك" with "رصيد المحفظة" and its switch, "المتاح <amount>", or "لا يوجد رصيد متاح" in red with the switch off; switched on, "المدفوع من المحفظة" shows in the summary and الإجمالي and "تنفيذ الطلب" show the cash left.
+  - The order details (customer and store) show the wallet's part; the delivery man's details show it under "تحصيل النقود".
+- **[Open]**
+  - The movements' rows (not captured): the reason ("دفع الطلب #…", "استرداد الطلب #…", or the admin's reason), how long ago, and the amount in green or red.
+  - The dashboard's العملاء page (not captured); the customer's profile, orders and block are not built yet (§11 A3).
+- **[Derived]**
+  - The switch starts off.
+  - The customer sees the admin's reason on the row.
+  - The most the admin adds or deducts at once: 10,000 ج.م (Tawsilty's top-up limit).
+  - The app shows the newest 200 movements.
+- **Phone verification:**
+  - With an empty wallet, محفظتي shows 0.00 ج.م; حركة المحفظة shows both empty states and no "شحن المحفظة"; checkout shows "لا يوجد رصيد متاح" with the switch off.
+  - The admin adds 50 with a reason in the dashboard: the tile, the card and الإضافات show it.
+  - Order for more than 50 with the switch on: the summary takes 50 and "تنفيذ الطلب" shows the rest; الخصومات shows "دفع الطلب #…"; the store's details show "المدفوع من المحفظة" and the rest as المجموع; the delivery man's "تحصيل النقود" is the rest.
+  - The store rejects such an order: the 50 comes back in الإضافات as "استرداد الطلب #…".
 
 ## Phase 18: Points
 

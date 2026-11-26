@@ -113,6 +113,13 @@
       "when": 1795639742375,
       "tag": "0015_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1795670123185,
+      "tag": "0016_wallet",
+      "breakpoints": true
     }
   ]
 }

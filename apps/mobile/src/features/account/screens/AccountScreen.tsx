@@ -1,5 +1,6 @@
+import { formatMoney } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User } from 'lucide-react-native';
+import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User, Wallet } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +23,10 @@ import { AccountRow } from '../components/AccountRow';
 import { usePartnerOrderCounts } from '@/features/partner/api';
 import { SupportRows } from '@/features/support/SupportRows';
 import { useNotifications } from '@/features/notifications/api';
+import { useWallet } from '@/features/wallet/api';
+
+/** The wallet icon's blue, as captured. */
+const WALLET_BLUE = '#2F6FED';
 
 /** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
 function OrdersMadeRow() {
@@ -34,6 +39,36 @@ function OrdersMadeRow() {
       value={counts.data ? String(counts.data.delivered) : undefined}
       onPress={() => router.push('/partner/orders')}
     />
+  );
+}
+
+/**
+ * محفظتي (customer/account/account-top-wallet-points-invite.png): the wallet icon, the label and the
+ * balance, opening حركة المحفظة. نقاطي joins beside it in Phase 18.
+ */
+function WalletTile() {
+  const t = useT();
+  const locale = useLocale();
+  const wallet = useWallet();
+  const balance = wallet.data ? formatMoney(wallet.data.balance, locale) : '';
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`${t('wallet.tile')} ${balance}`.trim()}
+      onPress={() => router.push('/wallet')}
+      scaleTo={0.98}
+      style={styles.tile}
+    >
+      <View style={styles.tileTop}>
+        <Wallet size={22} color={WALLET_BLUE} />
+        <AppText weight="semibold" size={fontSizes.listTitle + 1}>
+          {t('wallet.tile')}
+        </AppText>
+      </View>
+      <AppText weight="bold" size={fontSizes.listTitle + 3}>
+        {balance}
+      </AppText>
+    </PressableScale>
   );
 }
 
@@ -105,6 +140,8 @@ export function AccountScreen() {
           </View>
           <DirectionalIcon icon={ChevronLeft} size={22} color={colors.ink2} />
         </PressableScale>
+
+        {user.role === 'customer' ? <WalletTile /> : null}
 
         {user.role === 'customer' ? <SupportRows /> : null}
 
@@ -213,4 +250,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FDEDED',
   },
   sheet: { gap: spacing.lg, paddingTop: spacing.sm },
+  tile: { gap: spacing.md, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.lg, marginBottom: spacing.sm },
+  tileTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

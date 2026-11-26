@@ -22,6 +22,7 @@ import { SettingsModule } from './modules/settings/settings.module.js';
 import { SupportModule } from './modules/support/support.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { WalletModule } from './modules/wallet/wallet.module.js';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { UsersModule } from './modules/users/users.module.js';
     DriversModule,
     SettingsModule,
     SupportModule,
+    WalletModule,
     FavoritesModule,
     AddressesModule,
     PartnersModule,

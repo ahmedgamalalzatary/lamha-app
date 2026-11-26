@@ -124,6 +124,8 @@ export type ApiErrorCode =
   | 'CHECKOUT_ALREADY_PLACED'
   /** The order already moved on (another partner, or a second tap): the store sees its status now. */
   | 'ORDER_STATUS'
+  /** The admin's deduction is more than the wallet holds (never below 0, §8.15). */
+  | 'WALLET_BALANCE'
   /** Another delivery man took the offer first, or the admin assigned it. */
   | 'OFFER_TAKEN'
   /** "بدء نوبة العمل" outside its window (30 min before to 15 min after), or no shift to start. */

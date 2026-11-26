@@ -1,6 +1,6 @@
 'use client';
 
-import { type AdminOrder, formatMoney, type OrderStatus, orderStatusLabel } from '@tawsela/shared';
+import { type AdminOrder, cashDue, formatMoney, type OrderStatus, orderStatusLabel } from '@tawsela/shared';
 import { Bike, ClipboardList } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
@@ -88,8 +88,11 @@ function OrderRow({ order: o, onAssign }: { order: AdminOrder; onAssign: () => v
           {o.customer.phone}
         </span>
       </td>
-      <td className="px-4 py-3 whitespace-nowrap">{formatMoney(o.total)}</td>
-      <td className="px-4 py-3 whitespace-nowrap">الدفع عند الاستلام</td>
+      <td className="px-4 py-3 whitespace-nowrap">
+        <span className="block">{formatMoney(o.total)}</span>
+        {o.walletPaid > 0 ? <span className="block text-xs text-tw-ink-2">منها {formatMoney(o.walletPaid)} من المحفظة</span> : null}
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">{cashDue(o) === 0 ? 'مدفوع بالكامل' : 'الدفع عند الاستلام'}</td>
       <td className="px-4 py-3">{o.mode === 'pickup' ? 'استلام من المحل' : o.deliveredBy === 'store' ? 'توصيل المتجر' : (o.driver?.name ?? '—')}</td>
       <td className="px-4 py-2">
         {canAssign(o) ? (

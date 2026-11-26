@@ -32,6 +32,7 @@ const ACTIONS: Record<AuditAction, string> = {
   'ticket.done': 'تغيير حالة شكوى أو اقتراح',
   'settings.support': 'تعديل أرقام التواصل',
   'campaign.send': 'إرسال إشعار تفاعلي',
+  'customer.wallet': 'تعديل رصيد محفظة عميل',
 };
 
 /** The fields' names as the forms show them; any other field keeps its own name. */
@@ -51,6 +52,10 @@ const FIELDS: Record<string, string> = {
   pickupAllowed: 'الاستلام من المحل',
   layout: 'شكل القائمة',
   vertical: 'النوع',
+  kind: 'الحركة',
+  amount: 'المبلغ',
+  note: 'السبب',
+  balance: 'الرصيد بعدها',
 };
 
 const show = (v: unknown) => (v === true ? 'نعم' : v === false ? 'لا' : v === null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v));

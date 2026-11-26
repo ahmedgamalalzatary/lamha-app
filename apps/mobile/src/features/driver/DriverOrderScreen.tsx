@@ -196,6 +196,17 @@ function Details({ order: o, busy, onStep }: { order: DriverOrderDetails; busy: 
               {money(o.total)}
             </AppText>
           </View>
+          {/* [Derived] He collects that much less; the app owes it to him [Owner, 2026-11-26]. */}
+          {o.walletPaid > 0 ? (
+            <View style={styles.row}>
+              <AppText color={colors.ink2} style={styles.grow}>
+                {t('wallet.paid')}
+              </AppText>
+              <AppText weight="semibold" color={colors.ink2}>
+                {money(o.walletPaid)}
+              </AppText>
+            </View>
+          ) : null}
         </Card>
       </ScrollView>
       <StepButton order={o} busy={busy} onStep={onStep} />

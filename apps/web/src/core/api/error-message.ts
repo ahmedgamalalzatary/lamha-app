@@ -23,6 +23,7 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   EMAIL_TAKEN: 'البريد الإلكتروني مستخدم في حساب آخر',
   ORDER_STATUS: 'تغيرت حالة الطلب، راجعه مرة أخرى',
   SHIFT_NOT_OPEN: 'لا توجد نوبة عمل يمكن بدؤها الآن',
+  WALLET_BALANCE: 'الرصيد أقل من مبلغ الخصم',
 };
 
 export const GENERIC_ERROR = 'حدث خطأ، حاول مرة أخرى';

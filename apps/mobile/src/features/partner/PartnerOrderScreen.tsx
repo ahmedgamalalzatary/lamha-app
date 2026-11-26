@@ -1,4 +1,4 @@
-import { formatMoney, orderStatusLabel, type PartnerAction, type PartnerOrderDetails } from '@tawsela/shared';
+import { cashDue, formatMoney, orderStatusLabel, type PartnerAction, type PartnerOrderDetails } from '@tawsela/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { CalendarDays, Check, MapPin, NotebookText, Phone } from 'lucide-react-native';
 import type { ReactNode } from 'react';
@@ -199,11 +199,13 @@ function Details({
         <Money label={t('partner.itemsTotal')} value={money(o.itemsTotal)} />
         <Money label={t('partner.deliveryFee')} value={money(o.deliveryFee)} />
         <Money label={t('partner.paymentFee')} value={money(0)} />
+        {/* A discount shows in red (§9): here what the wallet paid; المجموع is what the customer still pays. */}
+        {o.walletPaid > 0 ? <Money label={t('wallet.paid')} value={`-${money(o.walletPaid)}`} color={colors.danger} /> : null}
       </Section>
 
       <Section last={!o.driver && !collects}>
-        <Money label={t('partner.total')} value={money(o.total)} color={colors.ink} />
-        <Money label={t('partner.paymentMethod')} value={t('checkout.cash')} color={colors.ink} />
+        <Money label={t('partner.total')} value={money(cashDue(o))} color={colors.ink} />
+        <Money label={t('partner.paymentMethod')} value={t(cashDue(o) === 0 ? 'wallet.paidInFull' : 'checkout.cash')} color={colors.ink} />
       </Section>
 
       {o.driver ? (

@@ -1,4 +1,4 @@
-import { canReorder, type CustomerOrderDetails, customerStatusLabel, customerSteps, formatMoney } from '@tawsela/shared';
+import { canReorder, cashDue, type CustomerOrderDetails, customerStatusLabel, customerSteps, formatMoney } from '@tawsela/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Check, CircleCheck, Headset, IdCard, MapPin, Star } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
@@ -170,11 +170,12 @@ function Details({ order: o }: { order: CustomerOrderDetails }) {
       <Section>
         <Row label={t('orders.subtotal')} value={money(o.itemsTotal)} />
         {o.mode === 'delivery' ? <Row label={t('orders.deliveryFee')} value={money(o.deliveryFee)} /> : null}
+        {o.walletPaid > 0 ? <Row label={t('wallet.paid')} value={`-${money(o.walletPaid)}`} /> : null}
       </Section>
 
       <Section last>
-        <Row label={t('orders.total')} value={money(o.total)} strong />
-        <Row label={t('orders.paymentMethod')} value={t('checkout.cash')} strong />
+        <Row label={t('orders.total')} value={money(cashDue(o))} strong />
+        <Row label={t('orders.paymentMethod')} value={t(cashDue(o) === 0 ? 'wallet.paidInFull' : 'checkout.cash')} strong />
         <Row label={t(o.mode === 'delivery' ? 'orders.deliveryTime' : 'orders.pickupTime')} value={when(o.scheduledFor)} strong />
       </Section>
 

@@ -28,6 +28,7 @@ import {
   payout,
   type PlacedOrder,
   type PlaceOrderInput,
+  walletPays,
 } from '@tawsela/shared';
 import { and, asc, count as countRows, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
@@ -43,6 +44,7 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { SettingsService } from '../settings/settings.service.js';
 import { ratings } from '../support/support.schema.js';
 import { users } from '../users/users.schema.js';
+import { WalletService } from '../wallet/wallet.service.js';
 import { nameOf } from '../audit/audit.service.js';
 import { OrdersGateway } from './orders.gateway.js';
 
@@ -77,6 +79,7 @@ export class OrdersService {
     private readonly settings: SettingsService,
     private readonly live: OrdersGateway,
     private readonly notices: NotificationsService,
+    private readonly wallet: WalletService,
   ) {}
 
   quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
@@ -123,6 +126,13 @@ export class OrdersService {
       if (input.slot !== null && !bill.slots.includes(input.slot)) {
         throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'CHECKOUT_SLOT', 'This delivery time is no longer offered');
       }
+      // "رصيد المحفظة" pays what it holds, up to the total; a balance that moved since the screen
+      // loaded is a changed bill. The customer's row is locked, so nothing spends it meanwhile.
+      const expectedWalletPaid = input.expectedWalletPaid ?? 0;
+      const walletPaid = expectedWalletPaid > 0 ? walletPays(bill.walletBalance, bill.total) : 0;
+      if (walletPaid !== expectedWalletPaid) {
+        throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_TOTAL_CHANGED', 'The wallet balance changed; check the bill again');
+      }
 
       const now = new Date();
       now.setSeconds(0, 0);
@@ -149,12 +159,14 @@ export class OrdersService {
           itemsTotal: bill.itemsTotal,
           deliveryFee: bill.deliveryFee,
           total: bill.total,
+          walletPaid,
           payoutOption,
           appPercent,
           ...payout(bill.itemsTotal, payoutOption, appPercent),
         })
         .$returningId();
       const orderId = created!.id;
+      await this.wallet.pay(tx, userId, orderId, walletPaid);
       await tx.insert(orderLines).values(
         bill.cart.lines.map((line) => {
           const options = line.product.optionGroups.flatMap((g) => g.options.filter((o) => line.optionIds.includes(o.id)).map((o) => o.name));
@@ -256,6 +268,8 @@ export class OrdersService {
       if (!next) throw new ApiException(HttpStatus.CONFLICT, 'ORDER_STATUS', `The order is ${row.status}; it cannot be moved by "${action}"`);
       await tx.update(orders).set({ status: next }).where(eq(orders.id, id));
       await tx.insert(orderEvents).values({ orderId: id, status: next, byUserId: userId });
+      // A rejected order's wallet money goes back at once [Owner, 2026-11-26].
+      if (next === 'rejected' || next === 'cancelled') await this.wallet.refund(tx, row.customerId, id, row.walletPaid);
       return { status: next, row };
     });
     this.live.orderChanged(row, { id, status });
@@ -378,7 +392,8 @@ export class OrdersService {
     const [store] = await tx.select().from(stores).where(eq(stores.id, cart.store.id));
     if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
     const slots = deliverySlots(cairoMinuteOfDay(new Date()), { opensAt: hhmm(store.opensAt), closesAt: hhmm(store.closesAt), closedNow: store.closedNow });
-    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, cart, store };
+    const walletBalance = await this.wallet.balanceOf(tx, userId);
+    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, walletBalance, cart, store };
     if (cart.mode === 'pickup') {
       return { ...base, deliveryFee: 0, total: cart.total, distanceKm: null, address: null, spot: null };
     }
@@ -444,6 +459,7 @@ function toPartnerOrder(row: OrderRow, count: number): PartnerOrder {
     count,
     itemsTotal: row.itemsTotal,
     total: row.total,
+    walletPaid: row.walletPaid,
     note: row.note,
     paymentMethod: 'cash',
     createdAt: row.createdAt.toISOString(),
@@ -462,6 +478,7 @@ function toCustomerOrder(row: OrderRow, store: CustomerOrder['store'], count: nu
     itemsTotal: row.itemsTotal,
     deliveryFee: row.deliveryFee,
     total: row.total,
+    walletPaid: row.walletPaid,
     createdAt: row.createdAt.toISOString(),
   };
 }

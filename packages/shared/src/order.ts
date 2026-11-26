@@ -95,6 +95,8 @@ export interface CheckoutQuote {
   distanceKm: number | null;
   /** Today's later-delivery slots (see deliverySlots). */
   slots: number[];
+  /** رصيد المحفظة now (§8.15): "رصيدك" pays walletPays(walletBalance, total) when switched on. */
+  walletBalance: number;
 }
 
 /** POST /v1/me/orders */
@@ -104,6 +106,11 @@ export interface PlaceOrderInput extends CheckoutQuoteInput {
   slot: number | null;
   /** The total the customer saw; a different one on the server means the bill changed. */
   expectedTotal: number;
+  /**
+   * What the wallet pays, as the customer saw it: 0 or left out with "رصيد المحفظة" off. A different
+   * amount on the server (the balance moved) means the bill changed.
+   */
+  expectedWalletPaid?: number;
   /** One per tap of "تنفيذ الطلب": the same key twice places one order. */
   requestId: string;
 }
@@ -122,6 +129,8 @@ export interface CustomerOrder {
   itemsTotal: number;
   deliveryFee: number;
   total: number;
+  /** Paid from the wallet (§8.15); the rest, cashDue, is paid in cash. */
+  walletPaid: number;
   createdAt: string;
 }
 
@@ -179,6 +188,8 @@ export interface PartnerOrder {
   count: number;
   itemsTotal: number;
   total: number;
+  /** Paid from the wallet: "المدفوع من المحفظة"; المجموع is what is left to collect (cashDue). */
+  walletPaid: number;
   /** ملاحظات العميل, shown in red. */
   note: string;
   /** طريقة الدفع (§9): cash only for now (§15.1 #2). */

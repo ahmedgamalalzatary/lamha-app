@@ -505,6 +505,24 @@ export const ar = {
   'driver.day6': 'السبت',
   'partner.out': 'خارج للتوصيل',
   'partner.delivered': 'تم التوصيل',
+  // The wallet (contract §8.15, customer/account/wallet-*.png).
+  'wallet.tile': 'محفظتي',
+  'wallet.title': 'حركة المحفظة',
+  'wallet.balance': 'رصيد المحفظة',
+  'wallet.additions': 'الإضافات',
+  'wallet.deductions': 'الخصومات',
+  'wallet.noAdditions': 'لا توجد إضافات',
+  'wallet.noAdditionsBody': 'لم يتم إضافة أي مبالغ للمحفظة بعد',
+  'wallet.noDeductions': 'لا توجد خصومات',
+  'wallet.noDeductionsBody': 'لم يتم خصم أي مبالغ من المحفظة بعد',
+  'wallet.paidOrder': 'دفع الطلب #{code}',
+  'wallet.refund': 'استرداد الطلب #{code}',
+  'wallet.paid': 'المدفوع من المحفظة',
+  'wallet.paidInFull': 'مدفوع بالكامل',
+  'checkout.yourBalance': 'رصيدك',
+  'checkout.noBalance': 'لا يوجد رصيد متاح',
+  'checkout.available': 'المتاح {amount}',
+  'errors.WALLET_BALANCE': 'الرصيد أقل من مبلغ الخصم',
 } as const;
 
 export type TranslationKey = keyof typeof ar;
