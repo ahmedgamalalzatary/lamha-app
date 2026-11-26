@@ -1,9 +1,10 @@
 'use client';
 
-import type { DriverRules, DriverSettings, WeekSchedule } from '@tawsela/shared';
+import { type DriverRules, type DriverSettings, isSpeedLevels, SPEED_LEVELS_MAX, type WeekSchedule } from '@tawsela/shared';
+import { Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
-import { Button, ErrorLine, LoadState, TextField } from '@/components/ui';
+import { Button, ErrorLine, IconButton, LoadState, TextField } from '@/components/ui';
 import { useDriverSettings, useSaveDriverSettings } from './api';
 import { isWeekReady, WeekEditor } from './WeekEditor';
 
@@ -32,11 +33,14 @@ export function DriverRulesPage() {
 }
 
 type Numbers = Record<keyof DriverRules, string>;
+type LevelDraft = { minutes: string; points: string };
 
 function RulesForm({ initial }: { initial: DriverSettings }) {
   const save = useSaveDriverSettings();
   const [week, setWeek] = useState<WeekSchedule>(initial.schedule);
   const [numbers, setNumbers] = useState<Numbers>(() => Object.fromEntries(FIELDS.map((f) => [f.key, String(initial[f.key])])) as Numbers);
+  const [levels, setLevels] = useState<LevelDraft[]>(() => initial.speedLevels.map((l) => ({ minutes: String(l.maxMinutesPerKm), points: String(l.points) })));
+  const [pointValue, setPointValue] = useState(String(initial.pointValue));
   const [saved, setSaved] = useState(false);
   const edits = useRef(0);
   const edited = () => {
@@ -48,7 +52,13 @@ function RulesForm({ initial }: { initial: DriverSettings }) {
     const v = numbers[f.key];
     return /^\d+$/.test(v) && Number(v) >= f.min && Number(v) <= f.max;
   };
-  const ready = isWeekReady(week) && FIELDS.every(valid);
+  const speedLevels = levels.map((l) => ({ maxMinutesPerKm: l.minutes.trim() === '' ? Number.NaN : Number(l.minutes), points: l.points.trim() === '' ? Number.NaN : Number(l.points) }));
+  const valueOk = /^\d+(\.\d{1,2})?$/.test(pointValue.trim()) && Number(pointValue) <= 10_000;
+  const ready = isWeekReady(week) && FIELDS.every(valid) && isSpeedLevels(speedLevels) && valueOk;
+  const setLevel = (i: number, change: Partial<LevelDraft>) => {
+    edited();
+    setLevels((all) => all.map((l, j) => (j === i ? { ...l, ...change } : l)));
+  };
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -90,6 +100,60 @@ function RulesForm({ initial }: { initial: DriverSettings }) {
         <p className="text-xs text-tw-ink-2">يظهر الطلب الجديد لكل المندوبين في الشفت، وإذا لم يقبله أحد يظهر مرة أخرى. لا يُحسب تخطي إلا عند الضغط على «تخطي».</p>
       </section>
 
+      <section className="flex flex-col gap-4 rounded-2xl border border-tw-line p-5">
+        <h2 className="text-lg font-bold">نقاط السرعة</h2>
+        <p className="text-sm text-tw-ink-2">
+          من قبول الطلب حتى توصيله، مقسوماً على كيلومترات المسافة من المتجر للعميل. يأخذ المندوب نقاط أسرع مستوى وصل له، وتُصرف له نقداً.
+        </p>
+        {levels.map((l, i) => (
+          <div key={i} className="flex items-end gap-3">
+            <TextField
+              label="حتى (دقيقة لكل كم)"
+              type="number"
+              min={0.01}
+              step="0.01"
+              value={l.minutes}
+              onChange={(e) => setLevel(i, { minutes: e.target.value })}
+              className="flex-1"
+            />
+            <TextField label="النقاط" type="number" min={1} step="1" value={l.points} onChange={(e) => setLevel(i, { points: e.target.value })} className="flex-1" />
+            <IconButton
+              label={`حذف المستوى ${i + 1}`}
+              onClick={() => {
+                edited();
+                setLevels((all) => all.filter((_, j) => j !== i));
+              }}
+            >
+              <Trash2 className="size-4" aria-hidden />
+            </IconButton>
+          </div>
+        ))}
+        <Button
+          tone="soft"
+          className="self-start"
+          disabled={levels.length >= SPEED_LEVELS_MAX}
+          onClick={() => {
+            edited();
+            setLevels((all) => [...all, { minutes: '', points: '' }]);
+          }}
+        >
+          <Plus className="size-4" aria-hidden />
+          إضافة مستوى
+        </Button>
+        <TextField
+          label="قيمة النقطة (ج.م)"
+          type="number"
+          min={0}
+          step="0.01"
+          value={pointValue}
+          onChange={(e) => {
+            edited();
+            setPointValue(e.target.value);
+          }}
+          className="max-w-xs"
+        />
+      </section>
+
       {save.error ? <ErrorLine>{errorMessage(save.error)}</ErrorLine> : null}
       <div className="flex items-center gap-4">
         <Button
@@ -99,7 +163,7 @@ function RulesForm({ initial }: { initial: DriverSettings }) {
           onClick={() => {
             const sent = edits.current;
             const rules = Object.fromEntries(FIELDS.map((f) => [f.key, Number(numbers[f.key])])) as unknown as DriverRules;
-            save.mutate({ ...rules, schedule: week }, { onSuccess: () => setSaved(edits.current === sent) });
+            save.mutate({ ...rules, schedule: week, speedLevels, pointValue: Number(pointValue) }, { onSuccess: () => setSaved(edits.current === sent) });
           }}
         >
           حفظ

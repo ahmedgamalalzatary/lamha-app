@@ -16,6 +16,7 @@ export const NOTICE_KINDS = [
   'offer',
   'skip_warning',
   'skip_block',
+  'driver_fine',
   'campaign',
 ] as const;
 export type NoticeKind = (typeof NOTICE_KINDS)[number];
@@ -40,6 +41,7 @@ const TEXTS: Texts = {
   offer: { ar: { title: 'طلب جديد متاح', body: 'طلب #{code} من {store} متاح الآن' }, en: { title: 'New order available', body: 'Order #{code} from {store} is available' } },
   skip_warning: { ar: { title: 'تنبيه', body: 'تخطيت {count} طلبات متتالية. التخطي مرة أخرى يوقف حسابك مؤقتاً' }, en: { title: 'Warning', body: 'You skipped {count} orders in a row. One more pauses your account' } },
   skip_block: { ar: { title: 'تم إيقافك مؤقتاً', body: 'لن تصلك طلبات حتى {time}' }, en: { title: 'Paused', body: 'No offers until {time}' } },
+  driver_fine: { ar: { title: 'خصم جديد', body: 'تم خصم {amount}: {reason}' }, en: { title: 'New deduction', body: '{amount} deducted: {reason}' } },
 };
 
 export function notice(kind: Exclude<NoticeKind, 'campaign'>, locale: Locale, params: Record<string, string> = {}): Notice {

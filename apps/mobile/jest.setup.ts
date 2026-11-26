@@ -55,6 +55,18 @@ jest.mock('expo-clipboard', () => {
   };
 });
 
+// The date picker is native (its iOS view sets its date by a native command): a plain view that hands
+// on the props, so a test sends a picked date with fireEvent(picker, 'onValueChange', event, date).
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { createElement } = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => createElement(View, props),
+    DateTimePickerAndroid: { open: jest.fn(), dismiss: jest.fn() },
+  };
+});
+
 // expo-notifications has no native module under Jest: permission granted and a fixed test token.
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),

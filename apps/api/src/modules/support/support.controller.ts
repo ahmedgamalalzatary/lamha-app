@@ -35,9 +35,10 @@ export class SupportController {
   }
 
   @Post('me/tickets')
-  @ApiOperation({ summary: 'A complaint (general or about a past order) or a suggestion' })
+  @Roles('customer', 'driver')
+  @ApiOperation({ summary: 'A complaint (general or about a past order of theirs) or a suggestion; delivery men too (§10)' })
   ticket(@CurrentUser() me: AuthUser, @Body() body: TicketDto): Promise<void> {
-    return this.support.createTicket(me.id, body);
+    return this.support.createTicket(me, body);
   }
 
   @Get('support/phones')

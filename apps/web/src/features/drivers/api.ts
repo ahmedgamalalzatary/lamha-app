@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreatedAccount, DriverAccount, DriverSettings, GeneratedPassword, WeekSchedule } from '@tawsela/shared';
+import type { AdminDriverMoney, CreatedAccount, DeliveryFeeRule, DriverAccount, DriverFine, DriverSettings, FineInput, GeneratedPassword, WeekSchedule } from '@tawsela/shared';
 import { api } from '@/core/api/client';
 
 const KEY = ['admin', 'drivers'] as const;
@@ -34,6 +34,24 @@ export const useSetDriverSchedule = () =>
   useDriverMutation(({ id, schedule }: { id: number; schedule: WeekSchedule | null }) =>
     api.request<DriverAccount>(`/admin/drivers/${id}/schedule`, { method: 'PUT', body: { schedule } }),
   );
+
+export const useSetDriverFee = () =>
+  useDriverMutation(({ id, fee }: { id: number; fee: DeliveryFeeRule | null }) => api.request<DriverAccount>(`/admin/drivers/${id}/fee`, { method: 'PUT', body: { fee } }));
+
+/** His فواتيري, fines and speed points balance (المندوبين › الحساب). */
+export const useDriverMoney = (id: number) => useQuery({ queryKey: [...KEY, id, 'money'], queryFn: () => api.request<AdminDriverMoney>(`/admin/drivers/${id}/money`) });
+
+/** A fine, its removal or a payout: his money is read again. */
+function useMoneyMutation<A, R>(id: number, fn: (args: A) => Promise<R>) {
+  const client = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => client.invalidateQueries({ queryKey: [...KEY, id, 'money'] }) });
+}
+
+export const useAddFine = (id: number) => useMoneyMutation(id, (body: FineInput) => api.request<DriverFine>(`/admin/drivers/${id}/fines`, { method: 'POST', body }));
+
+export const useRemoveFine = (id: number) => useMoneyMutation(id, (fineId: number) => api.request<void>(`/admin/drivers/${id}/fines/${fineId}`, { method: 'DELETE' }));
+
+export const usePayOut = (id: number) => useMoneyMutation(id, () => api.request<{ points: number; value: number }>(`/admin/drivers/${id}/payouts`, { method: 'POST' }));
 
 export const useStartDriverShift = () => useDriverMutation((id: number) => api.request<DriverAccount>(`/admin/drivers/${id}/shift`, { method: 'POST' }));
 

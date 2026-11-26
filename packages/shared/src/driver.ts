@@ -3,7 +3,8 @@ import type { StaffAccount } from './auth.js';
 import { isTimeOfDay, minuteOfDay } from './catalog.js';
 import type { CartMode } from './cart.js';
 import type { OrderStatus } from './enums.js';
-import type { OrderLine } from './order.js';
+import type { SpeedLevel } from './driver-money.js';
+import type { DeliveryFeeRule, OrderLine } from './order.js';
 
 /** One day's shift in Cairo time. An end at or before the start runs past midnight; the same time is a whole day. */
 export interface ShiftRange {
@@ -74,6 +75,10 @@ export const DEFAULT_DRIVER_RULES: DriverRules = {
 /** الإعدادات of the drivers: the global week and the rules (GET and PATCH /v1/admin/settings/drivers). */
 export interface DriverSettings extends DriverRules {
   schedule: WeekSchedule;
+  /** Speed points by minutes per km [Owner, 2026-11-25]; none earns nothing. */
+  speedLevels: SpeedLevel[];
+  /** What a speed point is worth in ج.م. */
+  pointValue: number;
 }
 
 // Cairo wall time. Egypt has summer time, so the offset is asked of the time zone database each time.
@@ -268,6 +273,8 @@ export interface DriverAccount extends StaffAccount {
   blockedUntil: string | null;
   /** His own week; null follows the global one. */
   schedule: WeekSchedule | null;
+  /** His own delivery fee rule for his earnings (§8.7); null earns the customer's fee. */
+  fee: DeliveryFeeRule | null;
 }
 
 /** Socket events to delivery men (§12 S3). */

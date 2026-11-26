@@ -668,6 +668,8 @@ Tawsilty's driver app is not public. Three of its screens came in the client's W
 - **Order history** (سجل الطلبات) with a date range and totals, and a complaint button per order. It replaces the earnings screen.
 - **Fines and deductions** (الخصومات والغرامات): every deduction with its amount, reason, date and order, so the driver always knows why money was taken.
 - **Account**: profile, documents, logout.
+- [Owner, 2026-11-26] **فواتيري** is his net earnings: his delivery earnings plus his speed points cash, less his fines. The admin adds fines (amount, reason, maybe an order) and may delete one made by mistake; he is told at once. Speed points stay a balance until the admin marks them paid in cash ("تم الصرف"). His earning on an order is fixed when he takes it, by his own fee rule when he has one (§8.7).
+- Built in Phase 24. [Open] The screens behind فواتيري and نقاطي and the dashboard pages are not captured.
 
 ---
 
@@ -758,7 +760,7 @@ First draft; each phase finalises its tables.
 - `wallet_transactions` (add/deduct, reason), `points_transactions`, `invites`
 - `coupons`, `offers`, `banners`, `wheel_prizes`, `wheel_spins`
 - `prescriptions` (pharmacy uploads)
-- `drivers` (vehicle, documents, status), `shifts`, `shift_sessions`, `skips`, `suspensions`, `fines`
+- `drivers` (vehicle, documents, status, his own fee rule), `shifts`, `shift_sessions`, `skips`, `suspensions`, `driver_fines`, `driver_payouts` (speed points paid in cash); on `orders`, his earning, when he took it, his minutes per km and speed points
 - `notifications`, `push_tokens`, `campaigns`
 - `settings` (one row per admin setting, e.g. shift rules)
 
@@ -865,6 +867,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | Fourth phone capture (open items, pharmacy): several carts at once with "سلاتي" and no replace dialog, adding from a closed store, the count badge, the upsell row (§8.6, §8.4); the greyscale closed look with "يفتح الساعة" (§8.3, §8.4); the wrong-code toast (§8.10); the pharmacy request going straight to checkout with the price sent later (§8.11); the empty points tabs (§8.16). Guesses replaced; code rework listed in phases.md. Things no phase builds are in §18. |
 | 2026-11-26 | §8.11: the pharmacy sets a request's price on قبول; the wallet may pay a request's fee; no codes or points on requests (owner). |
 | 2026-11-26 | §8.12: an "اطلب دليفري" order goes straight to the delivery men, with the note on the offer (owner). |
+| 2026-11-26 | §10: فواتيري is his net earnings; the admin adds and deletes fines; speed points are paid out in cash by "تم الصرف" (owner). Phase 24 built, migration 0022. |
 
 ---
 

@@ -72,6 +72,12 @@ export const orders = mysqlTable(
     storeFromDriver: money('store_from_driver').notNull(),
     /** The delivery man who took it (§10), or the one the admin assigned. */
     driverId: id('driver_id').references(() => users.id),
+    /** When he took it (or the admin gave it to him), and what he earns on it, fixed then (§8.7, §10). */
+    takenAt: datetime('taken_at'),
+    driverFee: money('driver_fee'),
+    /** Once delivered: his minutes per km and the speed points they earned. */
+    minutesPerKm: decimal('minutes_per_km', { precision: 7, scale: 2, mode: 'number' }),
+    driverPoints: int('driver_points', { unsigned: true }).notNull().default(0),
     /** When he tapped وصلت للمتجر. */
     atStoreAt: datetime('at_store_at'),
     /** The customer closed the rating popup (✕): it is not shown again for this order (§8.8). */

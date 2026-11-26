@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { DriverAction, DriverOffer, DriverOrder, DriverOrderDetails, DriverShiftState, SkipResult } from '@tawsela/shared';
+import type { DriverAction, DriverHistory, DriverMoney, DriverOffer, DriverOrder, DriverOrderDetails, DriverPoints, DriverShiftState, SkipResult } from '@tawsela/shared';
 import { api } from '@/core/api/client';
 import { useSession } from '@/core/auth/session';
 
@@ -87,4 +87,26 @@ export function useDriverStep() {
     mutationFn: ({ id, action }: { id: number; action: DriverAction }) => api<DriverOrderDetails>(`/driver/orders/${id}/${action}`, { method: 'POST' }),
     onSettled: () => queries.invalidateQueries({ queryKey: driverKey }),
   });
+}
+
+/** طلباتى between two Cairo days ("YYYY-MM-DD"), read again when "بحث" sets new ones. */
+export function useDriverHistory(from: string, to: string) {
+  const id = useDriverId();
+  return useQuery({
+    queryKey: [...driverKey, id, 'history', from, to],
+    queryFn: () => api<DriverHistory>(`/driver/history?from=${from}&to=${to}`),
+    enabled: id !== undefined,
+  });
+}
+
+/** فواتيري: his net earnings, and the fines. */
+export function useDriverMoney() {
+  const id = useDriverId();
+  return useQuery({ queryKey: [...driverKey, id, 'money'], queryFn: () => api<DriverMoney>('/driver/money'), enabled: id !== undefined });
+}
+
+/** نقاطي: his speed points. */
+export function useDriverPoints() {
+  const id = useDriverId();
+  return useQuery({ queryKey: [...driverKey, id, 'points'], queryFn: () => api<DriverPoints>('/driver/points'), enabled: id !== undefined });
 }

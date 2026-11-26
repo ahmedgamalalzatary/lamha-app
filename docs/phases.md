@@ -48,7 +48,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
 | 22 | Pharmacy: prescriptions and product photos | 🔍 in-verify | none (the partner side and the notice wording marked [Open]) |
 | 23 | Send anything (اطلب دليفري) | 🔍 in-verify | none (the customer's first status marked [Derived]) |
-| 24 | Driver: history and fines | ⬜ | none (history captured; fines follow the client's rules) |
+| 24 | Driver: history and fines | 🔍 in-verify | none (فواتيري, نقاطي and the dashboard pages marked [Open]) |
 | 25 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
 | 26 | Release | ⬜ | 8 |
 
@@ -667,7 +667,36 @@ Owner's answer before the phase (2026-11-26): an "اطلب دليفري" order h
 
 Contract §10: order history with a date range, totals and complaints; fines with reasons; dashboard fines.
 
-Moved here from Phase 18 [Owner, 2026-11-26]: the delivery man's speed points (minutes per km, levels set by the admin, paid in cash) and his نقاطي tile.
+Moved here from Phase 18 [Owner, 2026-11-26]: the delivery man's speed points (minutes per km, levels set by the admin, paid in cash) and his نقاطي tile. And from Phase 13: his own fee values (§8.7) and his earnings.
+
+Owner's answers before the phase (2026-11-26):
+- فواتيري is his net earnings: delivery earnings plus speed points cash, less fines.
+- The admin adds fines (amount, reason, maybe an order) and may delete one; the delivery man is told.
+- Speed points are a balance until the admin taps "تم الصرف" when he pays them in cash; the balance starts again and the payout is listed.
+- The native date picker (`@react-native-community/datetimepicker`) may be installed; the next phone check needs a new dev build.
+
+- **Migration 0022:** on `orders`, `taken_at`, `driver_fee`, `minutes_per_km` and `driver_points`; on `drivers`, his own `base_fee`, `base_km`, `per_km`; on `driver_settings`, `speed_levels` and `point_value`; the tables `driver_fines` and `driver_payouts`; the `driver_fine` notice.
+- **Shared (TDD):** `minutesPerKm`, `speedPoints` (the fastest level reached), `isSpeedLevels`, `driverEarning` (his own rule on the order's distance, else the fee before a free delivery), `isFeeRuleOrNull`, `netEarnings`, `isDayString`, `cairoDayRange` (Cairo days; the earlier day first), `fineProblem`.
+- **API:**
+  - Taking an order (قبول, or the admin's 🛵) fixes his earning and the time; delivering it gives his speed points from the admin's levels.
+  - `GET /v1/driver/history?from=&to=`: his delivered, cancelled or rejected orders placed in those Cairo days, with the items count, the earning on a delivered one, اجمالى الارباح and عدد الطلبات المكتملة.
+  - `GET /v1/driver/money` (فواتيري) and `GET /v1/driver/points` (نقاطي).
+  - `PUT /v1/admin/drivers/:id/fee`, `GET /v1/admin/drivers/:id/money`, `POST` and `DELETE /v1/admin/drivers/:id/fines`, `POST /v1/admin/drivers/:id/payouts` (409 `NO_POINTS` without a balance; his row is locked so two taps pay once); each in سجل التغييرات.
+  - `PATCH /v1/admin/settings/drivers` takes `speedLevels` (up to 10) and `pointValue`.
+  - `POST /v1/me/tickets` takes delivery men too: a complaint names one of his orders; the admin's list says who sent it.
+- **App:** حسابي as in the photo: فواتيري (net, green) and نقاطي tiles; العمل › نوبات عملي and سجل الطلبات; الدعم والمساعدة › تقديم مقترح and تقديم شكوى. "طلباتى" as in the photo: the two date boxes (the phone's date dialog), the outlined blue "بحث", the cards (code, status pill, store, "الاجمالى", the red "تقديم شكوى" opening a complaint about that order, the date in English, "+ <earning>" in green) and the grey panel. فواتيري: the net, what makes it, and الخصومات والغرامات. نقاطي: the balance and its value, the levels, the orders and payouts.
+- **Dashboard:** المندوبين gets a الرسوم column and two actions: "حساب" (his net and what makes it, "تم الصرف", "إضافة خصم" with an optional order code, the fines with delete) and "رسوم" (his own fee rule). نوبات العمل والقواعد gets نقاط السرعة (levels and the point value). الشكاوى والاقتراحات marks a delivery man's ticket "مندوب".
+- **[Derived]**
+  - طلباتى opens on 1 January to today, as in the photo; the list changes on "بحث" only. The date is when the order was placed; a stopped order's card has the photo's pale orange band.
+  - Amounts show two decimals like the rest of the app (the photo shows "25.0").
+  - An order taken before this phase earns the fee the customer was asked for and no speed points.
+  - Speed is from his taking the order (or the admin giving it to him) to تم التوصيل, over the store-to-customer line.
+- **[Open]** The screens behind فواتيري and نقاطي, the fine notice wording, and the dashboard pages are not captured.
+- **Phone verification (new dev build):**
+  - As the admin, set speed levels and a point value; give one delivery man his own fee.
+  - Deliver an order quickly: نقاطي goes up; فواتيري adds the earning and the points.
+  - Fine him with a reason: the push arrives; فواتيري lists it and takes it off. "تم الصرف" in the dashboard empties نقاطي.
+  - سجل الطلبات: pick the dates in the phone's dialog, "بحث", the totals; "تقديم شكوى" on a card reaches الشكاوى والاقتراحات marked "مندوب".
 
 ## Phase 25: Admin: overview and reports
 

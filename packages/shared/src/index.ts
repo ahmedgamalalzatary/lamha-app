@@ -11,6 +11,7 @@ export * from './address.js';
 export * from './audit.js';
 export * from './order.js';
 export * from './driver.js';
+export * from './driver-money.js';
 export * from './customer-order.js';
 export * from './support.js';
 export * from './notification.js';

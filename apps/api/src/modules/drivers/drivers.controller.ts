@@ -1,7 +1,12 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, NotFoundException, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
+  type AdminDriverMoney,
   type CreatedAccount,
+  type DriverFine,
+  type DriverHistory,
+  type DriverMoney,
+  type DriverPoints,
   DRIVER_ACTIONS,
   type DriverAccount,
   type DriverAction,
@@ -17,7 +22,8 @@ import { type AuthUser, CurrentUser } from '../../common/decorators/current-user
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CreateAdminDto, SetDisabledDto } from '../admins/dto/admins.dto.js';
 import { AuditService } from '../audit/audit.service.js';
-import { AssignDriverDto, DriverScheduleDto, DriverSettingsDto, DriversQuery } from './drivers.dto.js';
+import { DriverMoneyService } from './driver-money.service.js';
+import { AssignDriverDto, DriverFeeDto, DriverScheduleDto, DriverSettingsDto, DriversQuery, FineDto, HistoryQuery } from './drivers.dto.js';
 import { DriversService } from './drivers.service.js';
 
 /** The delivery man's app (contract §10): his shift, the offers, and his orders. */
@@ -26,7 +32,10 @@ import { DriversService } from './drivers.service.js';
 @Roles('driver')
 @Controller('driver')
 export class DriverController {
-  constructor(private readonly drivers: DriversService) {}
+  constructor(
+    private readonly drivers: DriversService,
+    private readonly money: DriverMoneyService,
+  ) {}
 
   @Get('shift')
   @ApiOperation({ summary: 'His shift now or next, whether he can start it, extensions left, a block' })
@@ -92,6 +101,24 @@ export class DriverController {
     if (!(DRIVER_ACTIONS as readonly string[]).includes(action)) throw new NotFoundException();
     return this.drivers.step(me.id, id, action as DriverAction);
   }
+
+  @Get('history')
+  @ApiOperation({ summary: 'طلباتى: his finished orders placed in the Cairo days, with اجمالى الارباح and عدد الطلبات المكتملة' })
+  history(@CurrentUser() me: AuthUser, @Query() query: HistoryQuery): Promise<DriverHistory> {
+    return this.money.history(me.id, query.from, query.to);
+  }
+
+  @Get('money')
+  @ApiOperation({ summary: 'فواتيري: earnings and speed points cash less fines, and the fines' })
+  myMoney(@CurrentUser() me: AuthUser): Promise<DriverMoney> {
+    return this.money.money(me.id);
+  }
+
+  @Get('points')
+  @ApiOperation({ summary: 'نقاطي: speed points not yet paid out, the levels and the movements' })
+  points(@CurrentUser() me: AuthUser): Promise<DriverPoints> {
+    return this.money.points(me.id);
+  }
 }
 
 /** المندوبين (contract §11, §11.2): accounts, their own weeks, starting a shift for one. Admins only. */
@@ -102,6 +129,7 @@ export class DriverController {
 export class AdminDriversController {
   constructor(
     private readonly drivers: DriversService,
+    private readonly money: DriverMoneyService,
     private readonly audit: AuditService,
   ) {}
 
@@ -137,6 +165,43 @@ export class AdminDriversController {
     const account = await this.drivers.setSchedule(me.id, id, body.schedule);
     await this.audit.recordAccount(me.id, 'driver.schedule', id, { schedule: body.schedule });
     return account;
+  }
+
+  @Put(':id/fee')
+  @ApiOperation({ summary: 'His own fee rule for his earnings (§8.7); null earns the fee the customer pays' })
+  async fee(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: DriverFeeDto): Promise<DriverAccount> {
+    const account = await this.drivers.setFee(me.id, id, body.fee);
+    await this.audit.recordAccount(me.id, 'driver.fee', id, { fee: body.fee });
+    return account;
+  }
+
+  @Get(':id/money')
+  @ApiOperation({ summary: 'His فواتيري, fines and speed points balance' })
+  adminMoney(@Param('id', ParseIntPipe) id: number): Promise<AdminDriverMoney> {
+    return this.money.adminMoney(id);
+  }
+
+  @Post(':id/fines')
+  @ApiOperation({ summary: 'A fine with its reason, maybe about one of his orders; he is told' })
+  async fine(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: FineDto): Promise<DriverFine> {
+    const fine = await this.money.fine(me.id, id, body);
+    await this.audit.recordAccount(me.id, 'driver.fine', id, { amount: fine.amount, reason: fine.reason, orderId: fine.order?.id ?? null });
+    return fine;
+  }
+
+  @Delete(':id/fines/:fineId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeFine(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Param('fineId', ParseIntPipe) fineId: number): Promise<void> {
+    const fine = await this.money.removeFine(id, fineId);
+    await this.audit.recordAccount(me.id, 'driver.fine.delete', id, { amount: fine.amount, reason: fine.reason });
+  }
+
+  @Post(':id/payouts')
+  @ApiOperation({ summary: 'تم الصرف: pays out his whole speed points balance in cash (409 NO_POINTS without one)' })
+  async payout(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<{ points: number; value: number }> {
+    const paid = await this.money.payout(me.id, id);
+    await this.audit.recordAccount(me.id, 'driver.payout', id, paid);
+    return paid;
   }
 
   @Post(':id/shift')

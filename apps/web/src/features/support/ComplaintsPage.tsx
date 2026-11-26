@@ -67,7 +67,11 @@ function TicketRow({ ticket: t }: { ticket: AdminTicket }) {
   return (
     <tr className="border-t border-tw-line align-top">
       <td className="px-4 py-3">
-        <div className="font-semibold">{t.customer.name}</div>
+        <div className="flex items-center gap-2 font-semibold">
+          {t.customer.name}
+          {/* A delivery man's complaint or suggestion (§10) [Derived]. */}
+          {t.customer.role === 'driver' ? <Pill tone="muted">مندوب</Pill> : null}
+        </div>
         <div className="flex items-center gap-2 text-tw-ink-2" dir="ltr">
           <a href={`tel:${t.customer.phone}`}>{t.customer.phone}</a>
           <a href={whatsapp(t.customer.phone)} target="_blank" rel="noreferrer" aria-label={`واتساب ${t.customer.phone}`} className="text-tw-ok">

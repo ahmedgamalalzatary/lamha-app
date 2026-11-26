@@ -76,7 +76,7 @@ export function ticketProblem(text: string): 'empty' | 'long' | null {
 /** POST /v1/me/tickets: تقديم مقترح, تقديم شكوى (عامة or about a طلب سابق). */
 export interface TicketInput {
   type: TicketType;
-  /** A past order of the customer's, for a complaint about it. */
+  /** A past order of the customer's (or the delivery man's), for a complaint about it. */
   orderId?: number;
   text: string;
 }
@@ -87,7 +87,8 @@ export interface AdminTicket {
   type: TicketType;
   status: TicketStatus;
   text: string;
-  customer: { id: number; name: string; phone: string };
+  /** Who sent it: a customer, or a delivery man about one of his orders (§10). */
+  customer: { id: number; name: string; phone: string; role: 'customer' | 'driver' };
   order: { id: number; code: string; store: string } | null;
   createdAt: string;
   doneAt: string | null;

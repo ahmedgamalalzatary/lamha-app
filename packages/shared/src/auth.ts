@@ -162,6 +162,8 @@ export type ApiErrorCode =
   | 'OPTION_GROUP'
   /** A partner account with no store (contract §2). */
   | 'NO_STORE'
+  /** The delivery man has no speed points to pay out (§10). */
+  | 'NO_POINTS'
   /** The upload is not an image the server can read. */
   | 'IMAGE_INVALID'
   /** A home tile must open exactly one vertical or one store. */

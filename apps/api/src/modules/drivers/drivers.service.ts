@@ -3,6 +3,10 @@ import {
   canStartShift,
   cashDue,
   type CreatedAccount,
+  type DeliveryFeeRule,
+  driverEarning,
+  minutesPerKm,
+  speedPoints,
   type DriverAccount,
   type DriverAction,
   type DriverOffer,
@@ -232,7 +236,8 @@ export class DriversService {
       if (me.blockedUntil && me.blockedUntil > now) throw conflict('DRIVER_BLOCKED', 'Blocked for skipping offers');
       if (!(await this.activeShift(tx, driverId, now))) throw conflict('NOT_ON_SHIFT', 'Offers need a shift running now');
       const order = await this.lockOffer(tx, orderId);
-      await tx.update(orders).set({ driverId }).where(eq(orders.id, orderId));
+      // What he earns on it is fixed now, by his own fee rule if he has one (§8.7).
+      await tx.update(orders).set({ driverId, takenAt: now, driverFee: driverEarning(order, feeRuleOf(me)) }).where(eq(orders.id, orderId));
       await tx.update(drivers).set({ skipsInRow: 0 }).where(eq(drivers.userId, driverId));
       return order;
     });
@@ -359,8 +364,11 @@ export class DriversService {
         .set({ ...(change.status ? { status: change.status } : {}), ...(change.atStore ? { atStoreAt: new Date() } : {}) })
         .where(eq(orders.id, orderId));
       if (change.status) await tx.insert(orderEvents).values({ orderId, status: change.status, byUserId: driverId });
-      // Points come once the order is delivered (§8.16).
-      if (change.status === 'delivered') await this.orders.delivered(tx, row);
+      // Points come once the order is delivered (§8.16), and his speed points with them (§10).
+      if (change.status === 'delivered') {
+        await this.orders.delivered(tx, row);
+        await this.speedPointsFor(tx, row);
+      }
       return { row, status: change.status ?? row.status, moved: change.status !== undefined };
     });
     this.live.orderChanged(row, { id: orderId, status });
@@ -431,6 +439,17 @@ export class DriversService {
     return this.account(meId, id);
   }
 
+  /** His own delivery fee rule for his earnings (§8.7), or null to earn the customer's fee. Orders he already took keep theirs. */
+  async setFee(meId: number, id: number, fee: DeliveryFeeRule | null): Promise<DriverAccount> {
+    await this.account(meId, id);
+    await this.driverRow(this.db, id);
+    await this.db
+      .update(drivers)
+      .set({ baseFee: fee?.baseFee ?? null, baseKm: fee?.baseKm ?? null, perKm: fee?.perKm ?? null })
+      .where(eq(drivers.userId, id));
+    return this.account(meId, id);
+  }
+
   /** The admin starts his shift after his own window closed. */
   async startFor(meId: number, id: number): Promise<DriverAccount> {
     const account = await this.account(meId, id);
@@ -459,8 +478,11 @@ export class DriversService {
         throw conflict('ORDER_STATUS', `The order is ${order.status}; it cannot be given to a delivery man now`);
       }
       if (order.driverId === driverId) return order;
-      await tx.update(orders).set({ driverId, atStoreAt: null }).where(eq(orders.id, orderId));
-      await this.driverRow(tx, driverId);
+      const him = await this.driverRow(tx, driverId);
+      await tx
+        .update(orders)
+        .set({ driverId, atStoreAt: null, takenAt: new Date(), driverFee: driverEarning(order, feeRuleOf(him)) })
+        .where(eq(orders.id, orderId));
       return order;
     });
     this.live.toDrivers(DRIVER_SOCKET_EVENTS.offerGone, { id: orderId });
@@ -536,6 +558,14 @@ export class DriversService {
     return worked ? shiftAt(week, shift.endsAt) : shift;
   }
 
+  /** From taking it to delivering it, per km: the admin's levels give his speed points (§10). */
+  private async speedPointsFor(tx: Tx, row: OrderRow): Promise<void> {
+    if (!row.takenAt) return;
+    const speed = minutesPerKm((Date.now() - row.takenAt.getTime()) / 60_000, row.distanceKm);
+    const { speedLevels } = await this.settings.get(tx);
+    await tx.update(orders).set({ minutesPerKm: speed, driverPoints: speedPoints(speed, speedLevels) }).where(eq(orders.id, row.id));
+  }
+
   /** The order locked, when it is still an offer. */
   private async lockOffer(tx: Tx, orderId: number): Promise<OrderRow> {
     const [row] = await tx
@@ -578,5 +608,12 @@ function toDriverAccount(user: UserRow, driver: DriverRow | null, onShift: boole
     onShift,
     blockedUntil: driver?.blockedUntil && driver.blockedUntil > now ? driver.blockedUntil.toISOString() : null,
     schedule: driver?.schedule ?? null,
+    fee: driver ? feeRuleOf(driver) : null,
   };
+}
+
+/** His own fee rule, when the admin set all three. */
+function feeRuleOf(driver: DriverRow): DeliveryFeeRule | null {
+  const { baseFee, baseKm, perKm } = driver;
+  return baseFee !== null && baseKm !== null && perKm !== null ? { baseFee, baseKm, perKm } : null;
 }

@@ -5,6 +5,7 @@ import {
   type RatePrompt,
   type RatingInput,
   ratingProblem,
+  type Role,
   type SupportPhone,
   type TicketInput,
   type TicketStatus,
@@ -13,6 +14,7 @@ import {
 import { and, asc, desc, eq, gte, isNull, sql } from 'drizzle-orm';
 import { ApiException } from '../../common/api-exception.js';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
+import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import { nameOf } from '../audit/audit.service.js';
 import { stores } from '../catalog/catalog.schema.js';
 import { orders } from '../orders/orders.schema.js';
@@ -81,13 +83,15 @@ export class SupportService {
     if (res.affectedRows === 0) throw orderNotFound();
   }
 
-  async createTicket(userId: number, input: TicketInput): Promise<void> {
+  /** A delivery man's complaint names one of the orders he carried; a customer's, one of theirs. */
+  async createTicket(me: AuthUser, input: TicketInput): Promise<void> {
+    const userId = me.id;
     if (input.orderId !== undefined) {
       if (input.type !== 'complaint') throw new BadRequestException('Only a complaint is about an order');
       const [order] = await this.db
         .select({ id: orders.id })
         .from(orders)
-        .where(and(eq(orders.id, input.orderId), eq(orders.customerId, userId)));
+        .where(and(eq(orders.id, input.orderId), eq(me.role === 'driver' ? orders.driverId : orders.customerId, userId)));
       if (!order) throw orderNotFound();
     }
     await this.db.insert(tickets).values({ customerId: userId, type: input.type, orderId: input.orderId ?? null, text: input.text.trim() });
@@ -150,7 +154,7 @@ export class SupportService {
     const rows = await this.db
       .select({
         ticket: tickets,
-        customer: { id: users.id, firstName: users.firstName, lastName: users.lastName, phone: users.phone },
+        customer: { id: users.id, firstName: users.firstName, lastName: users.lastName, phone: users.phone, role: users.role },
         storeName: stores.name,
       })
       .from(tickets)
@@ -164,13 +168,13 @@ export class SupportService {
   }
 }
 
-function toAdminTicket(t: TicketRow, customer: { id: number; firstName: string; lastName: string; phone: string }, storeName: string | null): AdminTicket {
+function toAdminTicket(t: TicketRow, customer: { id: number; firstName: string; lastName: string; phone: string; role: Role }, storeName: string | null): AdminTicket {
   return {
     id: t.id,
     type: t.type,
     status: t.status,
     text: t.text,
-    customer: { id: customer.id, name: nameOf(customer), phone: customer.phone },
+    customer: { id: customer.id, name: nameOf(customer), phone: customer.phone, role: customer.role === 'driver' ? 'driver' : 'customer' },
     order: t.orderId !== null ? { id: t.orderId, code: codeOf(t.orderId), store: storeName ?? '' } : null,
     createdAt: t.createdAt.toISOString(),
     doneAt: t.doneAt?.toISOString() ?? null,

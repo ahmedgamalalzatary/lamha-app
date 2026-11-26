@@ -1,12 +1,13 @@
 'use client';
 
 import { type DriverAccount, isEgyptianMobile, normalizePhone, WEEK_DAYS, type WeekSchedule } from '@tawsela/shared';
-import { Ban, Bike, CalendarClock, CircleCheck, KeyRound, Play, Plus } from 'lucide-react';
+import { Ban, Bike, CalendarClock, CircleCheck, KeyRound, Play, Plus, ReceiptText, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/core/api/error-message';
 import { PasswordShown } from '@/components/PasswordShown';
 import { Button, ConfirmDialog, Dialog, DialogActions, EmptyState, ErrorLine, IconButton, LoadState, Pill, Switch, Table, TextField } from '@/components/ui';
 import { useCreateDriver, useDrivers, useDriverSettings, useResetDriverPassword, useSetDriverDisabled, useSetDriverSchedule, useStartDriverShift } from './api';
+import { DriverFeeDialog, DriverMoneyDialog } from './DriverMoneyDialogs';
 import { isWeekReady, WeekEditor } from './WeekEditor';
 
 const fullName = (a: { firstName: string; lastName: string }) => `${a.firstName} ${a.lastName}`.trim();
@@ -25,7 +26,7 @@ export function ShiftPill({ driver }: { driver: Pick<DriverAccount, 'onShift' | 
 
 /**
  * المندوبين (contract §11, §10): the delivery men's accounts in the orders-table look, their shift now,
- * and whose week they follow. "إضافة" makes an account and shows the password once (§2). [Open]
+ * whose week and fee they follow, and each one's الحساب (earnings, fines, speed points). "إضافة" makes an account and shows the password once (§2). [Open]
  * Tawsilty's page is not captured.
  */
 export function DriversPage() {
@@ -36,6 +37,8 @@ export function DriversPage() {
   const start = useStartDriverShift();
   const [adding, setAdding] = useState(false);
   const [scheduling, setScheduling] = useState<DriverAccount | null>(null);
+  const [money, setMoney] = useState<DriverAccount | null>(null);
+  const [fees, setFees] = useState<DriverAccount | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [password, setPassword] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string>();
@@ -77,7 +80,7 @@ export function DriversPage() {
       ) : drivers.data.length === 0 ? (
         <EmptyState icon={Bike} title="لا يوجد مندوبين" />
       ) : (
-        <Table headers={['الاسم', 'رقم الهاتف', 'الحساب', 'الشفت', 'النوبات', 'العمليات']}>
+        <Table headers={['الاسم', 'رقم الهاتف', 'الحساب', 'الشفت', 'النوبات', 'الرسوم', 'العمليات']}>
           {drivers.data.map((d) => (
             <tr key={d.id} className="border-t border-tw-line">
               <td className="px-4 py-3 font-semibold">{fullName(d)}</td>
@@ -89,10 +92,17 @@ export function DriversPage() {
                 <ShiftPill driver={d} />
               </td>
               <td className="px-4 py-3 whitespace-nowrap">{d.schedule ? 'جدول خاص' : 'الجدول العام'}</td>
+              <td className="px-4 py-3 whitespace-nowrap">{d.fee ? 'رسوم خاصة' : 'رسوم العميل'}</td>
               <td className="px-4 py-2">
                 <div className="flex items-center gap-1">
                   <IconButton label={`نوبات ${fullName(d)}`} onClick={() => setScheduling(d)}>
                     <CalendarClock className="size-4" aria-hidden />
+                  </IconButton>
+                  <IconButton label={`حساب ${fullName(d)}`} onClick={() => setMoney(d)}>
+                    <Wallet className="size-4" aria-hidden />
+                  </IconButton>
+                  <IconButton label={`رسوم ${fullName(d)}`} onClick={() => setFees(d)}>
+                    <ReceiptText className="size-4" aria-hidden />
                   </IconButton>
                   {!d.onShift && !d.disabled ? (
                     <IconButton label={`بدء الشفت لـ ${fullName(d)}`} onClick={() => setPending({ kind: 'start', account: d })}>
@@ -128,6 +138,8 @@ export function DriversPage() {
         />
       ) : null}
       {scheduling ? <ScheduleDialog driver={scheduling} onClose={() => setScheduling(null)} /> : null}
+      {money ? <DriverMoneyDialog driver={money} onClose={() => setMoney(null)} /> : null}
+      {fees ? <DriverFeeDialog driver={fees} onClose={() => setFees(null)} /> : null}
       {pending ? (
         <ConfirmDialog
           title={TITLES[pending.kind]}

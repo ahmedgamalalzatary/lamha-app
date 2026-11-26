@@ -1,6 +1,6 @@
 import { formatMoney } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Share2, Star, Trash2, User, Wallet } from 'lucide-react-native';
+import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, Lightbulb, LogOut, MapPin, ReceiptText, Share2, Star, TriangleAlert, Trash2, User, Wallet } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +25,7 @@ import { SupportRows } from '@/features/support/SupportRows';
 import { useNotifications } from '@/features/notifications/api';
 import { useWallet } from '@/features/wallet/api';
 import { usePoints } from '@/features/points/api';
+import { useDriverMoney, useDriverPoints } from '@/features/driver/api';
 import { AccountInviteCard } from '@/features/invite/AccountInviteCard';
 
 /** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
@@ -64,7 +65,52 @@ function MoneyTiles() {
   );
 }
 
-function Tile({ label, value, onPress, children }: { label: string; value: string; onPress: () => void; children: ReactNode }) {
+/** The delivery man's فواتيري (his net earnings, in green) and نقاطي (speed points not yet paid out). */
+function DriverTiles() {
+  const t = useT();
+  const locale = useLocale();
+  const money = useDriverMoney();
+  const points = useDriverPoints();
+  return (
+    <View style={styles.tiles}>
+      <Tile
+        label={t('driver.money')}
+        value={money.data ? formatMoney(money.data.net, locale) : ''}
+        valueColor={colors.success}
+        onPress={() => router.push('/driver-money')}
+      >
+        <Wallet size={22} color={colors.blue} />
+      </Tile>
+      <Tile label={t('points.title')} value={points.data ? String(points.data.balance) : ''} onPress={() => router.push('/driver-points')}>
+        <View style={styles.starCircle}>
+          <Star size={13} color={colors.bg} fill={colors.bg} />
+        </View>
+      </Tile>
+    </View>
+  );
+}
+
+/** العمل and الدعم والمساعدة of the delivery man, as in the photo: no "التواصل معنا" and no complaint menu. */
+function DriverRows() {
+  const t = useT();
+  const ticket = (type: 'complaint' | 'suggestion') => router.push({ pathname: '/driver-support/[type]', params: { type } });
+  return (
+    <>
+      <AppText weight="semibold" color={colors.ink2} style={styles.group}>
+        {t('driver.groupWork')}
+      </AppText>
+      <AccountRow icon={Clock} label={t('driver.myShifts')} onPress={() => router.push('/driver-shifts')} />
+      <AccountRow icon={ReceiptText} label={t('driver.historyRow')} onPress={() => router.push('/driver-history')} />
+      <AppText weight="semibold" color={colors.ink2} style={styles.group}>
+        {t('support.group')}
+      </AppText>
+      <AccountRow icon={Lightbulb} label={t('support.suggest')} onPress={() => ticket('suggestion')} />
+      <AccountRow icon={TriangleAlert} label={t('support.complain')} onPress={() => ticket('complaint')} />
+    </>
+  );
+}
+
+function Tile({ label, value, valueColor, onPress, children }: { label: string; value: string; valueColor?: string; onPress: () => void; children: ReactNode }) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={`${label} ${value}`.trim()} onPress={onPress} scaleTo={0.98} style={styles.tile}>
       <View style={styles.tileTop}>
@@ -73,7 +119,7 @@ function Tile({ label, value, onPress, children }: { label: string; value: strin
           {label}
         </AppText>
       </View>
-      <AppText weight="bold" size={fontSizes.listTitle + 3}>
+      <AppText weight="bold" size={fontSizes.listTitle + 3} color={valueColor}>
         {value}
       </AppText>
     </PressableScale>
@@ -158,6 +204,14 @@ export function AccountScreen() {
 
         {user.role === 'customer' ? <SupportRows /> : null}
 
+        {/* driver/driver-account-invoices-points-shifts-history.jpg: the tiles, العمل, الدعم والمساعدة, then الحساب. */}
+        {user.role === 'driver' ? (
+          <>
+            <DriverTiles />
+            <DriverRows />
+          </>
+        ) : null}
+
         <AppText weight="semibold" color={colors.ink2} style={styles.group}>
           {t('account.groupAccount')}
         </AppText>
@@ -173,16 +227,6 @@ export function AccountScreen() {
         ) : null}
 
         {user.role === 'partner' ? <OrdersMadeRow /> : null}
-
-        {user.role === 'driver' ? (
-          <>
-            {/* driver/driver-account-invoices-points-shifts-history.jpg: العمل › نوبات عملي. فواتيري, نقاطي and سجل الطلبات come with their phases. */}
-            <AppText weight="semibold" color={colors.ink2} style={styles.group}>
-              {t('driver.groupWork')}
-            </AppText>
-            <AccountRow icon={Clock} label={t('driver.myShifts')} onPress={() => router.push('/driver-shifts')} />
-          </>
-        ) : null}
 
         {user.role === 'customer' ? (
           <>

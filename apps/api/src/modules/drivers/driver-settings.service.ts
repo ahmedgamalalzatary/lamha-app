@@ -22,8 +22,8 @@ export class DriverSettingsService {
         .onDuplicateKeyUpdate({ set: { id: ROW } });
       return this.get(tx);
     }
-    const { id: _id, updatedAt: _updatedAt, ...settings } = row;
-    return settings;
+    const { id: _id, updatedAt: _updatedAt, speedLevels, ...settings } = row;
+    return { ...settings, speedLevels: speedLevels ?? [] };
   }
 
   async update(change: Partial<DriverSettings>): Promise<DriverSettings> {
