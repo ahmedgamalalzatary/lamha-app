@@ -43,6 +43,9 @@ function buildNumber(): number {
 /** Google Maps for Android (contract §8.9), from the root .env or a CI secret. Not a public value. */
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY ?? '';
 
+/** The Expo (EAS) project, for push tokens (contract §15.1 #7). */
+const EXPO_PROJECT_ID = 'ad88a569-be7d-4cf2-84fc-d66d0722ec2a';
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: IDENTITY.name,
@@ -108,7 +111,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     nameAr: IDENTITY.nameAr,
     /** The map picker draws Google's map only with a key (src/features/addresses/map-available.ts). */
     googleMaps: Boolean(GOOGLE_MAPS_API_KEY),
-    // [Open] The Expo (EAS) project the push tokens belong to; set EXPO_PROJECT_ID once it exists (Phase 2).
-    ...(process.env.EXPO_PROJECT_ID ? { eas: { projectId: process.env.EXPO_PROJECT_ID } } : {}),
+    // The Expo project the push tokens belong to (@alzatary/tawsela, made 2026-11-26). Not a secret:
+    // it ships in every build. Builds run on GitHub (.github/workflows), not on EAS.
+    eas: { projectId: EXPO_PROJECT_ID },
   },
 });

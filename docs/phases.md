@@ -40,7 +40,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (driver home and current orders marked [Open], #9) |
 | 14 | Order status and the delivered view (live tracking out of scope) | 🔍 in-verify | none (the active order view marked [Open]) |
 | 15 | Ratings, complaints and support | 🔍 in-verify | none (good chips and star words marked [Open]) |
-| 16 | Notifications and push (Expo push) | 🔍 in-verify | none (needs EXPO_PROJECT_ID for real pushes, [Open]) |
+| 16 | Notifications and push (Expo push) | 🔍 in-verify | none (Expo project made; real pushes need a workflow-built app and FCM) |
 | 17 | Wallet (top-up excluded for now) | ⬜ | none |
 | 18 | Points | ⬜ | none (#4 decided) |
 | 19 | Invite friends | ⬜ | |
@@ -85,7 +85,7 @@ Docker Compose (API + MySQL), nginx, Let's Encrypt, the dashboard build, backups
 
 **Must not be forgotten (found since):**
 - nginx forwards the live socket: `/socket.io/` to the API with `proxy_http_version 1.1` and the `Upgrade` and `Connection` headers. The apps and `/partner` connect over WebSocket only; without them live orders, offers and status stop (CodeRabbit review, 2026-11-25).
-- `EXPO_PROJECT_ID` for push tokens and, if push security is on, `EXPO_ACCESS_TOKEN` (Phase 16).
+- If push security is on, `EXPO_ACCESS_TOKEN` (Phase 16). The Expo project ID is in `app.config.ts`.
 - Migrations are not transactional in MySQL: take the database backup before each deploy, and restore it if a migration stops halfway.
 
 ## Phase 3: Dashboard shell and sign-in
@@ -457,14 +457,14 @@ Owner's answers before the phase (2026-11-25):
   - الإشعارات as in the photo: the white header with the chevron, the pale page, and "لا توجد إشعارات — ستظهر هنا إشعاراتك عند وصولها" with the violet bell.
   - إعدادات الإشعارات as in the photo, without the SMS switch: "حسابي  اعدادات الخدمات والإشعارات", the orange bell tile, "تفعيل الإشعار".
 - **[Open]**
-  - Real pushes need the Expo (EAS) project: set EXPO_PROJECT_ID (with the build setup, Phase 2). Until then the app asks for no token.
+  - The Expo project exists (2026-11-26); its ID is in `app.config.ts`. Real pushes need an app built by the GitHub workflows (not Expo Go) and, on Android, Firebase (FCM) set up.
   - The notices' wording, the list's rows, the dashboard page (not captured).
 - **[Derived]**
   - An offer pushes once, when the store accepts; the 60-second rounds do not push again.
   - Opening الإشعارات marks them read.
   - A pickup's "ready" pushes the customer.
 - **Changed from the plan:** the store's ring sound for a new order (Phase 12) is the push's sound for now.
-- **Phone verification (needs EXPO_PROJECT_ID and a development build):**
+- **Phone verification (needs an app built by the GitHub workflows, and FCM on Android):**
   - Allow notifications; place an order: the store's phone gets "طلب جديد"; accept it: the customer's gets "تم قبول طلبك"; tap it: the order opens.
   - Two delivery men on shift get "طلب جديد متاح"; the one who takes it gets "الطلب جاهز" when the store marks it ready; three skips bring the warning and the block.
   - Turn "تفعيل الإشعار" off: no more pushes, the list still fills.
