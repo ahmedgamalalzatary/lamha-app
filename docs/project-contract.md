@@ -376,7 +376,7 @@ Built in Phase 6: the list, opened from a home tile, with the tile's label as it
 - The "خصومات" and "عروض التوصيل" chips and the offer badges on the rows came with Phase 20.
 - "اطلب من جديد" arrives once customers have past orders.
 - The pharmacy list's "سهلنا الطلب عليك" card arrives in Phase 22.
-- [Open] A closed store's picture is darkened with "مغلق" on it, not turned grey: the app has no greyscale image filter.
+- [Tawsilty, capture 2026-11-26] A closed store's picture is greyscale with "مغلق" on it (§6). The darkened stand-in is to be replaced.
 
 ### 8.4 Store page [Tawsilty]
 
@@ -393,7 +393,7 @@ Built in Phase 6: the list, opened from a home tile, with the tile's label as it
 
 Built in Phase 7: the store page at `/store/<id>` with both layouts, the category page at `/store/<id>/category/<id>`, the ☰ sheet, the product sheet (§8.5), the bottom bar and the heart (§8.14 المفضلة). Sub-categories are one level deep and set by the admin (`store_categories.parent_id`).
 
-- Phase 10 stores one cart per customer on the server (§8.6). [Open] Tapping a simple product's count badge adds one more.
+- [Tawsilty, capture 2026-11-26, `customer/store/grid-count-badge.png`] Once a simple product is in the cart, its "+" turns into an orange count badge. Tapping the badge does nothing; the count changes in the cart.
 - [Tawsilty, `customer/store/store-search-*`] The search button opens **"البحث"** (`/store/<id>/search`): the title in orange, a white box "ابحث عن كل ما تريد عند <store>", and the matching products two to a row as you type. Nothing typed or nothing matching leaves the page blank. [Open] The bottom bar shows there once something is in the cart.
 - [Tawsilty, `store-unavailable-products-grey.png`] A switched-off product (منتجات غير فعالة, §11) still shows on the store page, its picture grey with a white "غير متوفر" pill; it has no add button, does not open, and is never offered in "تُطلب معًا". Search leaves it out.
 - [Tawsilty, `store-no-products-free-delivery.png`] A store with nothing on its menu shows a white card with a box icon and "لا توجد منتجات حاليا". A delivery fee of 0 shows a green "مجاني"; a free delivery on every order (Phase 20) strikes the usual fee through beside it.
@@ -401,7 +401,7 @@ Built in Phase 7: the store page at `/store/<id>` with both layouts, the categor
 - [Tawsilty] "التوصيل بواسطة" names the platform ("توصيلتي" there, "توصيلة" here) or "المتجر" when the store delivers.
 - [Tawsilty] The heart turns red and filled once the store is a favourite.
 - Phase 20 adds the voucher, free-delivery and discount cards, the قسائمي sheet and the market's "العروض" rail. [Open] The market's themed rails are not built.
-- [Open] A closed store's cover is darkened, not turned grey (as in the store lists).
+- [Tawsilty, capture 2026-11-26, `customer/store/store-page-closed-greyscale-opens-at.png`] A closed store's cover is greyscale, with a dark pill "يفتح الساعة <time>" (clock icon) over it and "مغلق" on the logo. Its products can still be added to the cart (§8.6).
 
 ### 8.5 Product sheet [Tawsilty]
 
@@ -420,10 +420,12 @@ Built in Phase 7: the admin sets each product's option groups (title, required, 
 
 ### 8.6 Cart (السلة) [Tawsilty]
 
-- One store per cart. Adding from a different store asks the customer to confirm replacing the current cart. [Open] The captures do not show the replacement dialog or the pickup selector.
+- [Tawsilty, capture 2026-11-26, `customer/cart/my-carts-*`] **One cart per store, several at once.** Adding from another store starts that store's cart with a grey toast "تمت الاضافة الى السلة"; there is no replace dialog. The السلة tab opens **"سلاتي"**: a card per cart (logo, store name, "<n> أصناف", an arrow) that opens that store's cart, and a trash icon at the top that asks "حذف كل السلات؟" / "سيتم حذف جميع السلات المعلقة" (إلغاء · حذف). Empty: "سلتك فارغة" (below).
+- [Tawsilty, capture 2026-11-26] A closed store's products can still be added; the closed message comes at "تابع للدفع".
+- [Open] The pickup selector is not captured.
 - Header "سلة المشتريات" + store name.
 - Lines: image with a stepper (trash icon at 1, with a "حذف المنتج" confirm dialog), name, price.
-- "قد تعجبك أيضًا…" upsell row from the same store.
+- "قد تعجبك أيضًا…" upsell row from the same store. [Tawsilty, capture 2026-11-26] It may include a product already in the cart.
 - "دوّن ملاحظة" note sheet (200 characters, "تم").
 - "ملخص الدفع": عدد المنتجات, مجموع المنتجات, الإجمالي, and "سيتم احتساب التوصيل في الخطوة التالية".
 - Buttons: "أضف المزيد" and "تابع للدفع". If the service is closed: red toast "عذراً الخدمة مغلقة الآن".
@@ -505,6 +507,7 @@ Whatever the customer paid with points (§8.16), the app owes to the party that 
 
 - [Tawsilty] Offer tiles: عروض حصرية لك · استخدم كوبون · عروض التوصيل. Each opens one offers screen with an orange header (title and subtitle change: "خصومات على المنتجات", "كوبونات وقسائم", "عروض التوصيل"), three pill tabs خصومات · كوبونات · عروض التوصيل, and sub-tabs الكل · مطاعم · متاجر أخرى, listing the stores that have that kind of offer with their badges (§6.3).
 - [Client] Offers are grouped by the coupon the customer holds.
+- [Tawsilty, capture 2026-11-26, `customer/checkout/coupon-invalid-code-toast.png`] A code that does not exist: dark toast "الكود الذى أدخلته غير صحيح". The other reasons' wording is still not captured.
 
 Built in Phase 20 (see the phase's owner answers, [Open] and [Derived] notes in phases.md): one kind of code for قسائم and checkout coupons, made by the admin only, an amount or a percentage with a cap, uses per customer and in all, and who pays set per offer; product discounts as an old price per product; free delivery per store from an amount (0 for every order); banners (carousel or a rail over the store's products); the offers screen at `/offers?kind=`. [Open] "Grouped by the coupon" is read as the كوبونات tab. [Open] The coloured store sections are not built.
 
@@ -513,6 +516,9 @@ Built in Phase 20 (see the phase's owner answers, [Open] and [Derived] notes in 
 - "سهلنا الطلب عليك" card with "توصيل فوري" and "30 - 60 دقيقة", and two actions: **روشتة طبية** (upload a prescription) and **صورة المنتج** (photo of a product).
 - Both first open "اختر صيدلية (<n>)" sheet: each pharmacy card (logo, name, rating, time, fee, voucher) with an "التالي ←" button; empty "لا توجد صيدليات حالياً".
 - Next, the **الروشتة** screen: "أضف صورة الروشتة أو المنتج الذي تريده" with a camera box, "أو", "اكتب طلبك" with a text area ("مثال: علبة بنادول"), and "التالي". With neither a photo nor text: red toast "يرجى رفع صورة او كتابة طلبك".
+- [Tawsilty, capture 2026-11-26, `customer/pharmacy/prescription-choose-photo-sheet.png`] The camera box opens "اختر الصورة": **التقط صورة** · **اختر من المعرض**.
+- [Tawsilty, capture 2026-11-26, `customer/pharmacy/prescription-checkout-*`] "التالي" goes **straight to إتمام الدفع** for that pharmacy: عنوان التوصيل, "سيصل خلال <n> دقيقة" or "اختر وقتاً لاحقاً", رصيدك (wallet), طريقة الدفع (cash on delivery), وفر على طلبك (code). ملخّص الدفع opens with a red note "سيتم إعلامك بسعر الطلب من قبل الصيدلية" and lists only the fees (رسوم التوصيل, رسوم الخدمة); الإجمالي and "تنفيذ الطلب" show the fees alone. There is no step where the customer confirms a price first. Tawsela drops رسوم الخدمة (§8.7).
+- [Tawsilty, capture 2026-11-26, `customer/pharmacy/pharmacy-store-page-categories.png`] A pharmacy's own page is a normal market store page (الأقسام, products, minimum order).
 - Below: the pharmacies list with the same filters as §8.3.
 - [Client] The pharmacy page follows this layout exactly.
 
@@ -569,6 +575,8 @@ Orange balance card ("0.0 ج.م"), "شحن المحفظة"; tabs الإضافا�
 ### 8.16 Points (نقاطي) [Tawsilty]
 
 Orange card: balance, progress bar, "باقي <n> نقطة للاستبدال", قيمة نقاطك (EGP value) and الحد الأدنى للاستبدال (240 نقطة). Tabs المكتسبة / المنفقة. Points are earned per order.
+
+[Tawsilty, capture 2026-11-26, `customer/account/points-*-empty.png`] Empty tabs: "لا توجد نقاط مكتسبة" / "اطلب من التطبيق واكسب نقاط مع كل طلب", and "لا توجد نقاط منفقة" / "استبدل نقاطك بخصومات على طلباتك".
 
 [Owner, 2026-11-25, §15.1 #4] The rules are global admin settings, with nothing set per customer:
 - **Rate:** "X ج.م = Y نقطة". It works the same both ways: what earns a point is also what a point pays.
@@ -847,3 +855,14 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | Phase 18 built (§8.16, §8.2, §8.7, §11 A5, A21), migration 0017: نقاطي as in the photo; نقاطي on حسابي and "استخدم ووفر" on الرئيسية; two point settings [Owner] in الإعدادات › النقاط; points earned on the items once delivered, the wallet counting as cash [Owner]; spent at checkout after the wallet [Owner], down to the minimum; a rejected order's points back; the admin adds or deducts points in العملاء. The delivery man's speed points moved to Phase 24 [Owner]. |
 | 2026-11-26 | Phase 19 built (§8.17, §8.1, §8.2, §8.14, §11 A17), migration 0018: ادعُ أصدقاءك as in the photos; حسابي's invite card; Tawsilty's rules as admin settings [Owner] with the cap in ج.م [Owner] and an expiry switch [Owner]; the friend's welcome money at sign-up; the inviter's reward on the friend's first delivered order in time; invite money kept piece by piece in the wallet, first to pay, within its per-order limit, for restaurant and market orders only, back on a rejection, and taken out when it expires. The friends' rows are not captured [Open]. |
 | 2026-11-26 | Phase 20 built (§8.2, §8.3, §8.4, §8.7, §8.10, §11 A14–A15), migration 0019: one kind of code for قسائم and checkout coupons [Owner], made by the admin only [Owner], an amount or a percentage with a cap [Owner], uses per customer set by the admin [Owner], who pays set per offer [Owner]; product discounts as an old price [Owner]; free delivery per store; the code before the wallet and points [Owner]; banners opening a store or its products [Owner]; the offers screen, the row badges, the store page's cards and قسائمي, the market's "العروض", and "وفر على طلبك". The dashboard pages and the code error texts are not captured [Open]; the coloured store sections are not built. |
+| 2026-11-26 | Fourth phone capture (open items, pharmacy): several carts at once with "سلاتي" and no replace dialog, adding from a closed store, the count badge, the upsell row (§8.6, §8.4); the greyscale closed look with "يفتح الساعة" (§8.3, §8.4); the wrong-code toast (§8.10); the pharmacy request going straight to checkout with the price sent later (§8.11); the empty points tabs (§8.16). Guesses replaced; code rework listed in phases.md. Things no phase builds are in §18. |
+
+---
+
+## 18. Found in the capture 2026-11-26 (not in any phase)
+
+These show in Tawsilty but no phase in `docs/phases.md` builds them. Each needs the owner to place it in a phase (or drop it).
+
+- **Coloured store sections on الرئيسية** (§8.2; `customer/home/home-section-*.png`): full-width coloured bands, each with a title, an emoji and a round image ("الجديد على توصيلتي", "الأكثر طلبًا 🔥", "جرب طعم المتعه", "دور ع اللي فايتك", "استمتع باختيارك 😍"), holding a sideways pager of three store cards per column (cover with "مغلق" when closed, the lime "عروض" tag, name, rating, count, minutes). Admin-managed. Phase 20 left them out.
+- **Titled product rails on الرئيسية** (`customer/home/home-section-new-and-product-rail.png`): a heading with a subtitle and an arrow ("فطارك جاهز علي ذوقك ❤️" / "اختيارك بقى أسهل") over a row of products with "+", including "السعر حسب الاختيار". Phase 20 built only the banner-headed rail.
+- **The market's themed rails** on the store page (§8.4): still not built.

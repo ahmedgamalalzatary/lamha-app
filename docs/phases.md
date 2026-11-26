@@ -651,3 +651,19 @@ Contract §11: الرئيسية overview and التقارير.
 ## Phase 26: Release
 
 Brand assets, store listings, Android and iOS builds, release checks on real phones.
+
+## Rework from the capture 2026-11-26
+
+The phone showed that some guesses were wrong. The contract now follows Tawsilty; the code still has to change. Each item reopens its phase's phone check.
+
+- **Phase 10 (cart):**
+  - Several carts, one per store, with the "سلاتي" list and "حذف كل السلات؟"; drop the replace dialog (contract §8.6).
+  - Adding from a closed store is allowed; the closed message moves to "تابع للدفع".
+  - "قد تعجبك أيضًا" may include products already in the cart.
+- **Phase 7 (store page):** tapping a count badge does nothing; a closed store's cover shows the "يفتح الساعة <time>" pill.
+- **Phases 6 and 7:** closed stores' pictures in greyscale, not darkened.
+- **Phase 20:** an unknown code reads "الكود الذى أدخلته غير صحيح" in the dark toast.
+- **Phase 18:** the empty المنفقة tab reads "استبدل نقاطك بخصومات على طلباتك".
+- **حسابي (Phase 1):** the "مشاركة التطبيق" row under التطبيق (contract §8.14 lists it; it was never built).
+
+Kept on purpose (owner or client decisions): no رسوم الخدمة (§8.7, also on pharmacy requests), the language row (§7, client).
