@@ -241,7 +241,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     expect(await screen.findByRole('header', { name: 'سارة سوشي - Sara sushi' })).toBeTruthy();
     expect(screen.getByText('25 دقيقة')).toBeTruthy();
     expect(screen.getByText('20 ج.م')).toBeTruthy();
-    expect(screen.getByText('توصيلة')).toBeTruthy();
+    expect(screen.getByText('وصّل')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'السوشي', selected: true })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'صوصات' })).toBeTruthy();
     expect(screen.getAllByText('قابل للتخصيص')).toHaveLength(2); // the combo and the toffee

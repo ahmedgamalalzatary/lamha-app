@@ -4,6 +4,7 @@ import { ChevronUp, LogOut, Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import Image from 'next/image';
 import { api, useSession } from '@/core/api/client';
 import { activeHref, filterNav, type NavGroup, navHrefs } from './admin-nav';
 
@@ -32,7 +33,7 @@ export function Sidebar({ nav }: { nav: NavGroup[] }) {
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col gap-4 overflow-y-auto bg-tw-side px-4 py-5">
       <div className="flex items-center justify-between">
-        <div className="flex size-9 items-center justify-center rounded-md bg-tw text-sm font-bold text-white">ت</div>
+        <Image src="/mark.png" alt="وصّل" width={36} height={36} />
         <Menu className="size-5 text-tw-ink-2" aria-hidden />
       </div>
 

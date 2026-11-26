@@ -32,7 +32,7 @@ import { PartnerAccounts } from './PartnerAccounts';
 const MapView = dynamic(() => import('@/components/MapView').then((m) => m.MapView), { ssr: false });
 
 const LAYOUT_LABELS = { list: 'قائمة (مطاعم)', grid: 'شبكة (ماركت وصيدليات)' } as const;
-const DELIVERED_BY_LABELS = { platform: 'توصيلة', store: 'المتجر نفسه' } as const;
+const DELIVERED_BY_LABELS = { platform: 'وصّل', store: 'المتجر نفسه' } as const;
 
 /** The form's text boxes hold strings; numbers are read on save. An empty percentage follows الإعدادات. */
 interface Draft extends Omit<StoreInput, 'deliveryMinutes' | 'minimumOrder' | 'appPercent' | 'freeDeliveryFrom'> {

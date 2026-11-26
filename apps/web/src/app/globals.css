@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-/* Tawsilty's tokens (contract §6.1), the same as the mobile app's theme and the demo's tw-* colours. */
+/* Tawsilty's tokens (contract §6.1) with the owner's brand rust in place of its orange; the same as the mobile app's theme. */
 @theme {
-  --color-tw: #f68b1d;
-  --color-tw-700: #db760f;
-  --color-tw-400: #f8a24a;
-  --color-tw-100: #fde6d0;
-  --color-tw-50: #fef3e8;
+  --color-tw: #b44a0e;
+  --color-tw-700: #8f3a0b;
+  --color-tw-400: #cb6b34;
+  --color-tw-100: #f3dccb;
+  --color-tw-50: #faf0e8;
   --color-tw-ink: #1f1f1f;
   --color-tw-ink-2: #8a8a8a;
   --color-tw-line: #ececec;

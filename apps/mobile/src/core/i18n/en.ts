@@ -2,7 +2,7 @@ import type { TranslationKey } from './ar';
 
 // English, offered from the language switch (contract §7). Every Arabic key must exist here too.
 export const en: Record<TranslationKey, string> = {
-  'app.name': 'Tawsela',
+  'app.name': 'Wassal',
   'common.cancel': 'Cancel',
   'common.close': 'Close',
   'common.clear': 'Clear',
@@ -75,7 +75,7 @@ export const en: Record<TranslationKey, string> = {
   'account.groupApp': 'App',
   'account.settings': 'Account settings',
   'account.shareApp': 'Share the app',
-  'account.shareAppMessage': 'Try the Tawsela app to order food, groceries and medicine.',
+  'account.shareAppMessage': 'Try the Wassal app to order food, groceries and medicine.',
   'account.delete': 'Delete account',
   'account.deleteBody': 'Your account and data will be deleted for good. Enter your password to confirm.',
   'account.deleteConfirm': 'Confirm deletion',
@@ -128,7 +128,7 @@ export const en: Record<TranslationKey, string> = {
   'accounts.copy': 'Copy',
   'accounts.copied': 'Copied',
   'accounts.share': 'Share',
-  'accounts.shareMessage': 'Tawsela sign-in details\nPhone: {phone}\nPassword: {password}',
+  'accounts.shareMessage': 'Wassal sign-in details\nPhone: {phone}\nPassword: {password}',
   'accounts.done': 'Done',
   'accounts.phoneTaken': 'This phone already has an account',
 
@@ -189,7 +189,7 @@ export const en: Record<TranslationKey, string> = {
   'store.deliveryTime': 'Delivery time',
   'store.deliveryFee': 'Delivery fee',
   'store.deliveredBy': 'Delivered by',
-  'store.deliveredBy.platform': 'Tawsela',
+  'store.deliveredBy.platform': 'Wassal',
   'store.deliveredBy.store': 'The store',
   'store.favorite': 'Add to favourites',
   'store.unfavorite': 'Remove from favourites',
@@ -606,7 +606,7 @@ export const en: Record<TranslationKey, string> = {
   'invite.friendWaiting': 'Waiting for a first order',
   'invite.friendRewarded': 'You earned {amount}',
   'invite.friendMissed': 'Reward not counted',
-  'invite.shareMessage': 'Use my invite code {code} when you sign up for Tawsela and get {amount} in your wallet.',
+  'invite.shareMessage': 'Use my invite code {code} when you sign up for Wassal and get {amount} in your wallet.',
   'wallet.inviteReward': 'Friend invite reward',
   'wallet.inviteWelcome': 'Invite credit',
   'wallet.inviteExpired': 'Invite credit expired',

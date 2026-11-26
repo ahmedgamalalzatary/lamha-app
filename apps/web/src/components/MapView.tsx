@@ -9,7 +9,7 @@ type Leaflet = typeof import('leaflet');
 
 /** Fayoum city, Tawsilty's area: where an empty map opens. */
 const FAYOUM: LatLng = { lat: 29.3084, lng: 30.8428 };
-const ORANGE = '#F68B1D';
+const ORANGE = '#B44A0E';
 
 type Props = {
   /** Read out to screen readers: "حدود المنطقة", "موقع المتجر". */

@@ -96,7 +96,7 @@ describe('ادعُ أصدقاءك (contract §8.17; real API)', () => {
     await waitFor(async () => expect(await Clipboard.getStringAsync()).toBe('3JXDEB'));
     expect(await screen.findByText('تم نسخ الرمز')).toBeTruthy();
 
-    const message = 'استخدم رمز دعوتي 3JXDEB عند التسجيل في توصيلة واحصل على 25 ج.م في محفظتك.';
+    const message = 'استخدم رمز دعوتي 3JXDEB عند التسجيل في وصّل واحصل على 25 ج.م في محفظتك.';
     await fireEvent.press(screen.getByRole('button', { name: 'مشاركة' }));
     expect(share).toHaveBeenCalledWith({ message });
     await fireEvent.press(screen.getByRole('button', { name: 'واتساب' }));

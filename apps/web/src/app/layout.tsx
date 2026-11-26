@@ -6,8 +6,8 @@ import './globals.css';
 const alexandria = Alexandria({ variable: '--font-alexandria', subsets: ['arabic', 'latin'] });
 
 export const metadata: Metadata = {
-  title: 'توصيلة | لوحة التحكم',
-  description: 'لوحة تحكم توصيلة',
+  title: 'وصّل | لوحة التحكم',
+  description: 'لوحة تحكم وصّل',
 };
 
 /** Arabic RTL. Each area (admin, `/partner`) brings its own sidebar; sign-in has none. */

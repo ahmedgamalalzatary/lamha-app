@@ -1,6 +1,6 @@
 // Arabic, the default language (contract §7). Words follow Tawsilty.
 export const ar = {
-  'app.name': 'توصيلة',
+  'app.name': 'وصّل',
   'common.cancel': 'إلغاء',
   'common.close': 'إغلاق',
   'common.clear': 'مسح',
@@ -73,7 +73,7 @@ export const ar = {
   'account.groupApp': 'التطبيق',
   'account.settings': 'إعدادات حسابي',
   'account.shareApp': 'مشاركة التطبيق',
-  'account.shareAppMessage': 'جرّب تطبيق توصيلة لطلب الأكل والبقالة والأدوية.',
+  'account.shareAppMessage': 'جرّب تطبيق وصّل لطلب الأكل والبقالة والأدوية.',
   'account.delete': 'حذف الحساب',
   'account.deleteBody': 'سيتم حذف حسابك وبياناتك نهائيًا. أدخل كلمة المرور للتأكيد.',
   'account.deleteConfirm': 'تأكيد الحذف',
@@ -126,7 +126,7 @@ export const ar = {
   'accounts.copy': 'نسخ',
   'accounts.copied': 'تم النسخ',
   'accounts.share': 'مشاركة',
-  'accounts.shareMessage': 'بيانات الدخول لتطبيق توصيلة\nرقم الهاتف: {phone}\nكلمة المرور: {password}',
+  'accounts.shareMessage': 'بيانات الدخول لتطبيق وصّل\nرقم الهاتف: {phone}\nكلمة المرور: {password}',
   'accounts.done': 'تم',
   'accounts.phoneTaken': 'رقم الهاتف مسجل بالفعل لحساب آخر',
 
@@ -187,7 +187,7 @@ export const ar = {
   'store.deliveryTime': 'مدة التوصيل',
   'store.deliveryFee': 'رسوم التوصيل',
   'store.deliveredBy': 'التوصيل بواسطة',
-  'store.deliveredBy.platform': 'توصيلة',
+  'store.deliveredBy.platform': 'وصّل',
   'store.deliveredBy.store': 'المتجر',
   'store.favorite': 'أضف إلى المفضلة',
   'store.unfavorite': 'إزالة من المفضلة',
@@ -607,7 +607,7 @@ export const ar = {
   'invite.friendWaiting': 'بانتظار أول طلب',
   'invite.friendRewarded': 'ربحت {amount}',
   'invite.friendMissed': 'لم تُحتسب المكافأة',
-  'invite.shareMessage': 'استخدم رمز دعوتي {code} عند التسجيل في توصيلة واحصل على {amount} في محفظتك.',
+  'invite.shareMessage': 'استخدم رمز دعوتي {code} عند التسجيل في وصّل واحصل على {amount} في محفظتك.',
   'wallet.inviteReward': 'مكافأة دعوة صديق',
   'wallet.inviteWelcome': 'رصيد دعوة صديق',
   'wallet.inviteExpired': 'انتهت صلاحية رصيد الدعوة',

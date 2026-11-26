@@ -249,20 +249,20 @@ The same setup as the owner's Maqar project, so both are run the same way.
 
 ## 6. Brand and design
 
-**Everything visual follows Tawsilty** (decided 2026-11-23): colours, type, spacing, components and flows. The values below were measured from the real app's screenshots. A value marked "verify" is checked against the app again before Phase 0 ends.
+**Everything visual follows Tawsilty** (decided 2026-11-23): colours, type, spacing, components and flows. Exception [Owner, 2026-11-26]: the brand. The app is **وصّل** (English **Wassal**), its logo is in `docs/brand/`, and the logo's rust replaces Tawsilty's orange in the app and the dashboard (the `primary` rows and `bg-warm` below); layouts stay Tawsilty's. The values below were measured from the real app's screenshots. A value marked "verify" is checked against the app again before Phase 0 ends.
 
 ### 6.1 Colours [Tawsilty]
 
 | Token | Value | Used for |
 |---|---|---|
-| `primary` | `#F68B1D` | Buttons, active tab, links, prices in the cart, selected radio |
-| `primary-700` | `#DB760F` | Pressed state, active tab icon |
-| `primary-400` | `#F8A24A` | Header gradient start, search icon tile, empty-state icons |
-| `primary-50` | `#FEF3E8` | Soft cards (invite card), icon tiles |
-| `primary-100` | `#FDE6D0` | Soft card borders |
-| `header` | gradient `#F8A24A` → `#F38920` | Home header behind the address and search |
+| `primary` | `#B44A0E` (logo rust; Tawsilty's was `#F68B1D`) | Buttons, active tab, links, prices in the cart, selected radio |
+| `primary-700` | `#8F3A0B` | Pressed state, active tab icon |
+| `primary-400` | `#CB6B34` | Header gradient start, search icon tile, empty-state icons |
+| `primary-50` | `#FAF0E8` | Soft cards (invite card), icon tiles |
+| `primary-100` | `#F3DCCB` | Soft card borders |
+| `header` | gradient `#C65F22` → `#B0450D` | Home header behind the address and search |
 | `bg` | `#FFFFFF` | Screens |
-| `bg-warm` | `#F8F5EF` | Cart "قد تعجبك أيضًا" band (wavy top edge) |
+| `bg-warm` | `#FBF7EE` (the logo's cream) | Cart "قد تعجبك أيضًا" band (wavy top edge) |
 | `surface` | `#F9FAFB` | Cards on white (wallet, points tiles) |
 | `input` | `#F2F3F7` | Text fields, search box on inner pages |
 | `ink` | `#1F1F1F` | Titles, prices |
@@ -796,7 +796,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 5 | ~~Shift, skip and suspension defaults~~ | **Decided (2026-11-25):** a weekly schedule with a per-driver override; he can start from 30 min before until 15 min after the shift starts; extend by 60 min, at most 3 times; offers wait 60 s; warning after 2 skips, 15-minute block after 3. All admin settings (§10). Changed before Phase 13: every man on shift sees an offer at once, it shows again after 60 s, and only "تخطي" counts as a skip (in a row). | — |
 | 6 | ~~Production server and domain~~ | **Decided:** everything stays local until the first real mobile build; the owner then provides a VPS. | Deploy (Phase 2), moved to just before that build |
 | 7 | ~~Push provider~~ | **Decided:** Expo push service, called over its HTTP API with no SDK, as in the Maqar project. | — |
-| 8 | App identity, asked of the client: name (ZTechX already publishes apps named "توصيلة" and "توصيلتي"), package/bundle ID (`com.<company>.<app>`), logo (to be designed; the icon, adaptive icon and splash come from it), footer credit, and who owns the Google Play and Apple developer accounts | Open | Store release (Phase 26); until then placeholders in `app.config.ts` |
+| 8 | App identity | **Partly decided (owner, 2026-11-26):** the name **وصّل** / **Wassal**, the package and bundle ID `com.wassal.app`, the Arabic logo (`docs/brand/wassal-logo-ar.png`, tagline "من الأبلكيشن لحد بابك") and its colours: rust `#B44A0E`, amber `#EF940F`, cream `#FBF7EE`. **Still open:** the English logo and a vector (or large) logo file, which the owner will send (the icons are cut from a 1254 px PNG until then); the footer credit; who owns the Google Play and Apple developer accounts. | Store release (Phase 26) |
 | 9 | Screens not captured yet. The WhatsApp export (read 2026-11-23) brought the customer's delivered order details and rating screen (§8.8) and three driver screens (§10). Still missing: the partner products and account screens, the driver home and current-orders tabs, and admin pages beyond the orders list. Live tracking is out of scope (§15.2). | Partly cleared | Phases 12, 13, 25 |
 | 10 | ~~Lucky wheel~~ | **Excluded for now.** Tawsilty has none; the client sent a reference from another app (`client-requests/client-lucky-wheel-reference-other-app.jpg`: "لفة الحظ", 8 prizes of points, discounts and free delivery, "لف العجلة", "متبقي 1 لفة اليوم"). | — |
 | 11 | ~~What the captain pays the store~~ | **Decided (2026-11-25):** three admin options, set globally or per store: the full items total; the items total minus the app's percentage; or nothing, with the app paying the store later (§8.7). | — |
@@ -868,6 +868,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | §8.11: the pharmacy sets a request's price on قبول; the wallet may pay a request's fee; no codes or points on requests (owner). |
 | 2026-11-26 | §8.12: an "اطلب دليفري" order goes straight to the delivery men, with the note on the offer (owner). |
 | 2026-11-26 | §10: فواتيري is his net earnings; the admin adds and deletes fines; speed points are paid out in cash by "تم الصرف" (owner). Phase 24 built, migration 0022. |
+| 2026-11-26 | §6, §15.1 #8: the app is وصّل / Wassal, `com.wassal.app`; the owner's logo and its rust replace Tawsilty's orange in the app and the dashboard. The English logo and a vector file are still to come (owner). |
 
 ---
 

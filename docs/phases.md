@@ -40,7 +40,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (driver home and current orders marked [Open], #9) |
 | 14 | Order status and the delivered view (live tracking out of scope) | 🔍 in-verify | none (the active order view marked [Open]) |
 | 15 | Ratings, complaints and support | 🔍 in-verify | none (good chips and star words marked [Open]) |
-| 16 | Notifications and push (Expo push) | 🔍 in-verify | none (Expo project made; real pushes need a workflow-built app and FCM) |
+| 16 | Notifications and push (Expo push) | 🔍 in-verify | none (Expo project and Android FCM set up; real pushes need a workflow-built app) |
 | 17 | Wallet (top-up excluded for now) | 🔍 in-verify | none (movement rows and the العملاء page marked [Open]) |
 | 18 | Points | 🔍 in-verify | none (movement rows and the checkout row marked [Open]) |
 | 19 | Invite friends | 🔍 in-verify | none (friends' rows and the share message marked [Open]) |
@@ -457,7 +457,8 @@ Owner's answers before the phase (2026-11-25):
   - الإشعارات as in the photo: the white header with the chevron, the pale page, and "لا توجد إشعارات — ستظهر هنا إشعاراتك عند وصولها" with the violet bell.
   - إعدادات الإشعارات as in the photo, without the SMS switch: "حسابي  اعدادات الخدمات والإشعارات", the orange bell tile, "تفعيل الإشعار".
 - **[Open]**
-  - The Expo project exists (2026-11-26); its ID is in `app.config.ts`. Real pushes need an app built by the GitHub workflows (not Expo Go) and, on Android, Firebase (FCM) set up.
+  - The Expo project exists (2026-11-26); its ID is in `app.config.ts`. Real pushes need an app built by the GitHub workflows (not Expo Go).
+  - Android FCM set up (2026-11-26): Firebase project `wassal-app`, its `google-services.json` in the git-ignored `keys/` (the `GOOGLE_SERVICES_JSON_BASE64` secret on CI, written by the APK and AAB workflows), and its FCM V1 service account key uploaded to the Expo project's credentials for `com.wassal.app`. iOS push waits for the Apple developer account (contract §15.1 #8).
   - The notices' wording, the list's rows, the dashboard page (not captured).
 - **[Derived]**
   - An offer pushes once, when the store accepts; the 60-second rounds do not push again.
@@ -705,6 +706,15 @@ Contract §11: الرئيسية overview and التقارير.
 ## Phase 26: Release
 
 Brand assets, store listings, Android and iOS builds, release checks on real phones.
+
+Brand applied early (owner, 2026-11-26; contract §6, §15.1 #8):
+- The name وصّل / Wassal, `com.wassal.app`, the scheme `wassal://`; phones set to Arabic show وصّل under the icon. The Expo slug stays `tawsela` (it names the push project; only the owner sees it).
+- [Open] The Google Maps key: the owner has no card for Google Cloud billing yet; the map shows its stand-in until then.
+- The logo's rust replaces Tawsilty's orange in the app and the dashboard.
+- The icon, Android adaptive icon (with its monochrome layer), splash and favicons are cut from the owner's 1254 px PNG (`docs/brand/`). iOS uses the plain icon until there is a vector for an Icon Composer one.
+- The welcome screen and the dashboard sign-in show the Arabic logo; the sidebar shows the mark. [Open] English screens show the word "Wassal" until the English logo comes.
+- Still to come: the English logo and a vector file (then redraw every icon), the footer credit, the store accounts.
+- A new dev build is needed to see the new icon, splash, name and package; the new package installs beside the old app.
 
 ## Rework from the capture 2026-11-26
 

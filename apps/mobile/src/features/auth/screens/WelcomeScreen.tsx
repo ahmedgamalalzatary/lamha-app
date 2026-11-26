@@ -7,9 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
-import { useT } from '@/core/i18n';
+import { useLocale, useT } from '@/core/i18n';
 import { colors, radius, shadows, spacing, welcomeTints } from '@/core/theme';
 import { useHome } from '@/features/home/api/home';
+// The owner's Arabic logo, cut from the lockup (docs/brand). [Open] The English logo is not sent yet.
+import LOGO_AR from '../../../../assets/images/logo-ar.png';
 
 /** The soft card colours behind the pictures, as on Tawsilty's welcome screen. */
 const TINTS = welcomeTints;
@@ -18,11 +20,12 @@ const PER_COLUMN = 4;
 
 /**
  * Tawsilty's first screen (contract §8.1): columns of pictures on soft cards behind a white card
- * with the name, "يمكننا توصيل كلّ ما تتمناه" and "المتابعة باستخدام رقم الهاتف". The pictures are
+ * with the name (the owner's logo in Arabic), "يمكننا توصيل كلّ ما تتمناه" and "المتابعة باستخدام رقم الهاتف". The pictures are
  * the home tiles' images [Open]: Tawsilty's own are fixed food photos.
  */
 export function WelcomeScreen() {
   const t = useT();
+  const locale = useLocale();
   const { width } = useWindowDimensions();
   const home = useHome();
   const images = (home.data?.tiles ?? []).map((tile) => mediaUrl(tile.image)).filter((u): u is string => !!u);
@@ -49,9 +52,13 @@ export function WelcomeScreen() {
       </View>
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
         <View style={styles.sheet}>
-          <AppText weight="bold" size={44} color={colors.primary} style={styles.centred}>
-            {t('app.name')}
-          </AppText>
+          {locale === 'ar' ? (
+            <Image source={LOGO_AR} accessible accessibilityRole="image" accessibilityLabel={t('app.name')} contentFit="contain" style={styles.logo} />
+          ) : (
+            <AppText weight="bold" size={44} color={colors.primary} style={styles.centred}>
+              {t('app.name')}
+            </AppText>
+          )}
           <AppText weight="semibold" size={22} style={styles.centred}>
             {t('auth.welcome.tagline')}
           </AppText>
@@ -89,6 +96,7 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   centred: { textAlign: 'center' },
+  logo: { alignSelf: 'center', width: 190, aspectRatio: 1030 / 410 },
   withPhone: {
     marginTop: spacing.lg,
     minHeight: 64,

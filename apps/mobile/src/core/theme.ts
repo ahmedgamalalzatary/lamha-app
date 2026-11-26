@@ -1,15 +1,16 @@
-// Tawsilty's design tokens (contract §6), measured from the real app. Same values as the demo's tw-* colours.
+// Tawsilty's design tokens (contract §6), measured from the real app, with the owner's brand colours
+// (وصّل's rust, 2026-11-26) in place of Tawsilty's orange.
 
 export const colors = {
-  primary: '#F68B1D',
-  primary700: '#DB760F',
-  primary400: '#F8A24A',
-  primary100: '#FDE6D0',
-  primary50: '#FEF3E8',
-  headerFrom: '#F8A24A',
-  headerTo: '#F38920',
+  primary: '#B44A0E',
+  primary700: '#8F3A0B',
+  primary400: '#CB6B34',
+  primary100: '#F3DCCB',
+  primary50: '#FAF0E8',
+  headerFrom: '#C65F22',
+  headerTo: '#B0450D',
   bg: '#FFFFFF',
-  bgWarm: '#F8F5EF',
+  bgWarm: '#FBF7EE',
   surface: '#F9FAFB',
   input: '#F2F3F7',
   ink: '#1F1F1F',
@@ -86,7 +87,7 @@ export const colors = {
   /** The cart's "you may also like" strip. */
   upsell: '#F6F3ED',
   /** The map picker's pin. */
-  pin: '#CC5A00',
+  pin: '#8F3A0B',
   /** The dark wash over a store's cover. */
   coverShade: 'rgba(0,0,0,0.25)',
   /** An unselected rating star. */

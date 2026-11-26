@@ -97,7 +97,7 @@ describe('حسابي (contract §8.14; real API)', () => {
     await renderApp(ROUTES, { initialUrl: '/customer/account' });
 
     await press('مشاركة التطبيق');
-    expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('توصيلة') });
+    expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('وصّل') });
     share.mockRestore();
   });
 

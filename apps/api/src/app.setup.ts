@@ -63,8 +63,8 @@ export function configureApp(app: INestApplication): void {
   app.enableShutdownHooks();
 
   const doc = new DocumentBuilder()
-    .setTitle('Tawsela API')
-    .setDescription('REST API for the Tawsela mobile app and dashboard. Errors use the standard NestJS shape.')
+    .setTitle('Wassal API')
+    .setDescription('REST API for the Wassal mobile app and dashboard. Errors use the standard NestJS shape.')
     .setVersion('1')
     .addBearerAuth()
     .build();

@@ -60,7 +60,7 @@ export class Env {
   @IsString()
   SMTP_PASS?: string;
 
-  /** The sender shown, e.g. "Tawsela <tawsela@gmail.com>". Defaults to SMTP_USER. */
+  /** The sender shown, e.g. "Wassal <wassal@gmail.com>". Defaults to SMTP_USER. */
   @IsOptional()
   @IsString()
   MAIL_FROM?: string;

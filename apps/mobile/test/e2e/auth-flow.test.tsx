@@ -56,6 +56,8 @@ describe('sign-in: welcome → phone → password (every role, contract §2, §8
     await renderApp(ROUTES, { initialUrl: '/welcome' });
 
     expect(screen.getByText('يمكننا توصيل كلّ ما تتمناه')).toBeTruthy();
+    // The owner's Arabic logo (2026-11-26); English shows the name until its logo comes.
+    expect(screen.getByRole('image', { name: 'وصّل' })).toBeTruthy();
     await press('المتابعة باستخدام رقم الهاتف');
     expect(await screen.findByText('لن نستخدم رقم هاتفك إلا إذا احتجنا إلى التواصل معك بخصوص طلبيتك.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'متابعة' })).toBeDisabled();

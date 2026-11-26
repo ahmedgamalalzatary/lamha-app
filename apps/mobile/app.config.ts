@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
@@ -7,20 +8,21 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 loadEnv({ path: path.resolve(__dirname, '../../.env'), quiet: true });
 
 /**
- * The app's identity, in one place. Every value here is a PLACEHOLDER until the client decides
- * (contract §15.1 #8). Change it here only; the builds and the stores read it from here.
+ * The app's identity, in one place (contract §15.1 #8; owner, 2026-11-26). Change it here only; the
+ * builds and the stores read it from here. `slug` stays: it names the Expo project the push tokens
+ * belong to (@alzatary/tawsela).
  *
  * `id` becomes the Android package and the iOS bundle ID. It cannot change once the app is
  * published on a store.
  */
 const IDENTITY = {
-  name: 'Tawsela',
-  nameAr: 'توصيلة',
+  name: 'Wassal',
+  nameAr: 'وصّل',
   slug: 'tawsela',
-  scheme: 'tawsela',
-  id: 'com.placeholder.tawsela',
-  /** Splash and adaptive-icon background (Tawsilty's primary orange, contract §6.1). */
-  brandColor: '#F68B1D',
+  scheme: 'wassal',
+  id: 'com.wassal.app',
+  /** Splash and adaptive-icon background: the logo's rust (contract §6.1). */
+  brandColor: '#B44A0E',
 } as const;
 
 /** Shown in the store and in Settings > About. Raise it for each store release. */
@@ -43,6 +45,15 @@ function buildNumber(): number {
 /** Google Maps for Android (contract §8.9), from the root .env or a CI secret. Not a public value. */
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY ?? '';
 
+/**
+ * Firebase's Android file, for push through FCM (Firebase project wassal-app, 2026-11-26). It holds no
+ * password, but stays out of the public repo: `keys/google-services.json` here, written from the
+ * GOOGLE_SERVICES_JSON_BASE64 secret on CI. Without it the app builds, but gets no push on Android.
+ */
+const LOCAL_GOOGLE_SERVICES = '../../keys/google-services.json';
+const GOOGLE_SERVICES_FILE =
+  process.env.GOOGLE_SERVICES_JSON || (fs.existsSync(path.resolve(__dirname, LOCAL_GOOGLE_SERVICES)) ? LOCAL_GOOGLE_SERVICES : undefined);
+
 /** The Expo (EAS) project, for push tokens (contract §15.1 #7). */
 const EXPO_PROJECT_ID = 'ad88a569-be7d-4cf2-84fc-d66d0722ec2a';
 
@@ -55,8 +66,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   userInterfaceStyle: 'light',
+  // The name under the icon on phones set to Arabic (owner, 2026-11-26); other languages show `name`.
+  locales: {
+    ar: { ios: { CFBundleDisplayName: IDENTITY.nameAr }, android: { app_name: IDENTITY.nameAr } },
+  },
   ios: {
-    icon: './assets/expo.icon',
     bundleIdentifier: IDENTITY.id,
     buildNumber: String(buildNumber()),
     supportsTablet: false,
@@ -68,6 +82,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: IDENTITY.id,
+    ...(GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
     versionCode: buildNumber(),
     adaptiveIcon: {
       backgroundColor: IDENTITY.brandColor,
@@ -97,7 +112,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Arabic RTL from the first launch (contract §7). The English switch (LTR) comes with the account screen.
     ['expo-localization', { supportsRTL: true }],
     'expo-sharing',
-    ['expo-location', { locationWhenInUsePermission: 'توصيلة تستخدم موقعك لتحديد عنوان التوصيل على الخريطة.' }],
+    ['expo-location', { locationWhenInUsePermission: 'وصّل يستخدم موقعك لتحديد عنوان التوصيل على الخريطة.' }],
     'expo-asset',
     // Push (contract §15.1 #7): the small icon tint on Android.
     ['expo-notifications', { color: IDENTITY.brandColor }],

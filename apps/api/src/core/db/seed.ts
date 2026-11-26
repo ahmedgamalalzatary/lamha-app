@@ -37,7 +37,7 @@ if (!url || !password) throw new Error('DATABASE_URL and SEED_PASSWORD must be s
 
 /** Partners and drivers are normally created by an admin (Phases 4 and 12); these are for trying the apps. */
 const ACCOUNTS: { role: Role; phone: string; firstName: string; lastName?: string }[] = [
-  { role: 'admin', phone: '01000000001', firstName: 'مدير توصيلة' },
+  { role: 'admin', phone: '01000000001', firstName: 'مدير وصّل' },
   { role: 'partner', phone: '01000000002', firstName: 'مورد تجريبي' },
   { role: 'driver', phone: '01000000003', firstName: 'مندوب تجريبي' },
   // Phase 3: more admins, so حسابات الإدارة has rows to reset and disable.
@@ -182,7 +182,7 @@ if (anyStore) {
       storeId: courier!.id,
       categoryId: moto!.id,
       name: 'اطلب دليفري',
-      description: 'الشروط والأحكام الخاصة بخدمة التوصيل (Delivery) داخل تطبيق "توصيلة":',
+      description: 'الشروط والأحكام الخاصة بخدمة التوصيل (Delivery) داخل تطبيق "وصّل":',
       price: 1,
     });
 

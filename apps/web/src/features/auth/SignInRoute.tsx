@@ -2,6 +2,7 @@
 
 import { isEgyptianMobile, normalizePhone } from '@tawsela/shared';
 import { type FormEvent, useState } from 'react';
+import Image from 'next/image';
 import { api } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { Button, ErrorLine, TextField } from '@/components/ui';
@@ -44,7 +45,7 @@ function SignInPage() {
     <main className="grid min-h-screen w-full place-items-center bg-tw-surface p-4">
       <form onSubmit={submit} noValidate className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="grid size-14 place-items-center rounded-2xl bg-tw text-2xl font-bold text-white">ت</div>
+          <Image src="/logo-ar.png" alt="وصّل" width={150} height={60} priority />
           <h1 className="text-2xl font-bold">تسجيل الدخول</h1>
           <p className="text-sm text-tw-ink-2">أدخل رقم هاتفك وكلمة المرور</p>
         </div>
