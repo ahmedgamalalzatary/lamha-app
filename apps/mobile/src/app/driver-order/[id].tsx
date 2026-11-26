@@ -1,5 +1,5 @@
 import { Gate } from '@/core/navigation/area-gate';
-import { DriverOrderScreen } from '@/features/driver/DriverOrderScreen';
+import { DriverOrderScreen } from '@/features/driver/screens/DriverOrderScreen';
 
 export default function Screen() {
   return (

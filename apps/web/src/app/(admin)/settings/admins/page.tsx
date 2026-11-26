@@ -1,3 +1,3 @@
-import { AdminsPage } from '@/features/admins/AdminsPage';
+import { AdminsPage } from '@/features/admins/screens/AdminsPage';
 
 export default AdminsPage;

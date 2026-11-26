@@ -4,7 +4,7 @@ import type { MyPoints, PointsSettings } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
-import { PointsAdjustDto, PointsSettingsDto } from './points.dto.js';
+import { PointsAdjustDto, PointsSettingsDto } from './dto/points.dto.js';
 import { PointsService } from './points.service.js';
 
 /** نقاطي (contract §8.16). Customers only. */

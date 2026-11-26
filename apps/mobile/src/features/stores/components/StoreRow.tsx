@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { mediaUrl } from '@/core/api/client';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
-import { OfferBadges } from '@/features/offers/OfferBadges';
+import { OfferBadges } from '@/features/offers/components/OfferBadges';
 import { closedLook, GREYSCALE } from './closed-look';
 import { StoreMeta } from './StoreMeta';
 

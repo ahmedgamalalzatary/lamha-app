@@ -16,8 +16,8 @@ import {
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { StoreRow } from '../catalog/catalog.schema.js';
-import { CurrentStore, PartnerArea } from '../partners/partner-store.guard.js';
-import { AdminOrdersQuery, CheckoutQuoteDto, PartnerStepDto, PlaceOrderDto } from './orders.dto.js';
+import { CurrentStore, PartnerArea } from '../partners/guards/partner-store.guard.js';
+import { AdminOrdersQuery, CheckoutQuoteDto, PartnerStepDto, PlaceOrderDto } from './dto/orders.dto.js';
 import { OrdersService } from './orders.service.js';
 
 /** "إتمام الدفع" and طلباتي (contract §8.7, §8.8). Customers only. */

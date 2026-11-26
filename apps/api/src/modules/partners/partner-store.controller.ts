@@ -8,7 +8,7 @@ import { CatalogRepository } from '../catalog/catalog.repository.js';
 import type { StoreRow } from '../catalog/catalog.schema.js';
 import { CategoryDto, CreateProductDto, OrderDto, UpdateCategoryDto, UpdateProductDto } from '../catalog/dto/catalog.dto.js';
 import { PartnerStoreDto } from './dto/partner-store.dto.js';
-import { CurrentStore, PartnerArea } from './partner-store.guard.js';
+import { CurrentStore, PartnerArea } from './guards/partner-store.guard.js';
 
 const notFound = (what: string) => new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', `No ${what} of this store has this id`);
 

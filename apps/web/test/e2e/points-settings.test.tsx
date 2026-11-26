@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { PointsSettingsPage } from '@/features/settings/PointsSettingsPage';
+import { PointsSettingsPage } from '@/features/settings/screens/PointsSettingsPage';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => '/settings/points' }));

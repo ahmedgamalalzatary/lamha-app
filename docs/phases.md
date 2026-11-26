@@ -51,6 +51,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 24 | Driver: history and fines | 🔍 in-verify | none (history rebuilt from the 2026-11-26 captures; the dashboard pages marked [Open]) |
 | 25 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
 | 26 | Release | ⬜ | 8 |
+| 27 | Codebase folder layout | ✅ done | none |
 
 ---
 
@@ -717,6 +718,17 @@ Brand applied early (owner, 2026-11-26; contract §6, §15.1 #8):
 - The welcome screen and the dashboard sign-in show the Arabic logo; the sidebar shows the mark. [Open] English screens show the word "Wassal" until the English logo comes.
 - Still to come: the English logo and a vector file (then redraw every icon), the footer credit, the store accounts.
 - A new dev build is needed to see the new icon, splash, name and package; the new package installs beside the old app.
+
+## Phase 27: Codebase folder layout
+
+Contract §5, Code layout. Use the existing test suites after all four steps. The demo is outside this phase.
+
+1. Mobile. Organize feature APIs, components, screens and hooks by responsibility.
+2. API. Put module request DTOs in `dto/` and module guards in `guards/`.
+3. Dashboard. Use the same feature folders as mobile. Route entry points live in `src/app/`.
+4. Shared. Move unit tests to `test/unit/` and keep the build scoped to `src/`.
+
+Build, lint, typecheck and all 346 unit tests passed. The mobile and dashboard end-to-end suites passed. The API run passed 207 of 208 tests, with one five-second timeout. All four tests in that file passed on an isolated retry with the original timeout. Verification for this phase was automated.
 
 ## Rework from the capture 2026-11-26
 

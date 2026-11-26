@@ -21,7 +21,7 @@ import { CategoryTabs, TABS_HEIGHT } from '../components/CategoryTabs';
 import { NoProducts } from '../components/NoProducts';
 import { OfferCards } from '../components/OfferCards';
 import { ProductCard, type ProductActions, ProductRow } from '../components/ProductItems';
-import { VouchersSheet } from '@/features/offers/VouchersSheet';
+import { VouchersSheet } from '@/features/offers/components/VouchersSheet';
 import { ProductSheet } from '../components/ProductSheet';
 import { SectionTitle } from '../components/SectionTitle';
 import { COVER_HEIGHT, StoreHeader } from '../components/StoreHeader';

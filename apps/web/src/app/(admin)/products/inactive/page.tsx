@@ -1,3 +1,3 @@
-import { InactiveProductsPage } from '@/features/products/InactiveProductsPage';
+import { InactiveProductsPage } from '@/features/products/screens/InactiveProductsPage';
 
 export default InactiveProductsPage;

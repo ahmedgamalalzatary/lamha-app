@@ -224,7 +224,7 @@ The same setup as the owner's Maqar project, so both are run the same way.
 - `pnpm build lint typecheck test` must pass before pushing.
 - **One `.env` at the repo root** is used by every app. Tests use the root `.env.test`. Both are git-ignored; `.env.example` lists every variable.
 - **Test first, only where it matters:** business rules (order states, shift and skip rules, fees, wallet, points, coupons), guards, formatters, and each screen's main flow. Not plumbing.
-- **Code layout.** API: `src/modules/<feature>/`, plus `src/core` and `src/common`. Mobile: `src/features/<feature>/` (`api/`, `hooks/`, `components/`, `screens/`), `src/core`, `src/components`, and `src/app` for routes only. Dashboard: `src/app` routes, `src/features/<feature>/`.
+- **Code layout.** API: `src/modules/<feature>/`, plus `src/core` and `src/common`. Mobile: `src/features/<feature>/` (`api/`, `hooks/`, `components/`, `screens/`), `src/core`, `src/components`, and `src/app` for routes only. Dashboard: `src/app` routes and the same feature folders as mobile. API modules put request DTOs in `dto/` and module guards in `guards/`. Shared source lives in `packages/shared/src/` and its unit tests in `packages/shared/test/unit/`.
 - Database changes only through Drizzle migrations.
 - The phone screenshots and the client's WhatsApp export never go into git.
 - `.env` holds only secrets and values that change between machines. Fixed rules (OTP, token lifetimes, rate limits) live in `packages/shared/src/constants.ts`.

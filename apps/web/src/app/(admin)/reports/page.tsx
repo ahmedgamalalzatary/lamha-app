@@ -1,3 +1,3 @@
-import { ComingSoon } from '@/features/shell/ComingSoon';
+import { ComingSoon } from '@/features/shell/screens/ComingSoon';
 
 export default ComingSoon;

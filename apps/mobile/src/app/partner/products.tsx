@@ -1,3 +1,3 @@
-import { PartnerProductsScreen } from '@/features/partner/PartnerProductsScreen';
+import { PartnerProductsScreen } from '@/features/partner/screens/PartnerProductsScreen';
 
 export default PartnerProductsScreen;

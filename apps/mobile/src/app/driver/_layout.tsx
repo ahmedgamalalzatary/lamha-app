@@ -1,6 +1,6 @@
 import { Gate } from '@/core/navigation/area-gate';
 import { RoleTabs } from '@/core/navigation/RoleTabs';
-import { DriverLive } from '@/features/driver/DriverLive';
+import { DriverLive } from '@/features/driver/components/DriverLive';
 
 export default function Layout() {
   return (

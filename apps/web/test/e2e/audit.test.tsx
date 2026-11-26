@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { AuditPage } from '@/features/audit/AuditPage';
+import { AuditPage } from '@/features/audit/screens/AuditPage';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }), usePathname: () => '/settings/audit' }));

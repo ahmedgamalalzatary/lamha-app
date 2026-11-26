@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { AdminsPage } from '@/features/admins/AdminsPage';
+import { AdminsPage } from '@/features/admins/screens/AdminsPage';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { API_URL } from '../utils/env';
 

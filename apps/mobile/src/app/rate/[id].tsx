@@ -1,5 +1,5 @@
 import { Gate } from '@/core/navigation/area-gate';
-import { RatingScreen } from '@/features/support/RatingScreen';
+import { RatingScreen } from '@/features/support/screens/RatingScreen';
 
 /** The rating screen (contract §8.8): from the popup when the app opens, or "قيّم طلبك" in the details. */
 export default function Route() {

@@ -19,7 +19,7 @@ import { CatalogRepository, type Tx } from '../catalog/catalog.repository.js';
 import { products, stores } from '../catalog/catalog.schema.js';
 import { storeIsOpen, toProduct } from '../catalog/store-view.js';
 import { users } from '../users/users.schema.js';
-import type { EditCartDto } from './cart.dto.js';
+import type { EditCartDto } from './dto/cart.dto.js';
 import { cartLines, carts } from './cart.schema.js';
 
 type CartRow = typeof carts.$inferSelect;

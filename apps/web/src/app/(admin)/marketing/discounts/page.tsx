@@ -1,3 +1,3 @@
-import { DiscountsPage } from '@/features/offers/DiscountsPage';
+import { DiscountsPage } from '@/features/offers/screens/DiscountsPage';
 
 export default DiscountsPage;

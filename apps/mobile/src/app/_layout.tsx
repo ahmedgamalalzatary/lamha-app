@@ -16,7 +16,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { OfflineScreen } from '@/components/OfflineScreen';
 import { toast, ToastHost } from '@/components/Toast';
-import { PushSetup } from '@/features/notifications/PushSetup';
+import { PushSetup } from '@/features/notifications/components/PushSetup';
 import { session, useSession } from '@/core/auth/session';
 import { isRTL, translate, useLocale } from '@/core/i18n';
 import { localePreference, useLocalePersisted } from '@/core/i18n/locale';

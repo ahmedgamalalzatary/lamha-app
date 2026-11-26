@@ -1,7 +1,7 @@
 import type { CatalogStore, Cuisine, SearchResult, SearchScope, SearchSuggestion, StoreFilter, Vertical } from '@tawsela/shared';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/core/api/client';
-import { useDeliveryScope } from '@/features/addresses/chosen-address';
+import { useDeliveryScope } from '@/features/addresses/hooks/chosen-address';
 
 export interface StoresQuery extends StoreFilter {
   vertical: Vertical;

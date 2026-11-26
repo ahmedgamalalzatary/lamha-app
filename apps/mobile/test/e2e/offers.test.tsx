@@ -6,7 +6,7 @@ import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library'
 import { ToastHost, toast } from '@/components/Toast';
 import { session } from '@/core/auth/session';
 import { HomeScreen } from '@/features/home/screens/HomeScreen';
-import { OffersScreen } from '@/features/offers/OffersScreen';
+import { OffersScreen } from '@/features/offers/screens/OffersScreen';
 import { StoreProductsScreen } from '@/features/store/screens/StoreProductsScreen';
 import { StoreScreen } from '@/features/store/screens/StoreScreen';
 import { StoresScreen } from '@/features/stores/screens/StoresScreen';

@@ -1,3 +1,3 @@
-import { InviteSettingsPage } from '@/features/campaigns/InviteSettingsPage';
+import { InviteSettingsPage } from '@/features/campaigns/screens/InviteSettingsPage';
 
 export default InviteSettingsPage;

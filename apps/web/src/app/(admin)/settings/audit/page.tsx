@@ -1,3 +1,3 @@
-import { AuditPage } from '@/features/audit/AuditPage';
+import { AuditPage } from '@/features/audit/screens/AuditPage';
 
 export default AuditPage;

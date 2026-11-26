@@ -6,12 +6,12 @@ import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library'
 import type { ResultSetHeader } from 'mysql2/promise';
 import { ToastHost, toast } from '@/components/Toast';
 import { session } from '@/core/auth/session';
-import { resetChosenAddresses } from '@/features/addresses/chosen-address';
+import { resetChosenAddresses } from '@/features/addresses/hooks/chosen-address';
 import { MapPickerScreen } from '@/features/addresses/screens/MapPickerScreen';
 import { cartApi } from '@/features/cart/api/cart';
 import { CartScreen } from '@/features/cart/screens/CartScreen';
-import { CheckoutScreen } from '@/features/checkout/CheckoutScreen';
-import { OrdersScreen } from '@/features/checkout/OrdersScreen';
+import { CheckoutScreen } from '@/features/checkout/screens/CheckoutScreen';
+import { OrdersScreen } from '@/features/checkout/screens/OrdersScreen';
 import { insertProduct, insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { renderApp, testQueryClient } from '../utils/render';

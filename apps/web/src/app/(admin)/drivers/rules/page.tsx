@@ -1,3 +1,3 @@
-import { DriverRulesPage } from '@/features/drivers/DriverRulesPage';
+import { DriverRulesPage } from '@/features/drivers/screens/DriverRulesPage';
 
 export default DriverRulesPage;

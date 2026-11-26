@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { InviteSettingsPage } from '@/features/campaigns/InviteSettingsPage';
+import { InviteSettingsPage } from '@/features/campaigns/screens/InviteSettingsPage';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => '/marketing/invites' }));

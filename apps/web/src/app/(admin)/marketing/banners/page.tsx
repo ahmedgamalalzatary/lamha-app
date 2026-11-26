@@ -1,3 +1,3 @@
-import { BannersPage } from '@/features/offers/BannersPage';
+import { BannersPage } from '@/features/offers/screens/BannersPage';
 
 export default BannersPage;

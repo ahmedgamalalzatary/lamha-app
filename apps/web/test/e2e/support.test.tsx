@@ -5,8 +5,8 @@ import type { ResultSetHeader } from 'mysql2/promise';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { ComplaintsPage } from '@/features/support/ComplaintsPage';
-import { SupportPhonesPage } from '@/features/support/SupportPhonesPage';
+import { ComplaintsPage } from '@/features/support/screens/ComplaintsPage';
+import { SupportPhonesPage } from '@/features/support/screens/SupportPhonesPage';
 import { insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 

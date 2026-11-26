@@ -1,3 +1,3 @@
-import { HomeTilesPage } from '@/features/catalog/HomeTilesPage';
+import { HomeTilesPage } from '@/features/catalog/screens/HomeTilesPage';
 
 export default HomeTilesPage;

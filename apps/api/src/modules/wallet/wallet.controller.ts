@@ -4,7 +4,7 @@ import type { CustomerAccount, Wallet } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
-import { CustomersQuery, WalletAdjustDto } from './wallet.dto.js';
+import { CustomersQuery, WalletAdjustDto } from './dto/wallet.dto.js';
 import { WalletService } from './wallet.service.js';
 
 /** حركة المحفظة (contract §8.15). Customers only. */

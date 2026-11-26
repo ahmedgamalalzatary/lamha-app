@@ -7,7 +7,7 @@ import { ToastHost, toast } from '@/components/Toast';
 import { session } from '@/core/auth/session';
 import { AccountScreen } from '@/features/account/screens/AccountScreen';
 import { HomeScreen } from '@/features/home/screens/HomeScreen';
-import { PointsScreen } from '@/features/points/PointsScreen';
+import { PointsScreen } from '@/features/points/screens/PointsScreen';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { renderApp, testQueryClient } from '../utils/render';
 

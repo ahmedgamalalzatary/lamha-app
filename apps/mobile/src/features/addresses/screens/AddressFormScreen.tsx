@@ -15,7 +15,7 @@ import { useSubmit } from '@/core/hooks/useSubmit';
 import { type TranslationKey, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useAddresses, useAddressActions, useZoneCheck } from '../api/addresses';
-import { chooseAddress } from '../chosen-address';
+import { chooseAddress } from '../hooks/chosen-address';
 import { mapAvailable, mapProvider } from '../map-available';
 import { usePickedSpot } from '../picked-spot';
 

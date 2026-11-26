@@ -4,7 +4,7 @@ import type { DeliverySettings } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
-import { DeliverySettingsDto } from './settings.dto.js';
+import { DeliverySettingsDto } from './dto/settings.dto.js';
 import { SettingsService } from './settings.service.js';
 
 @ApiTags('admin')

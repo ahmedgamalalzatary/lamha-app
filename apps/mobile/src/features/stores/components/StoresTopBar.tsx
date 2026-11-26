@@ -5,7 +5,7 @@ import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
-import { useDeliverTo } from '@/features/addresses/components/useDeliverTo';
+import { useDeliverTo } from '@/features/addresses/hooks/useDeliverTo';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 
 /**

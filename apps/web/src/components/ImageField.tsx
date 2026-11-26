@@ -1,10 +1,10 @@
 'use client';
 
-import type { UploadedImage } from '@tawsela/shared';
 import { ImageUp, Trash2 } from 'lucide-react';
 import { useCallback, useId, useRef, useState } from 'react';
-import { api, mediaUrl } from '@/core/api/client';
+import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
+import { uploadImage } from '@/core/api/uploads';
 import { ErrorLine } from './ui';
 
 /** For a form with image fields: whether a picture is still uploading, so its Save can wait. */
@@ -40,9 +40,7 @@ export function ImageField({
     onBusyChange?.(true);
     setError(undefined);
     try {
-      const form = new FormData();
-      form.append('image', file);
-      onChange((await api.request<UploadedImage>('/admin/uploads', { method: 'POST', body: form })).url);
+      onChange((await uploadImage(file)).url);
     } catch (e) {
       setError(errorMessage(e));
     } finally {

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPip
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import { AddCartLineDto, CartQuantityDto, EditCartDto } from './cart.dto.js';
+import { AddCartLineDto, CartQuantityDto, EditCartDto } from './dto/cart.dto.js';
 import { CartService } from './cart.service.js';
 
 /** The customer's carts, one per store (contract §8.6). */

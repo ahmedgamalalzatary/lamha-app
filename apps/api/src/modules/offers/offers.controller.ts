@@ -5,7 +5,7 @@ import { type AuthUser, CurrentUser } from '../../common/decorators/current-user
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
 import { CatalogRepository } from '../catalog/catalog.repository.js';
-import { BannerDto, CouponDto, ProductDiscountDto, UpdateBannerDto, UpdateCouponDto } from './offers.dto.js';
+import { BannerDto, CouponDto, ProductDiscountDto, UpdateBannerDto, UpdateCouponDto } from './dto/offers.dto.js';
 import { OffersService } from './offers.service.js';
 
 /** Only the fields sent: a PATCH's missing ones are undefined and must not blank the saved ones. */

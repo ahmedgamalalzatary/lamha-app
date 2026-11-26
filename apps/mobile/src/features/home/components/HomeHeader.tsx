@@ -6,7 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
-import { useDeliverTo } from '@/features/addresses/components/useDeliverTo';
+import { useDeliverTo } from '@/features/addresses/hooks/useDeliverTo';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, spacing } from '@/core/theme';
 import { RotatingSearch } from './RotatingSearch';

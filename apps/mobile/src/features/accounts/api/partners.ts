@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import type { AdminStore, CreatedAccount, GeneratedPassword, PartnerAccount } from '@tawsela/shared';
 import { api } from '@/core/api/client';
 
@@ -10,3 +11,7 @@ export const partnersApi = {
   resetPassword: (id: number) => api<GeneratedPassword>(`/admin/partners/${id}/password`, { method: 'POST' }),
   setDisabled: (id: number, disabled: boolean) => api<PartnerAccount>(`/admin/partners/${id}`, { method: 'PATCH', body: { disabled } }),
 };
+
+export function useAccountStores(enabled: boolean) {
+  return useQuery({ queryKey: ['admin', 'stores'], queryFn: partnersApi.stores, enabled });
+}

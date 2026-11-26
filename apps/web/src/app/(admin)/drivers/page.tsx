@@ -1,3 +1,3 @@
-import { DriversPage } from '@/features/drivers/DriversPage';
+import { DriversPage } from '@/features/drivers/screens/DriversPage';
 
 export default DriversPage;

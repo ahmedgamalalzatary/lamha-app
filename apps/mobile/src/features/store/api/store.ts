@@ -1,7 +1,7 @@
 import type { CatalogStore, StorePage } from '@tawsela/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/core/api/client';
-import { useDeliveryScope } from '@/features/addresses/chosen-address';
+import { useDeliveryScope } from '@/features/addresses/hooks/chosen-address';
 
 /**
  * A store page (contract §8.4): the store, its categories and their products with choices. Its delivery

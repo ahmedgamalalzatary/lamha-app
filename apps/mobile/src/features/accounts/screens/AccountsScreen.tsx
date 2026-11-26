@@ -1,5 +1,5 @@
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type DriverAccount, isEgyptianMobile, normalizePhone, type PartnerAccount } from '@tawsela/shared';
+import { useQueryClient } from '@tanstack/react-query';
+import { isEgyptianMobile, normalizePhone } from '@tawsela/shared';
 import * as Clipboard from 'expo-clipboard';
 import { Ban, CircleCheck, KeyRound, Search, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -18,17 +18,14 @@ import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, radius, sizes, spacing } from '@/core/theme';
+import { apiOf, type Account, type Kind, useAccounts } from '../api/accounts';
 import { driversApi } from '../api/drivers';
-import { partnersApi } from '../api/partners';
+import { partnersApi, useAccountStores } from '../api/partners';
 
-/** Partners belong to a store; drivers do not (contract §2). */
-type Account = PartnerAccount | DriverAccount;
-type Kind = 'partner' | 'driver';
 type Pending = { kind: 'reset' | 'disable' | 'enable'; account: Account };
 type Shown = { phone: string; password: string };
 
 const fullName = (a: Account) => `${a.firstName} ${a.lastName}`.trim();
-const apiOf = (kind: Kind) => (kind === 'partner' ? partnersApi : driversApi);
 
 /**
  * The admin's one area in the app (contract §11.2, M2): partner accounts with search; create one for a
@@ -53,13 +50,7 @@ export function AccountsScreen() {
     return () => clearTimeout(id);
   }, [query]);
 
-  // While a new search loads, the last results stay on screen instead of skeletons, but only within
-  // the same tab: a partner card left showing under المندوبين would send its id to the drivers' API.
-  const accounts = useQuery<Account[]>({
-    queryKey: ['admin', `${kind}s`, search],
-    queryFn: () => apiOf(kind).list(search),
-    placeholderData: (previous, query) => (query?.queryKey[1] === `${kind}s` ? keepPreviousData(previous) : undefined),
-  });
+  const accounts = useAccounts(kind, search);
   const refresh = () => client.invalidateQueries({ queryKey: ['admin', `${kind}s`] });
 
   const act = useSubmit(async ({ kind: action, account }: Pending) => {
@@ -220,7 +211,7 @@ function IconAction({ label, onPress, children }: { label: string; onPress: () =
 function NewAccountSheet({ kind, visible, onClose, onCreated }: { kind: Kind; visible: boolean; onClose: () => void; onCreated: (s: Shown) => void }) {
   const t = useT();
   const forStore = kind === 'partner';
-  const stores = useQuery({ queryKey: ['admin', 'stores'], queryFn: partnersApi.stores, enabled: visible && forStore });
+  const stores = useAccountStores(visible && forStore);
   const [storeQuery, setStoreQuery] = useState('');
   const [storeId, setStoreId] = useState<number | null>(null);
   const [firstName, setFirstName] = useState('');

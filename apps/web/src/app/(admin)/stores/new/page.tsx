@@ -1,4 +1,4 @@
-import { StoreFormPage } from '@/features/stores/StoreFormPage';
+import { StoreFormPage } from '@/features/stores/screens/StoreFormPage';
 
 export default function Page() {
   return <StoreFormPage />;

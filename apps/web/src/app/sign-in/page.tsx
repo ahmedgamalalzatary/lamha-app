@@ -1,3 +1,3 @@
-import { SignInRoute } from '@/features/auth/SignInRoute';
+import { SignInRoute } from '@/features/auth/screens/SignInRoute';
 
 export default SignInRoute;

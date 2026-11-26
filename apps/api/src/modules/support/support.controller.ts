@@ -4,7 +4,7 @@ import type { AdminRating, AdminTicket, RatePrompt, SupportPhone } from '@tawsel
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
-import { RatingDto, SupportPhonesDto, TicketDto, TicketStatusDto, TicketsQuery } from './support.dto.js';
+import { RatingDto, SupportPhonesDto, TicketDto, TicketStatusDto, TicketsQuery } from './dto/support.dto.js';
 import { SupportService } from './support.service.js';
 
 /** قيّم طلبك, تقديم شكوى, تقديم مقترح and تواصل معنا (contract §8.8, §8.14). Customers only. */

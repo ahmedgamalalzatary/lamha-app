@@ -4,7 +4,7 @@ import type { CatalogStore, Cuisine, HomeScreen, SearchResult, SearchSuggestion,
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { CatalogService } from './catalog.service.js';
 import { CatalogStoresQuery, SearchQuery, StorePageQuery } from './dto/catalog.dto.js';
-import { OffersQueryDto } from '../offers/offers.dto.js';
+import { OffersQueryDto } from '../offers/dto/offers.dto.js';
 
 /** Router for `/v1/catalog`: what the apps read. Any signed-in account (the app opens on sign-in, §8.1). */
 @ApiTags('catalog')

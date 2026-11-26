@@ -1,19 +1,9 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { AuditPage } from '@tawsela/shared';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from './audit.service.js';
-
-export class AuditQuery {
-  @ApiPropertyOptional({ description: 'The `next` of the previous page' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  before?: number;
-}
+import { AuditQuery } from './dto/audit.dto.js';
 
 /** Router for `/v1/admin/audit`: الإعدادات › سجل التغييرات (review F70). Admins only. */
 @ApiTags('admin')

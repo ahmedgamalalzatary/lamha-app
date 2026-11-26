@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
-import { useDeliveryScope } from '@/features/addresses/chosen-address';
+import { useDeliveryScope } from '@/features/addresses/hooks/chosen-address';
 import { PharmacyRequestCard } from '@/features/pharmacy/components/RequestCard';
 import { useCuisines, useStores } from '../api/stores';
 import { CuisineCircles } from '../components/CuisineCircles';

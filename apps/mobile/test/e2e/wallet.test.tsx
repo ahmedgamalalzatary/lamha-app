@@ -5,7 +5,7 @@ import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library'
 import { ToastHost, toast } from '@/components/Toast';
 import { session } from '@/core/auth/session';
 import { AccountScreen } from '@/features/account/screens/AccountScreen';
-import { WalletScreen } from '@/features/wallet/WalletScreen';
+import { WalletScreen } from '@/features/wallet/screens/WalletScreen';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { renderApp, testQueryClient } from '../utils/render';
 

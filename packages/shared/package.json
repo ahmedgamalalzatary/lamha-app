@@ -20,7 +20,7 @@
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc",
     "clean": "rm -rf dist",
-    "lint": "oxlint src/",
+    "lint": "oxlint src/ test/",
     "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {

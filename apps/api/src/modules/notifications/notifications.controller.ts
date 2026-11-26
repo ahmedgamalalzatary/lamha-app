@@ -4,7 +4,7 @@ import type { Campaign, NotificationsPage } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
-import { CampaignDto, NotificationsQuery, PushTokenDto } from './notifications.dto.js';
+import { CampaignDto, NotificationsQuery, PushTokenDto } from './dto/notifications.dto.js';
 import { NotificationsService } from './notifications.service.js';
 
 /** الإشعارات and the phone's push token, for every signed-in account (contract §8.14, §9, §10). */

@@ -1,3 +1,3 @@
-import { PointsSettingsPage } from '@/features/settings/PointsSettingsPage';
+import { PointsSettingsPage } from '@/features/settings/screens/PointsSettingsPage';
 
 export default PointsSettingsPage;

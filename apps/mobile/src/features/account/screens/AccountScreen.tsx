@@ -20,13 +20,13 @@ import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { meApi } from '../api/me';
 import { AccountRow } from '../components/AccountRow';
-import { usePartnerOrderCounts } from '@/features/partner/api';
-import { ComplaintTypeMenu, SupportRows } from '@/features/support/SupportRows';
-import { useNotifications } from '@/features/notifications/api';
-import { useWallet } from '@/features/wallet/api';
-import { usePoints } from '@/features/points/api';
-import { useDriverMoney, useDriverPoints } from '@/features/driver/api';
-import { AccountInviteCard } from '@/features/invite/AccountInviteCard';
+import { usePartnerOrderCounts } from '@/features/partner/api/partner';
+import { ComplaintTypeMenu, SupportRows } from '@/features/support/components/SupportRows';
+import { useNotifications } from '@/features/notifications/api/notifications';
+import { useWallet } from '@/features/wallet/api/wallet';
+import { usePoints } from '@/features/points/api/points';
+import { useDriverMoney, useDriverPoints } from '@/features/driver/api/driver';
+import { AccountInviteCard } from '@/features/invite/components/AccountInviteCard';
 
 /** [Client] A partner's "الطلبات اللي اتعملت": the orders the store completed (§9), opening طلباتى. */
 function OrdersMadeRow() {

@@ -1,3 +1,3 @@
-import { CampaignsPage } from '@/features/campaigns/CampaignsPage';
+import { CampaignsPage } from '@/features/campaigns/screens/CampaignsPage';
 
 export default CampaignsPage;

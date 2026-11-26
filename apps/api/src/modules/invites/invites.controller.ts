@@ -4,7 +4,7 @@ import { type InviteOverview, type InviteSettings, inviteSettingsProblem } from 
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
-import { InviteSettingsDto } from './invites.dto.js';
+import { InviteSettingsDto } from './dto/invites.dto.js';
 import { InvitesService } from './invites.service.js';
 
 /** ادعُ أصدقاءك (contract §8.17). Customers only. */

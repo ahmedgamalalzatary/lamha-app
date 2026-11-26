@@ -15,7 +15,7 @@ import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { type TranslationKey, useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, sizes, spacing } from '@/core/theme';
-import { useDeliveryScope } from '@/features/addresses/chosen-address';
+import { useDeliveryScope } from '@/features/addresses/hooks/chosen-address';
 import { useSearch, useSuggestions } from '@/features/stores/api/stores';
 import { StoreMeta } from '@/features/stores/components/StoreMeta';
 

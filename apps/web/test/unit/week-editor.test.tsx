@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import type { WeekSchedule } from '@tawsela/shared';
 import { describe, expect, it } from 'vitest';
-import { isWeekReady, WeekEditor } from '@/features/drivers/WeekEditor';
+import { isWeekReady, WeekEditor } from '@/features/drivers/components/WeekEditor';
 
 const week = (sun: [string, string] | null, mon: [string, string] | null): WeekSchedule =>
   [sun, mon, null, null, null, null, null].map((d) => (d ? { start: d[0], end: d[1] } : null));

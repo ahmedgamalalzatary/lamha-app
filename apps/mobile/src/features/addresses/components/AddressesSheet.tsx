@@ -15,7 +15,7 @@ import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useAddresses, useAddressActions } from '../api/addresses';
-import { useChosenAddress } from '../chosen-address';
+import { useChosenAddress } from '../hooks/chosen-address';
 
 /**
  * Tawsilty's "العناوين المحفوظة" sheet (saved-addresses-sheet-two-addresses.png): ✕, each address with

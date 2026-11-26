@@ -1,3 +1,3 @@
-import { SupportPhonesPage } from '@/features/support/SupportPhonesPage';
+import { SupportPhonesPage } from '@/features/support/screens/SupportPhonesPage';
 
 export default SupportPhonesPage;

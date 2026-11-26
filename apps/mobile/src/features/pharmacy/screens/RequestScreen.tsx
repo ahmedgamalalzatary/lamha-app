@@ -16,7 +16,7 @@ import { errorMessage } from '@/core/api/error-message';
 import { useSubmit } from '@/core/hooks/useSubmit';
 import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, sizes, spacing } from '@/core/theme';
-import { pharmacyApi, requestCheckout } from '../api';
+import { pharmacyApi, requestCheckout } from '../api/pharmacy';
 
 /** Sharp enough to read a prescription; the API keeps it at 1600 px at most. */
 const PICK: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8 };

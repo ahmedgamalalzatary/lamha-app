@@ -5,8 +5,8 @@ import type { LatLng } from '@tawsela/shared';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { StoreFormPage } from '@/features/stores/StoreFormPage';
-import { ZonesPage } from '@/features/zones/ZonesPage';
+import { StoreFormPage } from '@/features/stores/screens/StoreFormPage';
+import { ZonesPage } from '@/features/zones/screens/ZonesPage';
 import { insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 

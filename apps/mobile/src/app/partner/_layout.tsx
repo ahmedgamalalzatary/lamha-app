@@ -1,6 +1,6 @@
 import { Gate } from '@/core/navigation/area-gate';
 import { RoleTabs } from '@/core/navigation/RoleTabs';
-import { PartnerLive } from '@/features/partner/PartnerLive';
+import { PartnerLive } from '@/features/partner/components/PartnerLive';
 
 export default function Layout() {
   return (

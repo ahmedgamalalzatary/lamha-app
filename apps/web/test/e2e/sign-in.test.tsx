@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { SignInRoute } from '@/features/auth/SignInRoute';
+import { SignInRoute } from '@/features/auth/screens/SignInRoute';
 import { insertUser, PASSWORD, resetDb } from '../utils/db';
 
 const replace = vi.fn();

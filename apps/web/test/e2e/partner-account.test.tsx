@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Providers } from '@/app/providers';
 import { api, forgetSession, sessionStore } from '@/core/api/client';
-import { PartnerAccountPage } from '@/features/account/PartnerAccountPage';
+import { PartnerAccountPage } from '@/features/account/screens/PartnerAccountPage';
 import { cookieJar } from '../utils/cookies';
 import { cookieRenews, insertUser, PASSWORD, resetDb, signInAs } from '../utils/db';
 import { API_URL } from '../utils/env';

@@ -1,3 +1,3 @@
-import { PartnerOrdersScreen } from '@/features/partner/PartnerOrdersScreen';
+import { PartnerOrdersScreen } from '@/features/partner/screens/PartnerOrdersScreen';
 
 export default PartnerOrdersScreen;

@@ -23,7 +23,7 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CreateAdminDto, SetDisabledDto } from '../admins/dto/admins.dto.js';
 import { AuditService } from '../audit/audit.service.js';
 import { DriverMoneyService } from './driver-money.service.js';
-import { AssignDriverDto, DriverFeeDto, DriverScheduleDto, DriverSettingsDto, DriversQuery, FineDto, HistoryQuery } from './drivers.dto.js';
+import { AssignDriverDto, DriverFeeDto, DriverScheduleDto, DriverSettingsDto, DriversQuery, FineDto, HistoryQuery } from './dto/drivers.dto.js';
 import { DriversService } from './drivers.service.js';
 
 /** The delivery man's app (contract §10): his shift, the offers, and his orders. */

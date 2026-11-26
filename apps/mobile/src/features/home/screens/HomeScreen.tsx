@@ -11,7 +11,7 @@ import { HomeTiles, HomeTilesSkeleton } from '../components/HomeTiles';
 import { InviteCard } from '../components/InviteCard';
 import { OfferTiles } from '../components/OfferTiles';
 import { UseAndSave } from '../components/UseAndSave';
-import { useInviteDismissed } from '../invite-dismissed';
+import { useInviteDismissed } from '../hooks/invite-dismissed';
 
 /**
  * The customer's الرئيسية (contract §8.2): header with the address and search, the tiles, the invite

@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
-import { OfferBadges } from '@/features/offers/OfferBadges';
+import { OfferBadges } from '@/features/offers/components/OfferBadges';
 import { useStores } from '@/features/stores/api/stores';
 import { StoreMeta } from '@/features/stores/components/StoreMeta';
 import { StorePicture } from '@/features/stores/components/StoreRow';

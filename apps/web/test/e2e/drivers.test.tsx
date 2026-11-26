@@ -6,9 +6,9 @@ import type { ResultSetHeader } from 'mysql2/promise';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { DriverRulesPage } from '@/features/drivers/DriverRulesPage';
-import { DriversPage } from '@/features/drivers/DriversPage';
-import { OrdersPage } from '@/features/orders/OrdersPage';
+import { DriverRulesPage } from '@/features/drivers/screens/DriverRulesPage';
+import { DriversPage } from '@/features/drivers/screens/DriversPage';
+import { OrdersPage } from '@/features/orders/screens/OrdersPage';
 import { insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
-import { AreaShell } from '@/features/shell/AreaShell';
+import { AreaShell } from '@/features/shell/components/AreaShell';
 import { cookieJar } from '../utils/cookies';
 import { cookieRenews, insertUser, resetDb, signInAs } from '../utils/db';
 
