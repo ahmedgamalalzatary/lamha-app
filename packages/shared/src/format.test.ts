@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatAmount,
+  formatClock,
   formatDay,
   formatMinutes,
   formatMinutesRange,
@@ -110,5 +111,14 @@ describe('formatDay (contract §8.4 "صالح حتى 30 نوفمبر 2026")', ()
 
   it('counts the day in Cairo: 23:30 UTC is the next day there', () => {
     expect(formatDay('2026-01-31T23:30:00.000Z')).toBe('1 فبراير 2026');
+  });
+});
+
+describe('formatClock', () => {
+  it('reads a Cairo time as "يفتح الساعة 11:00 ص" does in Tawsilty', () => {
+    expect(formatClock('11:00')).toBe('11:00 ص');
+    expect(formatClock('23:30')).toBe('11:30 م');
+    expect(formatClock('00:15')).toBe('12:15 ص');
+    expect(formatClock('12:00', 'en')).toBe('12:00 PM');
   });
 });

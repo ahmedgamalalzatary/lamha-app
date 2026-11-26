@@ -1,6 +1,6 @@
 import { cashDue, type CheckoutQuote, type CustomerCart, formatMoney, type LatLng, pointsPay, pointsToGo, pointsWorth, slotLabel, walletPays } from '@tawsela/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Banknote, Lock, MapPin, ShoppingCart, Star, TicketPercent, Wallet } from 'lucide-react-native';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
@@ -22,7 +22,7 @@ import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useChosenAddress } from '@/features/addresses/chosen-address';
 import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { confirmOnMap, usePickedSpot } from '@/features/addresses/picked-spot';
-import { useCart } from '@/features/cart/api/cart';
+import { cartChanged, cartKeys, useCart } from '@/features/cart/api/cart';
 import { useStorePage } from '@/features/store/api/store';
 import { FreeFee } from '@/features/stores/components/FreeFee';
 import { pointsKey } from '@/features/points/api';
@@ -32,6 +32,8 @@ import { checkoutApi, newRequestId } from './api';
 /** "سيصل خلال 30 دقيقة" when the store page has not said its own time yet. */
 const DEFAULT_MINUTES = 30;
 
+const couponError = (e: unknown) => e instanceof ApiRequestError && e.code?.startsWith('COUPON_') === true;
+
 /**
  * Tawsilty's "إتمام الدفع" (contract §8.7, customer/checkout/*): the delivery address with "تغيير", now or
  * a later slot today, cash on delivery, the bill (products and the distance delivery fee, no service
@@ -40,11 +42,12 @@ const DEFAULT_MINUTES = 30;
  */
 export function CheckoutScreen() {
   const t = useT();
-  const { cart, query } = useCart();
+  const storeId = Number(useLocalSearchParams<{ storeId: string }>().storeId);
+  const { cart, query } = useCart(storeId);
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <BackButton variant="square" onPress={() => (router.canGoBack() ? router.back() : router.navigate('/customer/cart'))} />
+        <BackButton variant="square" onPress={() => (router.canGoBack() ? router.back() : router.navigate(`/cart/${storeId}`))} />
         <AppText accessibilityRole="header" size={fontSizes.sectionTitle} weight="bold">
           {t('checkout.title')}
         </AppText>
@@ -102,10 +105,10 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
     // the bill is asked again without it.
     queryFn: async () => {
       try {
-        return await checkoutApi.quote({ addressId, location, couponCode });
+        return await checkoutApi.quote({ cartId: cart.id, addressId, location, couponCode });
       } catch (e) {
-        if (couponCode && e instanceof ApiRequestError && e.code?.startsWith('COUPON_')) {
-          toast.show(errorMessage(e), 'error');
+        if (couponCode && couponError(e)) {
+          toast.show(errorMessage(e), 'hint');
           setCouponCode(undefined);
         }
         throw e;
@@ -124,25 +127,26 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
     }
     setApplying(true);
     try {
-      const priced = await checkoutApi.quote({ addressId, location, couponCode: code });
+      const priced = await checkoutApi.quote({ cartId: cart.id, addressId, location, couponCode: code });
       client.setQueryData([...quoteKey.slice(0, 8), code], priced);
       setCouponCode(code);
     } catch (e) {
-      toast.show(errorMessage(e), 'error');
+      // A code that cannot be used shows in the dark toast (customer/checkout/coupon-invalid-code-toast.png).
+      toast.show(errorMessage(e), couponError(e) ? 'hint' : 'error');
     } finally {
       setApplying(false);
     }
   };
 
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: ['cart', userId] });
+    void client.invalidateQueries({ queryKey: cartKeys.store(userId, cart.store.id) });
     void client.invalidateQueries({ queryKey: ['checkout', userId] });
   };
 
   /** `picked`: a spot just confirmed on the map, for this address; it is kept once the server prices it. */
   const submit = useSubmit(async (shown: CheckoutQuote, spot?: LatLng, picked?: number) => {
     // The map may have moved the spot: price it before placing, and stop if the bill changed.
-    const current = spot && picked !== undefined ? await checkoutApi.quote({ addressId: picked, location: spot, couponCode }) : shown;
+    const current = spot && picked !== undefined ? await checkoutApi.quote({ cartId: cart.id, addressId: picked, location: spot, couponCode }) : shown;
     if (spot && picked !== undefined) {
       client.setQueryData([...quoteKey.slice(0, 5), picked, spot.lat, spot.lng, couponCode ?? null], current);
       setConfirmed({ addressId: picked, spot });
@@ -169,7 +173,8 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
       if (e instanceof ApiRequestError && e.status === 409) refresh();
       throw e;
     }
-    client.setQueryData(['cart', userId], { cart: null });
+    client.setQueryData(cartKeys.store(userId, cart.store.id), { cart: null });
+    cartChanged(client, userId);
     void client.invalidateQueries({ queryKey: ['orders', userId] });
     if (walletPaid > 0) void client.invalidateQueries({ queryKey: [...walletKey, userId] });
     if (points.points > 0) void client.invalidateQueries({ queryKey: [...pointsKey, userId] });

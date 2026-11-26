@@ -11,7 +11,7 @@ export const carts = mysqlTable('carts', {
   storeId: id('store_id').notNull().references(() => stores.id, { onDelete: 'cascade' }),
   note: varchar('note', { length: CART_NOTE_LIMIT }).notNull().default(''),
   mode: mysqlEnum('mode', CART_MODES).notNull().default('delivery'),
-}, (t) => [uniqueIndex('carts_user_idx').on(t.userId), index('carts_store_idx').on(t.storeId)]);
+}, (t) => [uniqueIndex('carts_user_store_idx').on(t.userId, t.storeId), index('carts_store_idx').on(t.storeId)]);
 
 export const cartLines = mysqlTable('cart_lines', {
   id: id('id').autoincrement().primaryKey(),

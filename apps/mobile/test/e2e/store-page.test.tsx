@@ -1,10 +1,11 @@
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
-import Cart from '@/app/customer/cart';
+import MyCarts from '@/app/customer/cart';
 import { ToastHost } from '@/components/Toast';
 import { session } from '@/core/auth/session';
 import { cartApi } from '@/features/cart/api/cart';
+import { CartScreen } from '@/features/cart/screens/CartScreen';
 import { FavoritesScreen } from '@/features/favorites/screens/FavoritesScreen';
 import { CategoryScreen } from '@/features/store/screens/CategoryScreen';
 import { StoreScreen } from '@/features/store/screens/StoreScreen';
@@ -29,7 +30,8 @@ const ROUTES = {
   'store/[id]/category/[categoryId]': CategoryScreen,
   'store/[id]/search': StoreSearchScreen,
   favorites: FavoritesScreen,
-  'customer/cart': Cart,
+  'customer/cart': MyCarts,
+  'cart/[storeId]': CartScreen,
 };
 
 /** The bottom bar's text, read as one line. */
@@ -50,30 +52,63 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     const store = await insertStore('ماكي');
     const productId = await insertMenuItem(store, await insertCategory(store, 'الوجبات'), 'برجر', 85);
     const { cart } = await cartApi.add({ productId, quantity: 1, optionIds: [], removedIngredientIds: [] });
-    await renderApp(ROUTES, { initialUrl: '/customer/cart' });
+    await renderApp(ROUTES, { initialUrl: `/cart/${store}` });
     const increase = await screen.findByRole('button', { name: 'زيادة كمية برجر' });
     await cartApi.remove(cart!.lines[0]!.id);
     await fireEvent.press(increase);
     expect(await screen.findByText('سلتك فارغة')).toBeTruthy();
   });
 
-  it('keeps a customized selection on cancel and shows add failures inside the product sheet', async () => {
+  it("a closed store's item goes in its own cart beside another store's; add failures show inside the sheet (§8.6)", async () => {
     const first = await insertStore('ماكي');
     const second = await insertStore('الساقية');
     const productId = await insertMenuItem(first, await insertCategory(first, 'الوجبات'), 'برجر', 85);
-    const custom = await insertMenuItem(second, await insertCategory(second, 'السندوتشات'), 'شاورما', 100);
+    const category = await insertCategory(second, 'السندوتشات');
+    const custom = await insertMenuItem(second, category, 'شاورما', 100);
+    const gone = await insertMenuItem(second, category, 'كفتة', 90, 1);
     await insertOptionGroup(custom, 'الحجم', true, 1, [['كبير', 20]]);
+    await insertOptionGroup(gone, 'الحجم', true, 1, [['كبير', 20]]);
     await cartApi.add({ productId, quantity: 1, optionIds: [], removedIngredientIds: [] });
+    await sql('UPDATE stores SET closed_now = true WHERE id = ?', [second]);
     await renderApp(ROUTES, { initialUrl: `/store/${second}?product=${custom}` });
     await fireEvent.press(await screen.findByRole('radio', { name: 'كبير (+20.00 ج.م)' }));
     await fireEvent.press(screen.getByRole('button', { name: 'أضف للسلة 120.00 ج.م' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'إلغاء' }));
-    const add = await screen.findByRole('button', { name: 'أضف للسلة 120.00 ج.م' });
-    expect(add).toBeEnabled();
-    await sql('UPDATE stores SET closed_now = true WHERE id = ?', [second]);
-    await fireEvent.press(add);
-    const alert = await within(screen.getByTestId('product-sheet')).findByText('عذراً الخدمة مغلقة الآن');
+    expect(await screen.findByText('تمت الاضافة الى السلة')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByTestId('product-sheet')).toBeNull());
+    expect((await cartApi.get(second)).cart).toMatchObject({ total: 120, store: { isOpen: false } });
+    expect((await cartApi.get(first)).cart?.total).toBe(85);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'كفتة' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'كبير (+20.00 ج.م)' }));
+    await sql('UPDATE products SET active = false WHERE id = ?', [gone]);
+    await fireEvent.press(screen.getByRole('button', { name: 'أضف للسلة 110.00 ج.م' }));
+    const alert = await within(screen.getByTestId('product-sheet')).findByText('هذا المنتج أو اختياراته غير متاحة الآن');
     expect(alert).toHaveProp('accessibilityRole', 'alert');
+  });
+
+  it('"سلاتي" lists a card per store cart, opens it, and "حذف كل السلات؟" empties them all (§8.6)', async () => {
+    const first = await insertStore('ماكي');
+    const second = await insertStore('الساقية');
+    await cartApi.add({ productId: await insertMenuItem(first, await insertCategory(first, 'الوجبات'), 'برجر', 85), quantity: 2, optionIds: [], removedIngredientIds: [] });
+    await cartApi.add({ productId: await insertMenuItem(second, await insertCategory(second, 'السندوتشات'), 'شاورما', 100), quantity: 1, optionIds: [], removedIngredientIds: [] });
+    await renderApp(ROUTES, { initialUrl: '/customer/cart' });
+
+    expect(await screen.findByRole('header', { name: 'سلاتي' })).toBeTruthy();
+    const cards = await screen.findAllByRole('button', { name: /أصناف$/ });
+    expect(cards.map((c) => c.props.accessibilityLabel)).toEqual(['الساقية, 1 أصناف', 'ماكي, 1 أصناف']);
+    await fireEvent.press(cards[1]!);
+    expect(await screen.findByText('سلة المشتريات')).toBeTruthy();
+    expect(screen).toHavePathname(`/cart/${first}`);
+    await act(async () => router.back());
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'حذف كل السلات' }));
+    expect(screen.getByText('سيتم حذف جميع السلات المعلقة')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'إلغاء' }));
+    expect(screen.getAllByRole('button', { name: /أصناف$/ })).toHaveLength(2);
+    await fireEvent.press(screen.getByRole('button', { name: 'حذف كل السلات' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'حذف' }));
+    expect(await screen.findByText('سلتك فارغة')).toBeTruthy();
+    expect((await cartApi.list()).carts).toEqual([]);
   });
 
   it('opens the persisted cart, edits quantities and the note, and handles a store closing', async () => {
@@ -102,27 +137,23 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     await fireEvent.press(screen.getByRole('button', { name: 'تقليل كمية برجر' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'حذف برجر' }));
     await fireEvent.press(screen.getByRole('button', { name: 'إلغاء' }));
-    expect(screen.getByText('برجر')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'حذف برجر' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'حذف برجر' }));
     await fireEvent.press(screen.getByRole('button', { name: 'حذف' }));
     expect(await screen.findByText('سلتك فارغة')).toBeTruthy();
   });
 
-  it('keeps the product sheet open when its add empties the cart suggestions', async () => {
+  it('"قد تعجبك أيضًا" also offers what is already in the cart, with its "+" (capture 2026-11-26)', async () => {
     const store = await insertStore('ماكي');
     const category = await insertCategory(store, 'الوجبات');
     const burger = await insertMenuItem(store, category, 'برجر', 85);
-    await insertOptionGroup(burger, 'إضافات', false, 1, [['جبنة', 10]]);
     await insertMenuItem(store, category, 'بطاطس', 20, 1);
     await cartApi.add({ productId: burger, quantity: 1, optionIds: [], removedIngredientIds: [] });
-    await renderApp(ROUTES, { initialUrl: '/customer/cart' });
+    await renderApp(ROUTES, { initialUrl: `/cart/${store}` });
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'بطاطس' }));
-    await fireEvent.press(await within(screen.getByTestId('product-sheet')).findByRole('button', { name: 'اختر برجر' }));
-    await within(screen.getByTestId('product-sheet')).findByRole('header', { name: 'برجر' });
-    await fireEvent.press(within(screen.getByTestId('product-sheet')).getByRole('button', { name: 'أضف بطاطس' }));
-    expect(await screen.findByRole('button', { name: 'زيادة كمية بطاطس' })).toBeTruthy();
-    expect(within(screen.getByTestId('product-sheet')).getByRole('header', { name: 'برجر' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'أضف بطاطس' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'أضف برجر' }));
+    expect(await screen.findAllByText('170.00 ج.م')).toHaveLength(2);
   });
 
   it('a slow note save does not close a newer note being written', async () => {
@@ -137,7 +168,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
       return realEdit(body);
     });
     try {
-      await renderApp(ROUTES, { initialUrl: '/customer/cart' });
+      await renderApp(ROUTES, { initialUrl: `/cart/${store}` });
       await fireEvent.press(await screen.findByRole('button', { name: 'دوّن ملاحظة' }));
       await fireEvent.changeText(screen.getByPlaceholderText('دوّن ملاحظة'), 'أ');
       await fireEvent.press(screen.getByRole('button', { name: 'تم' }));
@@ -146,14 +177,14 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
       await fireEvent.changeText(screen.getByPlaceholderText('دوّن ملاحظة'), 'ب');
       release();
       await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
-      await waitFor(async () => expect((await cartApi.get()).cart?.note).toBe('أ'));
+      await waitFor(async () => expect((await cartApi.get(store)).cart?.note).toBe('أ'));
       expect(await screen.findByDisplayValue('ب')).toBeTruthy();
     } finally {
       spy.mockRestore();
     }
   });
 
-  it('keeps the product sheet open after replacing the cart for an ordered-together add', async () => {
+  it('an ordered-together add from another store starts that store cart and keeps the product sheet open', async () => {
     const first = await insertStore('ماكي');
     const second = await insertStore('الساقية');
     const burger = await insertMenuItem(first, await insertCategory(first, 'الوجبات'), 'برجر', 85);
@@ -165,13 +196,12 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     await renderApp(ROUTES, { initialUrl: `/store/${second}?product=${shawarma}` });
 
     await fireEvent.press(await within(await screen.findByTestId('product-sheet')).findByRole('button', { name: 'أضف بطاطس' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'استبدال السلة' }));
-    await waitFor(async () => expect((await cartApi.get()).cart?.store.id).toBe(second));
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'استبدال السلة' })).toBeNull());
+    await waitFor(async () => expect((await cartApi.get(second)).cart?.count).toBe(1));
+    expect((await cartApi.get(first)).cart?.count).toBe(1);
     expect(within(screen.getByTestId('product-sheet')).getByRole('header', { name: 'شاورما' })).toBeTruthy();
   });
 
-  it('keeps the earlier cart on cancel and switches stores on confirmation in English', async () => {
+  it('keeps a cart per store and opens that store cart in English', async () => {
     await sql("UPDATE users SET locale = 'en' WHERE phone = ?", ['01554459196']);
     await session.signIn(await signInAs('01554459196'));
     const first = await insertStore('First store', 'restaurant', { pickupAllowed: true });
@@ -184,12 +214,8 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     await within(await barShown()).findByText('85.00 EGP');
     await act(async () => router.push(`/store/${second}`));
     await fireEvent.press(await screen.findByRole('button', { name: 'Add Pizza' }));
-    expect(await screen.findByText('Your cart contains items from First store. Replace them?')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
-    expect((await cartApi.get()).cart?.store.id).toBe(first);
-
-    await fireEvent.press(screen.getByRole('button', { name: 'Add Pizza' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Replace cart' }));
+    expect(await screen.findByText('Added to the cart')).toBeTruthy();
+    expect((await cartApi.get(first)).cart?.total).toBe(85);
     await fireEvent.press(await screen.findByRole('button', { name: /View cart/ }));
     expect(await screen.findByText('Shopping cart')).toBeTruthy();
     expect(screen.getByText('Second store')).toBeTruthy();
@@ -265,7 +291,7 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     await waitFor(() => expect(within(bar()).getByText('627.50 ج.م')).toBeTruthy());
 
     await fireEvent.press(within(bar()).getByRole('button'));
-    await waitFor(() => expect(screen).toHavePathname('/customer/cart'));
+    await waitFor(() => expect(screen).toHavePathname(`/cart/${sara}`));
   });
 
   it('market: the الأقسام grid opens a category page with sub-category circles and a product search', async () => {
@@ -302,6 +328,40 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     await fireEvent.press(screen.getByRole('button', { name: 'أضف طماطم فرز أول' }));
     expect(await within(await barShown()).findByText('عرض السلة')).toBeTruthy();
     expect(within(bar()).getByText('20.00 ج.م')).toBeTruthy();
+  });
+
+  it('a store closed by its hours says when it opens: "يفتح الساعة" (capture 2026-11-26)', async () => {
+    const later = await insertStore('Maky');
+    // Opens two hours from now in Cairo, for one minute.
+    const [h, m] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .format(new Date()).split(':').map(Number) as [number, number];
+    const opens = (h + 2) % 24;
+    await sql('UPDATE stores SET opens_at = ?, closes_at = ? WHERE id = ?', [`${opens}:${m}`, `${opens}:${(m + 1) % 60}`, later]);
+    await renderApp(ROUTES, { initialUrl: `/store/${later}` });
+    const clock = `${opens % 12 || 12}:${String(m).padStart(2, '0')} ${opens < 12 ? 'ص' : 'م'}`;
+    expect(await screen.findByText(`يفتح الساعة ${clock}`)).toBeTruthy();
+    expect(screen.getByText('مغلق')).toBeTruthy();
+  });
+
+  it('a store closed by its switch reads "مغلق" without an opening time', async () => {
+    const switched = await insertStore('ماكي', 'restaurant', { closedNow: true });
+    await renderApp(ROUTES, { initialUrl: `/store/${switched}` });
+    expect(await screen.findByText('مغلق')).toBeTruthy();
+    expect(screen.queryByText(/يفتح الساعة/)).toBeNull();
+  });
+
+  it('an item in the cart shows its count, and tapping the count does nothing (capture 2026-11-26)', async () => {
+    const maky = await insertStore('Maky');
+    const sandwiches = await insertCategory(maky, 'سندوتشات');
+    await insertMenuItem(maky, sandwiches, 'تويستر', 90);
+    await renderApp(ROUTES, { initialUrl: `/store/${maky}` });
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'أضف تويستر' }));
+    const badge = await screen.findByLabelText('تويستر: 1 في السلة');
+    await fireEvent.press(badge);
+    await waitFor(() => expect(within(bar()).getByText('90.00 ج.م')).toBeTruthy());
+    expect(screen.queryByTestId('product-sheet')).toBeNull();
+    expect(screen.getByLabelText('تويستر: 1 في السلة')).toBeTruthy();
   });
 
   it('the search button opens "البحث": products as you type; nothing typed or nothing matching leaves it blank', async () => {

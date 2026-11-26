@@ -48,8 +48,8 @@ describe('the wallet (e2e, contract §8.15, §11 A5)', () => {
 
   /** 2 × شاورما فراخ (85) delivered for 30: a bill of 200. */
   async function bill() {
-    await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-    return (await http().post('/v1/me/checkout/quote').set(customer).send({ addressId: address }).expect(200)).body;
+    const { cart } = (await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
+    return (await http().post('/v1/me/checkout/quote').set(customer).send({ cartId: cart.id, addressId: address }).expect(200)).body;
   }
   const place = (body: object) => http().post('/v1/me/orders').set(customer).send({ addressId: address, slot: null, requestId: nextRequest(), ...body });
 

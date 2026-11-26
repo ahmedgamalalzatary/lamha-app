@@ -4,6 +4,7 @@ import {
   type AddCartLine,
   CART_QUANTITY_LIMIT,
   type CartResponse,
+  type CartsResponse,
   cartSummary,
   type CustomerCart,
   lineKey,
@@ -11,7 +12,7 @@ import {
   type Product,
   unitPrice,
 } from '@tawsela/shared';
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { ApiException } from '../../common/api-exception.js';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { CatalogRepository, type Tx } from '../catalog/catalog.repository.js';
@@ -39,6 +40,10 @@ function validSelection(product: Product, optionIds: number[], removedIds: numbe
   return matched === optionIds.length && removedIds.every((id) => product.ingredients.some((ingredient) => ingredient.id === id));
 }
 
+/**
+ * The customer's carts (contract §8.6): one per store, several at once. A closed store's items still
+ * go in; "تابع للدفع" (ready) is where a closed store stops the order.
+ */
 @Injectable()
 export class CartService {
   constructor(
@@ -46,38 +51,42 @@ export class CartService {
     private readonly catalog: CatalogRepository,
   ) {}
 
-  get(userId: number): Promise<CartResponse> {
-    return this.db.transaction(async (tx) => ({ cart: await this.snapshot(tx, await this.find(tx, userId)) }));
+  /** "سلاتي": a card per cart, newest first [Derived]. */
+  async list(userId: number): Promise<CartsResponse> {
+    const rows = await this.db
+      .select({ id: carts.id, storeId: stores.id, name: stores.name, logo: stores.logo, items: count(cartLines.id) })
+      .from(carts)
+      .innerJoin(stores, eq(stores.id, carts.storeId))
+      .innerJoin(cartLines, eq(cartLines.cartId, carts.id))
+      .where(eq(carts.userId, userId))
+      .groupBy(carts.id, stores.id)
+      .orderBy(desc(carts.id));
+    return { carts: rows.map(({ id, storeId, name, logo, items }) => ({ id, store: { id: storeId, name, logo }, items })) };
   }
 
+  /** "حذف كل السلات؟". */
+  async clearAll(userId: number): Promise<CartsResponse> {
+    await this.db.delete(carts).where(eq(carts.userId, userId));
+    return { carts: [] };
+  }
+
+  get(userId: number, storeId: number): Promise<CartResponse> {
+    return this.db.transaction(async (tx) => ({ cart: await this.snapshot(tx, await this.find(tx, userId, storeId)) }));
+  }
+
+  /** Adds to the cart of the product's store, starting that cart when there is none yet. */
   add(userId: number, input: AddCartLine): Promise<CartResponse> {
-    return this.write(userId, async (tx, existing) => {
+    return this.write(userId, async (tx) => {
       const [row] = await tx.select().from(products).where(eq(products.id, input.productId));
       if (!row?.active) throw unavailable();
-      const [store] = await tx.select().from(stores).where(eq(stores.id, row.storeId));
-      if (!store?.active || !storeIsOpen(store, new Date())) throw closed();
+      const [store] = await tx.select({ active: stores.active }).from(stores).where(eq(stores.id, row.storeId));
+      if (!store?.active) throw unavailable();
       const choices = await this.catalog.choicesOf([row.id], tx);
       const product = toProduct(row, choices.get(row.id));
       if (!validSelection(product, input.optionIds, input.removedIngredientIds)) {
         throw new BadRequestException('Invalid options or ingredients');
       }
-
-      let cartId = existing?.id;
-      if (existing) {
-        const [firstLine] = await tx.select({ id: cartLines.id }).from(cartLines).where(eq(cartLines.cartId, existing.id)).limit(1);
-        if (firstLine && existing.storeId !== row.storeId && existing.id !== input.replaceCartId) {
-          throw new ApiException(HttpStatus.CONFLICT, 'CART_STORE_CONFLICT', 'The cart contains items from another store');
-        }
-        if (!firstLine || existing.storeId !== row.storeId) {
-          await tx.delete(carts).where(eq(carts.id, existing.id));
-          cartId = undefined;
-        }
-      }
-      if (cartId === undefined) {
-        const [created] = await tx.insert(carts).values({ userId, storeId: row.storeId }).$returningId();
-        cartId = created!.id;
-      }
-
+      const cartId = await this.cartOf(tx, userId, row.storeId);
       const selectionKey = createHash('sha256').update(lineKey(row.id, input.optionIds, input.removedIngredientIds)).digest('hex');
       const [line] = await tx.select().from(cartLines).where(and(eq(cartLines.cartId, cartId), eq(cartLines.selectionKey, selectionKey)));
       if (line) {
@@ -88,24 +97,20 @@ export class CartService {
           optionIds: input.optionIds, removedIngredientIds: input.removedIngredientIds,
         });
       }
+      return row.storeId;
     });
   }
 
   /**
-   * "اطلب تاني" (§8.8): puts an order's lines back in the cart, as adding them one by one would, and
-   * leaves out the ones gone from the menu or whose choices no longer fit. Another store's cart is
-   * replaced only when the customer agreed (replaceCartId); quantities stop at the limit.
+   * "اطلب تاني" (§8.8): puts an order's lines back in that store's cart, as adding them one by one
+   * would, and leaves out the ones gone from the menu or whose choices no longer fit. Quantities stop
+   * at the limit.
    */
-  async reorder(
-    userId: number,
-    storeId: number,
-    items: Omit<AddCartLine, 'replaceCartId'>[],
-    replaceCartId?: number,
-  ): Promise<{ cart: CustomerCart; skipped: number }> {
+  async reorder(userId: number, storeId: number, items: AddCartLine[]): Promise<{ cart: CustomerCart; skipped: number }> {
     let skipped = 0;
-    const { cart } = await this.write(userId, async (tx, existing) => {
-      const [store] = await tx.select().from(stores).where(eq(stores.id, storeId));
-      if (!store?.active || !storeIsOpen(store, new Date())) throw closed();
+    const { cart } = await this.write(userId, async (tx) => {
+      const [store] = await tx.select({ active: stores.active }).from(stores).where(eq(stores.id, storeId));
+      if (!store?.active) throw unavailable();
       const ids = [...new Set(items.map((i) => i.productId))];
       const rows = ids.length ? await tx.select().from(products).where(and(inArray(products.id, ids), eq(products.storeId, storeId))) : [];
       const choices = await this.catalog.choicesOf(rows.map((r) => r.id), tx);
@@ -115,22 +120,7 @@ export class CartService {
       });
       skipped = items.length - valid.length;
       if (!valid.length) throw unavailable();
-
-      let cartId = existing?.id;
-      if (existing) {
-        const [firstLine] = await tx.select({ id: cartLines.id }).from(cartLines).where(eq(cartLines.cartId, existing.id)).limit(1);
-        if (firstLine && existing.storeId !== storeId && existing.id !== replaceCartId) {
-          throw new ApiException(HttpStatus.CONFLICT, 'CART_STORE_CONFLICT', 'The cart contains items from another store');
-        }
-        if (!firstLine || existing.storeId !== storeId) {
-          await tx.delete(carts).where(eq(carts.id, existing.id));
-          cartId = undefined;
-        }
-      }
-      if (cartId === undefined) {
-        const [created] = await tx.insert(carts).values({ userId, storeId }).$returningId();
-        cartId = created!.id;
-      }
+      const cartId = await this.cartOf(tx, userId, storeId);
       for (const item of valid) {
         const selectionKey = createHash('sha256').update(lineKey(item.productId, item.optionIds, item.removedIngredientIds)).digest('hex');
         const [line] = await tx.select().from(cartLines).where(and(eq(cartLines.cartId, cartId), eq(cartLines.selectionKey, selectionKey)));
@@ -143,39 +133,40 @@ export class CartService {
           });
         }
       }
+      return storeId;
     });
     return { cart: cart!, skipped };
   }
 
   adjust(userId: number, lineId: number, delta: -1 | 1): Promise<CartResponse> {
-    return this.write(userId, async (tx, cart) => {
-      const line = await this.ownedLine(tx, cart, lineId);
+    return this.write(userId, async (tx) => {
+      const { line, cart } = await this.ownedLine(tx, userId, lineId);
       if (delta > 0) {
         const current = await this.snapshot(tx, cart);
-        if (!current?.store.isOpen) throw closed();
-        if (!current.lines.find((item) => item.id === line.id)?.available) throw unavailable();
+        if (!current?.lines.find((item) => item.id === line.id)?.available) throw unavailable();
       }
       if (line.quantity + delta < 1) {
         throw new BadRequestException('Use DELETE to remove the item');
       }
       await this.quantity(tx, line, line.quantity + delta);
+      return cart.storeId;
     });
   }
 
   remove(userId: number, lineId: number): Promise<CartResponse> {
-    return this.write(userId, async (tx, cart) => {
-      const line = await this.ownedLine(tx, cart, lineId);
+    return this.write(userId, async (tx) => {
+      const { line, cart } = await this.ownedLine(tx, userId, lineId);
       await tx.delete(cartLines).where(eq(cartLines.id, line.id));
-      const [remaining] = await tx.select({ id: cartLines.id }).from(cartLines).where(eq(cartLines.cartId, line.cartId)).limit(1);
-      if (!remaining) await tx.delete(carts).where(eq(carts.id, line.cartId));
+      const [remaining] = await tx.select({ id: cartLines.id }).from(cartLines).where(eq(cartLines.cartId, cart.id)).limit(1);
+      if (!remaining) await tx.delete(carts).where(eq(carts.id, cart.id));
+      return cart.storeId;
     });
   }
 
   edit(userId: number, { cartId, note, mode }: EditCartDto): Promise<CartResponse> {
-    return this.write(userId, async (tx, row) => {
-      if (row?.id !== cartId) throw missing();
-      const cart = await this.snapshot(tx, row);
-      if (!cart) throw missing();
+    return this.write(userId, async (tx) => {
+      const [row] = await tx.select().from(carts).where(and(eq(carts.id, cartId), eq(carts.userId, userId)));
+      if (!row || !(await this.snapshot(tx, row))) throw missing();
       if (mode === 'pickup') {
         // Serialize this choice with the store's admin update, which clears existing pickup choices.
         const [store] = await tx.select({ pickupAllowed: stores.pickupAllowed }).from(stores).where(eq(stores.id, row.storeId)).for('share');
@@ -184,19 +175,26 @@ export class CartService {
         }
       }
       if (note !== undefined || mode !== undefined) await tx.update(carts).set({ note, mode }).where(eq(carts.id, cartId));
+      return row.storeId;
     });
   }
 
-  validate(userId: number): Promise<CartResponse> {
-    return this.db.transaction(async (tx) => ({ cart: await this.ready(tx, userId) }));
+  /** "تابع للدفع" on one store's cart. */
+  validate(userId: number, storeId: number): Promise<CartResponse> {
+    return this.db.transaction(async (tx) => {
+      const row = await this.find(tx, userId, storeId);
+      if (!row) throw missing();
+      return { cart: await this.ready(tx, userId, row.id) };
+    });
   }
 
   /**
    * The cart, ready to order: the store is open, every item can be ordered and the minimum is reached.
    * Checkout calls it inside its own transaction, after locking the customer's row.
    */
-  async ready(tx: Tx, userId: number): Promise<CustomerCart> {
-    const cart = await this.snapshot(tx, await this.find(tx, userId));
+  async ready(tx: Tx, userId: number, cartId: number): Promise<CustomerCart> {
+    const [row] = await tx.select().from(carts).where(and(eq(carts.id, cartId), eq(carts.userId, userId)));
+    const cart = await this.snapshot(tx, row);
     if (!cart) throw missing();
     if (!cart.store.isOpen) throw closed();
     if (cart.lines.some((line) => !line.available)) throw unavailable();
@@ -206,31 +204,41 @@ export class CartService {
     return cart;
   }
 
-  /** Empties the customer's cart once its order is placed. */
+  /** Empties the store's cart once its order is placed. */
   async clear(tx: Tx, cartId: number): Promise<void> {
     await tx.delete(carts).where(eq(carts.id, cartId));
   }
 
-  private async write(userId: number, change: (tx: Tx, cart: CartRow | undefined) => Promise<void>): Promise<CartResponse> {
+  /** Runs a change and answers with the cart of the store it touched (null once emptied). */
+  private async write(userId: number, change: (tx: Tx) => Promise<number>): Promise<CartResponse> {
     return this.db.transaction(async (tx) => {
-      // The customer row exists before their first cart. Lock it so edits and replacements serialize.
+      // The customer row exists before their first cart. Lock it so edits serialize.
       const [user] = await tx.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).for('update');
       if (!user) throw missing();
-      await change(tx, await this.find(tx, userId));
-      return { cart: await this.snapshot(tx, await this.find(tx, userId)) };
+      const storeId = await change(tx);
+      return { cart: await this.snapshot(tx, await this.find(tx, userId, storeId)) };
     });
   }
 
-  private async find(tx: Tx, userId: number): Promise<CartRow | undefined> {
-    const [cart] = await tx.select().from(carts).where(eq(carts.userId, userId));
+  private async find(tx: Tx, userId: number, storeId: number): Promise<CartRow | undefined> {
+    const [cart] = await tx.select().from(carts).where(and(eq(carts.userId, userId), eq(carts.storeId, storeId)));
     return cart;
   }
 
-  private async ownedLine(tx: Tx, cart: CartRow | undefined, lineId: number): Promise<LineRow> {
-    if (!cart) throw missing();
-    const [line] = await tx.select().from(cartLines).where(and(eq(cartLines.id, lineId), eq(cartLines.cartId, cart.id)));
-    if (!line) throw missing();
-    return line;
+  /** The store's cart, started when the customer has none there yet. */
+  private async cartOf(tx: Tx, userId: number, storeId: number): Promise<number> {
+    const existing = await this.find(tx, userId, storeId);
+    if (existing) return existing.id;
+    const [created] = await tx.insert(carts).values({ userId, storeId }).$returningId();
+    return created!.id;
+  }
+
+  private async ownedLine(tx: Tx, userId: number, lineId: number): Promise<{ line: LineRow; cart: CartRow }> {
+    const [row] = await tx.select({ line: cartLines, cart: carts }).from(cartLines)
+      .innerJoin(carts, eq(carts.id, cartLines.cartId))
+      .where(and(eq(cartLines.id, lineId), eq(carts.userId, userId)));
+    if (!row) throw missing();
+    return row;
   }
 
   private async quantity(tx: Tx, line: LineRow, quantity: number): Promise<void> {

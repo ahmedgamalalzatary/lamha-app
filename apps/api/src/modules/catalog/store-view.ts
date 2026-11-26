@@ -84,6 +84,7 @@ export function toCatalogStore(row: StoreRow, cuisineIds: number[], now: Date, d
     layout: row.layout,
     pickupAllowed: row.pickupAllowed,
     isOpen: storeIsOpen(row, now),
+    opensAt: storeIsOpen(row, now) || row.closedNow ? null : hhmm(row.opensAt),
     rating: row.ratingCount ? Math.round((row.ratingSum / row.ratingCount) * 100) / 100 : null,
     ratingCount: row.ratingCount,
     cuisineIds,

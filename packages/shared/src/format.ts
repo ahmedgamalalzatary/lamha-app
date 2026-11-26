@@ -51,6 +51,14 @@ export function formatMinutesRange(from: number, to: number, locale: Locale = 'a
   return `${from} - ${to} ${MINUTES[locale]}`;
 }
 
+const DAY_HALF: Record<Locale, [string, string]> = { ar: ['ص', 'م'], en: ['AM', 'PM'] };
+
+/** "11:00 ص": a Cairo "HH:MM" on a 12-hour clock, as Tawsilty's "يفتح الساعة 11:00 ص" (§8.4). */
+export function formatClock(hhmm: string, locale: Locale = 'ar'): string {
+  const [h = 0, m = 0] = hhmm.split(':').map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${DAY_HALF[locale][h < 12 ? 0 : 1]}`;
+}
+
 const MONTHS: Record<Locale, string[]> = {
   ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
   en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],

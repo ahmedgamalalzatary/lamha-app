@@ -56,8 +56,9 @@ describe('the customer\'s orders: status, details and "اطلب تاني" (e2e, 
     http().post('/v1/me/cart/lines').set(as).send({ productId, quantity, optionIds, removedIngredientIds }).expect(201);
 
   /** Places whatever is in the customer's cart as a delivery to the saved address. */
-  async function place(as = customer, where: object = { addressId: address }): Promise<number> {
-    const bill = (await http().post('/v1/me/checkout/quote').set(as).send(where).expect(200)).body;
+  async function place(as = customer, where: object = { addressId: address }, from = store): Promise<number> {
+    const cart = (await http().get(`/v1/me/carts/${from}`).set(as).expect(200)).body.cart;
+    const bill = (await http().post('/v1/me/checkout/quote').set(as).send({ cartId: cart.id, ...where }).expect(200)).body;
     const requestId = `00000000-0000-4000-8000-${String(++requests).padStart(12, '0')}`;
     return (
       await http()
@@ -249,21 +250,18 @@ describe('the customer\'s orders: status, details and "اطلب تاني" (e2e, 
       .expect(({ body: b }) => expect(b.code).toBe('CART_ITEM_UNAVAILABLE'));
   });
 
-  it("asks before replacing another store's cart, and refuses while the store is closed or the order still runs", async () => {
+  it("goes into the store's own cart beside another store's, also while the store is closed, and waits for the order to end", async () => {
     const id = await deliveredOrder();
     const kushari = await insertProduct(otherStore, await insertCategory(otherStore), 'كشري', 40);
     const { body: theirs } = await add(kushari, 2);
-    await reorder(id)
-      .expect(409)
-      .expect(({ body }) => expect(body.code).toBe('CART_STORE_CONFLICT'));
-    const { body } = await reorder(id, { replaceCartId: theirs.cart.id }).expect(200);
+    const { body } = await reorder(id).expect(200);
     expect(body.cart.store.id).toBe(store);
+    expect((await http().get(`/v1/me/carts/${otherStore}`).set(customer).expect(200)).body.cart).toMatchObject({ id: theirs.cart.id, count: 2 });
 
     await sql('UPDATE stores SET closed_now = 1 WHERE id = ?', [store]);
-    await reorder(id)
-      .expect(409)
-      .expect(({ body }) => expect(body.code).toBe('CART_STORE_CLOSED'));
+    expect((await reorder(id).expect(200)).body.cart.store.isOpen).toBe(false);
     await sql('UPDATE stores SET closed_now = 0 WHERE id = ?', [store]);
+    await http().delete('/v1/me/carts').set(customer).expect(200);
 
     await add(fries, 3);
     const running = await place();

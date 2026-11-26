@@ -53,10 +53,9 @@ async function placePickup(): Promise<number> {
     return res.json();
   };
   const { accessToken } = await call('/auth/login', 'POST', null, { phone: '01554459196', password: PASSWORD });
-  await call('/me/cart/lines', 'POST', accessToken, { productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] });
-  const { cart } = await call('/me/cart', 'GET', accessToken);
+  const { cart } = await call('/me/cart/lines', 'POST', accessToken, { productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] });
   await call('/me/cart', 'PATCH', accessToken, { cartId: cart.id, mode: 'pickup', note: '01021327197 ده رقم الاستلام' });
-  const bill = await call('/me/checkout/quote', 'POST', accessToken, {});
+  const bill = await call('/me/checkout/quote', 'POST', accessToken, { cartId: cart.id });
   const requestId = `00000000-0000-4000-8000-${String(Date.now()).slice(-12)}`;
   const { order } = await call('/me/orders', 'POST', accessToken, { cartId: bill.cartId, slot: null, expectedTotal: bill.total, requestId });
   return order.id;

@@ -51,6 +51,25 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
     expect(pharmacies.body.map((s: { id: number }) => s.id)).toEqual([pharmacy]);
   });
 
+  it('a store closed by its hours says when it opens ("يفتح الساعة", capture 2026-11-26); one closed by its switch does not', async () => {
+    // Opens two hours from now in Cairo, for one minute, so it is closed whenever the test runs.
+    const [h, m] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .format(new Date()).split(':').map(Number) as [number, number];
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const opensAt = `${pad((h + 2) % 24)}:${pad(m)}`;
+    const closesAt = `${pad((h + 2) % 24)}:${pad((m + 1) % 60)}`;
+    const later = await insertStore({ name: 'لاحقاً', opensAt, closesAt });
+    const switched = await insertStore({ name: 'مقفول', closedNow: true });
+    const open = await insertStore({ name: 'مفتوح' });
+
+    const stores = (await get('/v1/catalog/stores?vertical=restaurant').expect(200)).body as { id: number; opensAt: string | null }[];
+    const opensOf = (id: number) => stores.find((s) => s.id === id)?.opensAt;
+    expect(opensOf(later)).toBe(opensAt);
+    expect(opensOf(switched)).toBeNull();
+    expect(opensOf(open)).toBeNull();
+    expect((await get(`/v1/catalog/stores/${later}`).expect(200)).body.opensAt).toBe(opensAt);
+  });
+
   it('searches a list by name, sorts it and keeps fast or pickup stores (§8.3)', async () => {
     const shawarma = await insertStore({ name: 'شاورما الساقية', deliveryMinutes: 45 });
     const fast = await insertStore({ name: 'بيتزا سريعة', deliveryMinutes: 20, pickupAllowed: true });

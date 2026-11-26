@@ -12,7 +12,7 @@ import {
 } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { Check, Minus, Plus, X } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
@@ -23,7 +23,6 @@ import { useSubmit } from '@/core/hooks/useSubmit';
 import { useReduceMotion } from '@/core/hooks/useReduceMotion';
 import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
-import { type CartConflict, CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { AddButton } from './AddButton';
 import { ProductPicture } from './ProductItems';
 import { ProductPrice } from './ProductPrice';
@@ -33,12 +32,11 @@ interface Props {
   /** The store's products in menu order, for "تُطلب معًا". */
   menu: Product[];
   countOf: (productId: number) => number;
-  /** closeOnSuccess: false for a "تُطلب معًا" add, which leaves the sheet open (also after a cart replacement). */
+  /** closeOnSuccess: false for a "تُطلب معًا" add, which leaves the sheet open. */
   onAdd: (item: { product: Product; optionIds: number[]; removedIngredientIds: number[]; quantity: number }, closeOnSuccess?: boolean) => Promise<boolean>;
   /** Another product from "تُطلب معًا" that has choices: the sheet shows it instead. */
   onOpen: (product: Product) => void;
   onClose: () => void;
-  conflict: CartConflict;
 }
 
 /**
@@ -46,54 +44,18 @@ interface Props {
  * "تُطلب معًا", the stepper and "أضف للسلة <price>". Grey with "أكمل الاختيارات للإضافة للسلة"
  * until every required group has a choice.
  */
-export function ProductSheet({ product, conflict, ...rest }: Props) {
+export function ProductSheet({ product, ...rest }: Props) {
   const reduceMotion = useReduceMotion();
-  const [replaceError, setReplaceError] = useState<string | null>(null);
-  const replacing = conflict.storeName !== undefined;
-  /** Whether the add that ran into another store's cart closes the sheet once it goes through. */
-  const closeAfterReplace = useRef(true);
-  const onAdd: Props['onAdd'] = (item, closeOnSuccess = true) => {
-    closeAfterReplace.current = closeOnSuccess;
-    return rest.onAdd(item);
-  };
-  const closeConflict = () => {
-    setReplaceError(null);
-    conflict.cancel();
-  };
-  const replacement = useSubmit(async () => {
-    setReplaceError(null);
-    try {
-      if ((await conflict.replace()) && closeAfterReplace.current) rest.onClose();
-    } catch (e) {
-      setReplaceError(errorMessage(e));
-    }
-  });
   return (
-    <Modal
-      visible={product !== null || replacing}
-      transparent
-      animationType={reduceMotion ? 'none' : product ? 'slide' : 'fade'}
-      onRequestClose={replacing ? closeConflict : rest.onClose}
-    >
+    <Modal visible={product !== null} transparent animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={rest.onClose}>
       <View style={styles.fill}>
-        {product ? (
-          <View style={styles.fill} accessibilityElementsHidden={replacing} importantForAccessibility={replacing ? 'no-hide-descendants' : 'auto'}>
-            <SheetBody key={product.id} product={product} {...rest} onAdd={onAdd} />
-          </View>
-        ) : null}
-        <CartConflictDialog
-          storeName={conflict.storeName}
-          cancel={closeConflict}
-          replace={() => void replacement.run()}
-          busy={replacement.busy}
-          error={replaceError}
-        />
+        {product ? <SheetBody key={product.id} product={product} {...rest} /> : null}
       </View>
     </Modal>
   );
 }
 
-function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Omit<Props, 'product' | 'conflict'> & { product: Product }) {
+function SheetBody({ product, menu, countOf, onAdd, onOpen, onClose }: Omit<Props, 'product'> & { product: Product }) {
   const locale = useLocale();
   const t = useT();
   const insets = useSafeAreaInsets();

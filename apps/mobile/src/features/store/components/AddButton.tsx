@@ -1,6 +1,6 @@
 import { isCustomizable, type Product } from '@tawsela/shared';
 import { ChevronLeft, Plus } from 'lucide-react-native';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
@@ -8,14 +8,25 @@ import { useT } from '@/core/i18n';
 import { colors } from '@/core/theme';
 
 const SIZE = 40;
+const ignore = () => undefined;
 
 /**
  * The round button on a product's picture (contract §6.3): "+" adds it, "‹" opens the sheet when the
- * item has choices, and the count in orange once it is in the cart.
+ * item has choices, and the count in orange once it is in the cart. Tapping the count does nothing
+ * (customer/store/grid-count-badge.png); it still takes the tap so the item behind it does not open.
  */
 export function AddButton({ product, count, onPress }: { product: Product; count: number; onPress: () => void }) {
   const t = useT();
   const custom = isCustomizable(product);
+  if (count) {
+    return (
+      <Pressable accessible accessibilityLabel={t('store.inCart', { name: product.name, count })} onPress={ignore} hitSlop={6} style={[styles.button, styles.filled]}>
+        <AppText weight="bold" color={colors.bg}>
+          {count}
+        </AppText>
+      </Pressable>
+    );
+  }
   return (
     <PressableScale
       accessibilityRole="button"
@@ -23,17 +34,9 @@ export function AddButton({ product, count, onPress }: { product: Product; count
       onPress={onPress}
       hitSlop={6}
       scaleTo={0.9}
-      style={[styles.button, count ? styles.filled : null]}
+      style={styles.button}
     >
-      {count ? (
-        <AppText weight="bold" color={colors.bg}>
-          {count}
-        </AppText>
-      ) : custom ? (
-        <DirectionalIcon icon={ChevronLeft} size={22} color={colors.primary} />
-      ) : (
-        <Plus size={22} color={colors.primary} />
-      )}
+      {custom ? <DirectionalIcon icon={ChevronLeft} size={22} color={colors.primary} /> : <Plus size={22} color={colors.primary} />}
     </PressableScale>
   );
 }

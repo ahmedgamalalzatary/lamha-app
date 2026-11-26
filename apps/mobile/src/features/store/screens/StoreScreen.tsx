@@ -48,7 +48,7 @@ export function StoreScreen() {
   const page = useStorePage(storeId);
   const favorites = useFavorites();
   const toggle = useToggleFavorite();
-  const { cart, actions, sheet, setSheet, conflict } = useProductTaps(storeId);
+  const { cart, actions, sheet, setSheet } = useProductTaps(storeId);
   const [solid, setSolid] = useState(false);
   const [vouchersOpen, setVouchersOpen] = useState(false);
 
@@ -126,8 +126,8 @@ export function StoreScreen() {
           <StoreTopBar title={store.name} solid={solid} favorite={favorite} onSearch={() => router.push(`/store/${storeId}/search` as Href)} />
         </>
       )}
-      <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
-      <ProductSheet product={shown} conflict={conflict} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
+      <CartBar storeId={storeId} count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
+      <ProductSheet product={shown} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={closeSheet} />
       <VouchersSheet visible={vouchersOpen} vouchers={store.vouchers} onClose={() => setVouchersOpen(false)} />
     </View>
   );

@@ -48,12 +48,6 @@ export interface CustomerOrderDetails extends CustomerOrder {
   rating: { stars: number } | null;
 }
 
-/** POST /v1/me/orders/:id/reorder */
-export interface ReorderInput {
-  /** The cart of another store the customer agreed to replace (409 CART_STORE_CONFLICT otherwise). */
-  replaceCartId?: number;
-}
-
 export interface ReorderResult {
   cart: CustomerCart;
   /** Lines left out: gone from the menu, or their choices changed. */

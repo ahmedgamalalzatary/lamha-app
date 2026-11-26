@@ -35,10 +35,9 @@ describe('invite friends (e2e, contract §8.17, §11 A17)', () => {
 
   /** A pickup of 2 × the product, placed (with the wallet when asked) and returned. */
   async function order(auth: Auth, productId: number, wallet = false) {
-    await http().post('/v1/me/cart/lines').set(auth).send({ productId, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-    const { cart } = (await http().get('/v1/me/cart').set(auth).expect(200)).body;
+    const { cart } = (await http().post('/v1/me/cart/lines').set(auth).send({ productId, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
     await http().patch('/v1/me/cart').set(auth).send({ cartId: cart.id, mode: 'pickup' }).expect(200);
-    const quote = (await http().post('/v1/me/checkout/quote').set(auth).send({}).expect(200)).body;
+    const quote = (await http().post('/v1/me/checkout/quote').set(auth).send({ cartId: cart.id }).expect(200)).body;
     const requestId = `00000000-0000-4000-8000-${String(++requests).padStart(12, '0')}`;
     const expectedWalletPaid = wallet ? Math.min(quote.walletBalance, quote.total) : 0;
     const placed = await http()

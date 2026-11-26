@@ -65,10 +65,9 @@ describe('delivery men: accounts, shifts, offers and steps (e2e, contract §10, 
 
   /** The customer orders 2 × شاورما فراخ (85); the store accepts it, so it is offered. */
   async function acceptedOrder(): Promise<number> {
-    await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    const { cart } = (await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
     await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode: 'delivery', note: '' }).expect(200);
-    const bill = (await http().post('/v1/me/checkout/quote').set(customer).send({ addressId: address }).expect(200)).body;
+    const bill = (await http().post('/v1/me/checkout/quote').set(customer).send({ cartId: cart.id, addressId: address }).expect(200)).body;
     const requestId = `00000000-0000-4000-8000-${String(++requests).padStart(12, '0')}`;
     const placed = await http()
       .post('/v1/me/orders')

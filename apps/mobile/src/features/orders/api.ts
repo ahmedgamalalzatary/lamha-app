@@ -1,4 +1,4 @@
-import type { CustomerOrderDetails, ReorderInput, ReorderResult } from '@tawsela/shared';
+import type { CustomerOrderDetails, ReorderResult } from '@tawsela/shared';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/core/api/client';
 import { useSession } from '@/core/auth/session';
@@ -8,7 +8,7 @@ export const ordersKey = ['orders'] as const;
 
 export const ordersApi = {
   details: (id: number) => api<CustomerOrderDetails>(`/me/orders/${id}`),
-  reorder: (id: number, body: ReorderInput) => api<ReorderResult>(`/me/orders/${id}/reorder`, { method: 'POST', body }),
+  reorder: (id: number) => api<ReorderResult>(`/me/orders/${id}/reorder`, { method: 'POST' }),
 };
 
 /** "تفاصيل الطلب" (§8.8). */

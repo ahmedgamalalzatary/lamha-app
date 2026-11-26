@@ -28,7 +28,7 @@ export function StoreProductsScreen() {
   const params = useLocalSearchParams<{ id: string; offers?: string }>();
   const storeId = Number(params.id);
   const page = useStorePage(storeId);
-  const { cart, actions, sheet, setSheet, conflict } = useProductTaps(storeId);
+  const { cart, actions, sheet, setSheet } = useProductTaps(storeId);
   const store = page.data;
   const menu = store?.categories.flatMap((c) => c.products) ?? [];
   const shown = menu.filter((p) => p.active && (params.offers !== '1' || productSaving(p) > 0));
@@ -59,8 +59,8 @@ export function StoreProductsScreen() {
           <ScrollView contentContainerStyle={styles.content}>
             {shown.length ? <ProductGrid products={shown} actions={actions} columns={2} /> : <EmptyState icon={SearchX} title={t('store.empty')} />}
           </ScrollView>
-          <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
-          <ProductSheet product={sheet} conflict={conflict} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
+          <CartBar storeId={storeId} count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
+          <ProductSheet product={sheet} menu={menu} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
         </>
       )}
     </SafeAreaView>

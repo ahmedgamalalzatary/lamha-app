@@ -1,7 +1,7 @@
 import { canReorder, cashDue, type CustomerOrderDetails, customerStatusLabel, customerSteps, formatMoney } from '@tawsela/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Check, CircleCheck, Headset, IdCard, MapPin, Star } from 'lucide-react-native';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
@@ -10,13 +10,13 @@ import { Button } from '@/components/Button';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { toast } from '@/components/Toast';
-import { ApiRequestError, mediaUrl } from '@/core/api/client';
+import { mediaUrl } from '@/core/api/client';
 import { errorMessage } from '@/core/api/error-message';
 import { session } from '@/core/auth/session';
+import { useSubmit } from '@/core/hooks/useSubmit';
 import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useCart } from '@/features/cart/api/cart';
-import { CartConflictDialog } from '@/features/cart/components/CartConflictDialog';
 import { LineChoices, orderDate, useWhen } from '@/features/partner/parts';
 import { ordersApi, useMyOrder } from './api';
 
@@ -214,60 +214,30 @@ function Details({ order: o }: { order: CustomerOrderDetails }) {
 }
 
 /**
- * "اطلب تاني" [Client: only here, inside طلباتي]: the order goes back in the cart and the cart opens.
- * A cart from another store is replaced only after the usual question; lines gone from the menu are
- * left out with a note [Derived].
+ * "اطلب تاني" [Client: only here, inside طلباتي]: the order goes back in its store's cart, beside any
+ * other store's cart (contract §8.6), and that cart opens. Lines gone from the menu are left out with
+ * a note [Derived].
  */
 function Reorder({ order }: { order: CustomerOrderDetails }) {
   const t = useT();
-  const { query, run } = useCart();
-  const [busy, setBusy] = useState(false);
-  const [conflict, setConflict] = useState<{ id: number; name: string } | null>(null);
-  const [conflictError, setConflictError] = useState<string | null>(null);
-
-  async function send(replaceCartId?: number) {
+  const { run } = useCart(order.store.id);
+  const reorder = useSubmit(async () => {
     const generation = session.generation();
-    setBusy(true);
     try {
       let skipped = 0;
       await run(async () => {
-        const result = await ordersApi.reorder(order.id, { replaceCartId });
+        const result = await ordersApi.reorder(order.id);
         skipped = result.skipped;
         return result;
       });
       if (session.generation() !== generation) return;
-      setConflict(null);
       if (skipped > 0) toast.show(t('orders.skipped', { count: skipped }), 'error');
-      router.push('/customer/cart');
+      router.push(`/cart/${order.store.id}`);
     } catch (e) {
-      if (session.generation() !== generation) return;
-      if (e instanceof ApiRequestError && e.code === 'CART_STORE_CONFLICT' && replaceCartId === undefined) {
-        const latest = (await query.refetch()).data?.cart;
-        if (latest && latest.store.id !== order.store.id) {
-          setConflictError(null);
-          setConflict({ id: latest.id, name: latest.store.name });
-          return;
-        }
-      }
-      if (replaceCartId !== undefined) setConflictError(errorMessage(e));
-      else toast.show(errorMessage(e), 'error');
-    } finally {
-      setBusy(false);
+      if (session.generation() === generation) toast.show(errorMessage(e), 'error');
     }
-  }
-
-  return (
-    <>
-      <Button label={t('orders.reorder')} loading={busy && !conflict} onPress={() => void send()} />
-      <CartConflictDialog
-        storeName={conflict?.name}
-        busy={busy}
-        error={conflictError}
-        cancel={() => setConflict(null)}
-        replace={() => conflict && void send(conflict.id)}
-      />
-    </>
-  );
+  });
+  return <Button label={t('orders.reorder')} loading={reorder.busy} onPress={() => void reorder.run()} />;
 }
 
 const styles = StyleSheet.create({

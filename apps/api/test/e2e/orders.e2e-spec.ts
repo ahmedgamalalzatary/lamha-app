@@ -39,9 +39,14 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
   const signIn = async (phone: string) => ({
     Authorization: `Bearer ${(await http().post('/v1/auth/login').send({ phone, password: PASSWORD }).expect(201)).body.accessToken}`,
   });
-  const addToCart = (productId: number, as = customer) =>
-    http().post('/v1/me/cart/lines').set(as).send({ productId, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-  const quote = (body: object, as = customer) => http().post('/v1/me/checkout/quote').set(as).send(body);
+  /** The cart the last add went to: quotes are for it. */
+  let cartId = 0;
+  const addToCart = async (productId: number, as = customer) => {
+    const res = await http().post('/v1/me/cart/lines').set(as).send({ productId, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
+    cartId = res.body.cart.id;
+    return res;
+  };
+  const quote = (body: object, as = customer) => http().post('/v1/me/checkout/quote').set(as).send({ cartId, ...body });
   const place = (body: object, as = customer) =>
     http()
       .post('/v1/me/orders')
@@ -54,6 +59,7 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
   });
   beforeEach(async () => {
     await resetDb();
+    cartId = 999_999;
     await insertUser('admin', '01000000001', PASSWORD);
     await insertUser('customer', '01554459196', PASSWORD);
     await insertUser('customer', '01100000001', PASSWORD);
@@ -106,7 +112,7 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
     expect((await quote({ addressId: address, location: STORE_AT }).expect(200)).body).toMatchObject({ deliveryFee: 20, total: 190 });
     await quote({ addressId: address, location: { lat: 30, lng: 31.2 } }).expect(422).expect(({ body }) => expect(body.code).toBe('CHECKOUT_ADDRESS'));
     await quote({}).expect(400);
-    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    const { cart } = (await http().get(`/v1/me/carts/${store}`).set(customer).expect(200)).body;
     await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode: 'pickup' }).expect(200);
     expect((await quote({}).expect(200)).body).toMatchObject({ mode: 'pickup', deliveryFee: 0, total: 170, distanceKm: null });
   });
@@ -133,7 +139,7 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
       total: 200,
     });
     expect(placed.body.order.code).toMatch(/^\d{6}$/);
-    expect((await http().get('/v1/me/cart').set(customer).expect(200)).body.cart).toBeNull();
+    expect((await http().get(`/v1/me/carts/${store}`).set(customer).expect(200)).body.cart).toBeNull();
     const [row] = await sql<Record<string, unknown>[]>('SELECT * FROM orders WHERE id = ?', [placed.body.order.id]);
     expect(row).toMatchObject({ payout_option: 'app_share', app_percent: '12.50', app_share: '21.25', store_gets: '148.75', store_from_driver: '148.75' });
     expect(row!.address_text).toContain('شارع 2');
@@ -178,7 +184,7 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
 
   it('a pickup retried with an address it never used still gives back the same order', async () => {
     await addToCart(shawarma);
-    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    const { cart } = (await http().get(`/v1/me/carts/${store}`).set(customer).expect(200)).body;
     await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode: 'pickup' }).expect(200);
     const bill = (await quote({}).expect(200)).body;
     const body = { cartId: bill.cartId, addressId: address, expectedTotal: bill.total, slot: null, requestId: '22222222-2222-4222-8222-222222222222' };
@@ -215,7 +221,7 @@ describe('checkout and placing an order (e2e, contract §8.7)', () => {
 
   it('a later slot from the quote is kept with the order; a pickup needs no address', async () => {
     await addToCart(shawarma);
-    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    const { cart } = (await http().get(`/v1/me/carts/${store}`).set(customer).expect(200)).body;
     await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode: 'pickup' }).expect(200);
     const bill = (await quote({}).expect(200)).body;
     const slot = bill.slots[0];

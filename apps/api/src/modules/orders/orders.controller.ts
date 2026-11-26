@@ -17,7 +17,7 @@ import { type AuthUser, CurrentUser } from '../../common/decorators/current-user
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { StoreRow } from '../catalog/catalog.schema.js';
 import { CurrentStore, PartnerArea } from '../partners/partner-store.guard.js';
-import { AdminOrdersQuery, CheckoutQuoteDto, PlaceOrderDto, ReorderDto } from './orders.dto.js';
+import { AdminOrdersQuery, CheckoutQuoteDto, PlaceOrderDto } from './orders.dto.js';
 import { OrdersService } from './orders.service.js';
 
 /** "إتمام الدفع" and طلباتي (contract §8.7, §8.8). Customers only. */
@@ -55,10 +55,10 @@ export class OrdersController {
   @Post('orders/:id/reorder')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'اطلب تاني: a finished order back in the cart, skipping lines gone from the menu (409 CART_STORE_CONFLICT, CART_STORE_CLOSED, CART_ITEM_UNAVAILABLE, ORDER_STATUS)',
+    summary: 'اطلب تاني: a finished order back in the cart, skipping lines gone from the menu (409 CART_ITEM_UNAVAILABLE, ORDER_STATUS)',
   })
-  reorder(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: ReorderDto): Promise<ReorderResult> {
-    return this.orders.reorder(me.id, id, body);
+  reorder(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<ReorderResult> {
+    return this.orders.reorder(me.id, id);
   }
 }
 

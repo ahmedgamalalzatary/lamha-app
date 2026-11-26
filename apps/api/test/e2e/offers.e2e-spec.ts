@@ -63,12 +63,13 @@ describe('offers, codes and banners (e2e, contract §8.2, §8.4, §8.7, §8.10, 
 
   /** 2 × شاورما فراخ (85): items 170; a delivery adds 30. */
   async function fillCart(mode: 'delivery' | 'pickup' = 'delivery') {
-    await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    const { cart } = (await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
     await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode }).expect(200);
+    cartId = cart.id;
     return cart.id as number;
   }
-  const quote = (body: object = {}) => http().post('/v1/me/checkout/quote').set(customer).send({ addressId: address, ...body });
+  let cartId = 0;
+  const quote = (body: object = {}) => http().post('/v1/me/checkout/quote').set(customer).send({ cartId, addressId: address, ...body });
   const place = (body: object) => http().post('/v1/me/orders').set(customer).send({ addressId: address, slot: null, requestId: nextRequest(), ...body });
   const storeFromDriver = async (id: number): Promise<number> => (await http().get(`/v1/partner/orders/${id}`).set(partner).expect(200)).body.storeFromDriver;
   const row = async (id: number): Promise<CatalogStore> => {

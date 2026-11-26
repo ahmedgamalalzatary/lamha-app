@@ -1,4 +1,4 @@
-import { type CatalogStore, formatAmount, formatMinutes } from '@tawsela/shared';
+import { type CatalogStore, formatAmount, formatClock, formatMinutes } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { Bike, Clock, Star, Store as StoreIcon } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
@@ -8,6 +8,7 @@ import { AppText } from '@/components/AppText';
 import { mediaUrl } from '@/core/api/client';
 import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { closedLook, GREYSCALE } from '@/features/stores/components/closed-look';
 import { FreeFee } from '@/features/stores/components/FreeFee';
 
 export const COVER_HEIGHT = 300;
@@ -15,7 +16,8 @@ export const COVER_HEIGHT = 300;
 /**
  * The top of a store page (contract §8.4): the cover with the "مغلق" pill, the logo, name and rating,
  * then the info row مدة التوصيل · رسوم التوصيل · التوصيل بواسطة.
- * [Open] A closed store's cover is darkened, not turned grey (no greyscale filter in the app).
+ * Closed (customer/store/store-page-closed-greyscale-opens-at.png): the cover in greyscale, "مغلق" on the
+ * logo, and "يفتح الساعة 11:00 ص" when its hours closed it.
  */
 export function StoreHeader({ store }: { store: CatalogStore }) {
   const locale = useLocale();
@@ -25,18 +27,31 @@ export function StoreHeader({ store }: { store: CatalogStore }) {
   return (
     <View>
       <View style={styles.cover}>
-        {cover ? <Image source={{ uri: cover }} contentFit="cover" style={StyleSheet.absoluteFill} /> : null}
-        <View style={[StyleSheet.absoluteFill, store.isOpen ? styles.shade : styles.closedShade]} />
-        {store.isOpen ? null : (
+        {cover ? (
+          <View style={[StyleSheet.absoluteFill, !store.isOpen && GREYSCALE ? closedLook.greyscale : null]}>
+            <Image source={{ uri: cover }} contentFit="cover" style={StyleSheet.absoluteFill} />
+          </View>
+        ) : null}
+        <View style={[StyleSheet.absoluteFill, store.isOpen || GREYSCALE ? styles.shade : closedLook.shade]} />
+        {store.opensAt ? (
           <View style={styles.closedPill}>
             <Clock size={16} color={colors.bg} />
             <AppText weight="semibold" color={colors.bg}>
-              {t('stores.closed')}
+              {t('store.opensAt', { time: formatClock(store.opensAt, locale) })}
             </AppText>
           </View>
-        )}
+        ) : null}
         <View style={styles.identity}>
-          <View style={styles.logo}>{logo ? <Image source={{ uri: logo }} contentFit="cover" style={StyleSheet.absoluteFill} /> : <StoreIcon size={32} color={colors.primary} />}</View>
+          <View style={styles.logo}>
+            {logo ? <Image source={{ uri: logo }} contentFit="cover" style={StyleSheet.absoluteFill} /> : <StoreIcon size={32} color={colors.primary} />}
+            {store.isOpen ? null : (
+              <View style={[StyleSheet.absoluteFill, closedLook.shade, styles.logoClosed]}>
+                <AppText weight="semibold" color={colors.bg}>
+                  {t('stores.closed')}
+                </AppText>
+              </View>
+            )}
+          </View>
           <View style={styles.names}>
             <AppText accessibilityRole="header" weight="bold" size={22} color={colors.bg} numberOfLines={2}>
               {store.name}
@@ -101,7 +116,6 @@ function Info({ icon: Icon, label, value, color = colors.ink }: { icon: LucideIc
 const styles = StyleSheet.create({
   cover: { height: COVER_HEIGHT, backgroundColor: colors.ink, justifyContent: 'flex-end' },
   shade: { backgroundColor: 'rgba(0,0,0,0.25)' },
-  closedShade: { backgroundColor: 'rgba(40,40,40,0.6)' },
   closedPill: {
     position: 'absolute',
     top: 140,
@@ -112,8 +126,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: colors.pillDark,
   },
+  logoClosed: { alignItems: 'center', justifyContent: 'center' },
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingBottom: spacing.xl + spacing.lg },
   logo: {
     width: 88,

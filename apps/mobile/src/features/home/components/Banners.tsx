@@ -91,7 +91,7 @@ export function BannerCarousel({ banners }: { banners: HomeBanner[] }) {
  */
 export function BannerRail({ banner }: { banner: HomeBanner }) {
   const { width } = useWindowDimensions();
-  const { actions, cart, sheet, setSheet, conflict } = useProductTaps(banner.store.id);
+  const { actions, cart, sheet, setSheet } = useProductTaps(banner.store.id);
   return (
     <View testID="banner-rail" style={styles.section}>
       <View style={styles.title}>
@@ -104,7 +104,7 @@ export function BannerRail({ banner }: { banner: HomeBanner }) {
           ))}
         </ScrollView>
       ) : null}
-      <ProductSheet product={sheet} conflict={conflict} menu={banner.products} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
+      <ProductSheet product={sheet} menu={banner.products} countOf={cart.countOf} onAdd={cart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
     </View>
   );
 }

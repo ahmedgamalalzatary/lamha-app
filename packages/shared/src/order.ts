@@ -79,6 +79,8 @@ export function slotLabel(minute: number): string {
 
 /** POST /v1/me/checkout/quote: the bill for the cart at an address (a delivery), or a pickup. */
 export interface CheckoutQuoteInput {
+  /** The store's cart being paid for: a customer has one per store (§8.6). */
+  cartId: number;
   addressId?: number;
   /** The spot confirmed on the map, when it differs from the saved address's. */
   location?: LatLng;
@@ -115,7 +117,6 @@ export interface CheckoutQuote {
 
 /** POST /v1/me/orders */
 export interface PlaceOrderInput extends CheckoutQuoteInput {
-  cartId: number;
   /** A slot from the quote, or null for "سيصل خلال 30 دقيقة". */
   slot: number | null;
   /** The total the customer saw; a different one on the server means the bill changed. */

@@ -131,15 +131,15 @@ describe('session (real API)', () => {
     await cartApi.add({ productId, optionIds: [], removedIngredientIds: [], quantity: 2 });
     await session.signOut();
     await session.signIn(await signInAs('01100000001'));
-    expect((await cartApi.get()).cart).toBeNull();
+    expect((await cartApi.get(store)).cart).toBeNull();
     const first = await signInAs('01554459196');
     const switching = session.signIn(first);
     const duringSwitch = session.generation();
-    const readBeforeSwitch = cartApi.get();
+    const readBeforeSwitch = cartApi.get(store);
     await switching;
     expect(session.generation()).not.toBe(duringSwitch);
     expect((await readBeforeSwitch).cart).toBeNull();
-    expect((await cartApi.get()).cart).toMatchObject({ count: 2, total: 100 });
+    expect((await cartApi.get(store)).cart).toMatchObject({ count: 2, total: 100 });
   });
 
   it('signs out on the phone first, then tells the server (review F10)', async () => {

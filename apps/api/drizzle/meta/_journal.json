@@ -141,6 +141,13 @@
       "when": 1795676396664,
       "tag": "0019_offers",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1795681706186,
+      "tag": "0020_multi_cart",
+      "breakpoints": true
     }
   ]
 }

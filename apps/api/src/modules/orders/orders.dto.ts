@@ -6,6 +6,10 @@ import { LatLngDto } from '../addresses/dto/addresses.dto.js';
 
 /** POST /v1/me/checkout/quote */
 export class CheckoutQuoteDto {
+  @ApiProperty({ description: "The store's cart being paid for (one per store)" })
+  @IsInt()
+  cartId: number;
+
   @ApiPropertyOptional({ description: 'The saved address it goes to; required for a delivery' })
   @IsOptional()
   @IsInt()
@@ -27,10 +31,6 @@ export class CheckoutQuoteDto {
 
 /** POST /v1/me/orders */
 export class PlaceOrderDto extends CheckoutQuoteDto {
-  @ApiProperty()
-  @IsInt()
-  cartId: number;
-
   @ApiProperty({ type: Number, nullable: true, description: 'A slot from the quote (minutes after midnight in Cairo), or null for now' })
   @ValidateIf((_, value) => value !== null)
   @IsInt()
@@ -66,12 +66,4 @@ export class AdminOrdersQuery {
   @IsOptional()
   @IsIn(ORDER_STATUSES)
   status?: OrderStatus;
-}
-
-/** POST /v1/me/orders/:id/reorder */
-export class ReorderDto {
-  @ApiPropertyOptional({ description: "Another store's cart the customer agreed to replace" })
-  @IsOptional()
-  @IsInt()
-  replaceCartId?: number;
 }

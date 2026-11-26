@@ -28,7 +28,7 @@ function Root() {
 const ROUTES = {
   _layout: Root,
   'customer/orders': OrdersScreen,
-  'customer/cart': CartScreen,
+  'cart/[storeId]': CartScreen,
   'order/[id]': CustomerOrderScreen,
 };
 
@@ -132,11 +132,11 @@ describe('طلباتي: an order\'s details (contract §8.8; real API)', () => {
 
     expect(await screen.findByText('سلة المشتريات')).toBeTruthy();
     expect(await screen.findByText('لم نضف 1 منتج لم يعد متاحاً')).toBeTruthy();
-    const { cart } = await cartApi.get();
+    const { cart } = await cartApi.get(store);
     expect(cart?.lines.map((l) => [l.product.id, l.quantity])).toEqual([[shawarma, 2]]);
   });
 
-  it('asks before replacing a cart from another store', async () => {
+  it("goes into the order's own store cart and keeps another store's cart (contract §8.6)", async () => {
     const other = await insertStore('كشري الحادقة');
     await cartApi.add({ productId: await insertProduct(other, 'كشري', 40), quantity: 2, optionIds: [], removedIngredientIds: [] });
     const id = await insertOrder('delivered');
@@ -144,11 +144,9 @@ describe('طلباتي: an order\'s details (contract §8.8; real API)', () => {
     await screen.findByText('قيمة الطلب');
     press('اطلب تاني');
 
-    expect(await screen.findByText('تحتوي سلتك على منتجات من كشري الحادقة. هل تريد استبدالها؟')).toBeTruthy();
-    press('استبدال السلة');
     expect(await screen.findByText('سلة المشتريات')).toBeTruthy();
-    const { cart } = await cartApi.get();
-    expect(cart?.store.id).toBe(store);
-    expect(cart?.count).toBe(3);
+    expect(screen).toHavePathname(`/cart/${store}`);
+    expect((await cartApi.get(store)).cart?.count).toBe(3);
+    expect((await cartApi.get(other)).cart?.count).toBe(2);
   });
 });

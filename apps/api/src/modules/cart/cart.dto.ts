@@ -29,12 +29,6 @@ export class AddCartLineDto implements AddCartLine {
   @IsInt({ each: true })
   @Min(1, { each: true })
   removedIngredientIds!: number[];
-
-  @ApiPropertyOptional({ description: 'The prior cart the customer agreed to replace' })
-  @ValidateIf((_, value) => value !== undefined)
-  @IsInt()
-  @Min(1)
-  replaceCartId?: number;
 }
 
 export class CartQuantityDto {

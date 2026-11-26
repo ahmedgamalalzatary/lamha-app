@@ -38,7 +38,7 @@ export function CategoryScreen() {
   const params = useLocalSearchParams<{ id: string; categoryId: string }>();
   const storeId = Number(params.id);
   const page = useStorePage(storeId);
-  const { cart, actions, sheet, setSheet, conflict } = useProductTaps(storeId);
+  const { cart, actions, sheet, setSheet } = useProductTaps(storeId);
   const [q, setQ] = useState('');
   const [sub, setSub] = useState<number | null>(null);
   const input = useRef<ComponentRef<typeof TextInput>>(null);
@@ -116,10 +116,10 @@ export function CategoryScreen() {
 
       {store ? (
         <>
-          <CartBar count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
+          <CartBar storeId={storeId} count={cart.count} total={cart.total} minimumOrder={store.minimumOrder} />
           <ProductSheet
             product={sheet}
-            conflict={conflict}
+           
             menu={store.categories.flatMap((c) => c.products)}
             countOf={cart.countOf}
             onAdd={cart.add}

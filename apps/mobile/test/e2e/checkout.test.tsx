@@ -58,7 +58,7 @@ function Root() {
 }
 const ROUTES = {
   _layout: Root,
-  'customer/cart': CartScreen,
+  'cart/[storeId]': CartScreen,
   'customer/orders': OrdersScreen,
   checkout: CheckoutScreen,
   'address/map': MapPickerScreen,
@@ -103,8 +103,8 @@ afterEach(async () => {
 });
 
 async function openCheckout() {
-  await renderApp(ROUTES, { initialUrl: '/customer/cart' });
-  await screen.findByText('شاورما فراخ');
+  await renderApp(ROUTES, { initialUrl: `/cart/${store}` });
+  await screen.findByRole('button', { name: 'زيادة كمية شاورما فراخ' });
   await press('تابع للدفع');
   expect(await screen.findByText('إتمام الدفع')).toBeTruthy();
 }
@@ -138,7 +138,7 @@ describe('checkout (contract §8.7; real API)', () => {
     const card = await screen.findByLabelText(`طلب رقم #${100000 + order!.id}`);
     expect(within(card).getByText('قيد المراجعة')).toBeTruthy();
     expect(within(card).getByText('200.00 ج.م')).toBeTruthy();
-    expect((await cartApi.get()).cart).toBeNull();
+    expect((await cartApi.get(store)).cart).toBeNull();
   });
 
   it('a spot moved out of the store\'s zone is refused and nothing is ordered', async () => {
@@ -172,7 +172,7 @@ describe('checkout (contract §8.7; real API)', () => {
   it('"رصيد المحفظة" pays what the wallet holds; the rest is cash [Owner, 2026-11-26]', async () => {
     const [{ id: me }] = await sql<{ id: number }[]>("SELECT id FROM users WHERE phone = '01554459196'");
     await sql('UPDATE users SET wallet_balance = 50 WHERE id = ?', [me]);
-    const { cart } = await cartApi.get();
+    const { cart } = await cartApi.get(store);
     await cartApi.edit({ cartId: cart!.id, mode: 'pickup' });
     await openCheckout();
     expect(await screen.findByText('المتاح 50.00 ج.م')).toBeTruthy();
@@ -202,7 +202,7 @@ describe('checkout (contract §8.7; real API)', () => {
   it('"نقاطي" pays after the wallet, up to what is due [Owner, 2026-11-26: wallet first]', async () => {
     const [{ id: me }] = await sql<{ id: number }[]>("SELECT id FROM users WHERE phone = '01554459196'");
     await sql('UPDATE users SET wallet_balance = 50, points_balance = 1000 WHERE id = ?', [me]);
-    const { cart } = await cartApi.get();
+    const { cart } = await cartApi.get(store);
     await cartApi.edit({ cartId: cart!.id, mode: 'pickup' });
     await openCheckout();
 
@@ -221,7 +221,7 @@ describe('checkout (contract §8.7; real API)', () => {
   });
 
   it('a pickup has no address or fee, and can be for a later time today', async () => {
-    const { cart } = await cartApi.get();
+    const { cart } = await cartApi.get(store);
     await cartApi.edit({ cartId: cart!.id, mode: 'pickup' });
     await openCheckout();
     expect(await screen.findByText('الاستلام من شاورما الساقية')).toBeTruthy();
@@ -255,7 +255,7 @@ describe('checkout (contract §8.7; real API)', () => {
       "INSERT INTO coupons (code, code_key, title, store_id, kind, value, min_order, per_customer, paid_by, active) VALUES ('Black Friday', 'black friday', 'Black Friday', ?, 'amount', 6, 150, 1, 'app', true)",
       [store],
     );
-    const { cart } = await cartApi.get();
+    const { cart } = await cartApi.get(store);
     await cartApi.edit({ cartId: cart!.id, mode: 'pickup' });
     await openCheckout();
     expect(await screen.findAllByText('170.00 ج.م')).toHaveLength(3);
@@ -264,7 +264,7 @@ describe('checkout (contract §8.7; real API)', () => {
     expect(await screen.findByText('من فضلك أدخل الكوبون أولا')).toBeTruthy();
     await fireEvent.changeText(screen.getByLabelText('أدخل كود الخصم'), 'NOPE');
     await press('تطبيق');
-    expect(await screen.findByText('هذا الكوبون غير صالح')).toBeTruthy();
+    expect(await screen.findByText('الكود الذى أدخلته غير صحيح')).toBeTruthy();
 
     await fireEvent.changeText(screen.getByLabelText('أدخل كود الخصم'), 'black friday');
     await press('تطبيق');

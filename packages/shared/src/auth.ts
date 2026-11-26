@@ -104,7 +104,6 @@ export type ApiErrorCode =
   | 'ACCOUNT_NOT_FOUND'
   /** A store, category, product, cuisine or home tile that does not exist. */
   | 'NOT_FOUND'
-  | 'CART_STORE_CONFLICT'
   | 'CART_STORE_CLOSED'
   | 'CART_ITEM_UNAVAILABLE'
   | 'CART_PICKUP_UNAVAILABLE'

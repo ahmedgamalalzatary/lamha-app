@@ -6,7 +6,6 @@ import {
   customerStatusNotice,
   notice,
   type OrderLine,
-  type ReorderInput,
   type ReorderResult,
   type CheckoutQuote,
   type CheckoutQuoteInput,
@@ -42,6 +41,7 @@ import { type Db, InjectDb } from '../../core/db/db.module.js';
 import type { AddressRow } from '../addresses/addresses.schema.js';
 import { AddressesService } from '../addresses/addresses.service.js';
 import { CartService } from '../cart/cart.service.js';
+import { carts } from '../cart/cart.schema.js';
 import type { Tx } from '../catalog/catalog.repository.js';
 import { type StoreRow, stores } from '../catalog/catalog.schema.js';
 import { cairoMinuteOfDay, locationOf } from '../catalog/store-view.js';
@@ -129,10 +129,12 @@ export class OrdersService {
         return { order: await this.customerOrder(tx, placed.id) };
       }
 
-      const bill = await this.bill(tx, userId, input, true);
-      if (bill.cartId !== input.cartId) {
+      // The cart was emptied, or ordered from another phone, since the checkout screen loaded.
+      const [cart] = await tx.select({ id: carts.id }).from(carts).where(and(eq(carts.id, input.cartId), eq(carts.userId, userId)));
+      if (!cart) {
         throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_CART_CHANGED', 'The cart changed since the checkout screen loaded');
       }
+      const bill = await this.bill(tx, userId, input, true);
       if (bill.total !== input.expectedTotal) {
         throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_TOTAL_CHANGED', 'The bill changed; check it again');
       }
@@ -394,8 +396,8 @@ export class OrdersService {
     };
   }
 
-  /** "اطلب تاني" (§8.8): a finished order's lines back in the cart, with the same choices. */
-  async reorder(userId: number, id: number, input: ReorderInput): Promise<ReorderResult> {
+  /** "اطلب تاني" (§8.8): a finished order's lines back in that store's cart, with the same choices. */
+  async reorder(userId: number, id: number): Promise<ReorderResult> {
     const [order] = await this.db.select().from(orders).where(and(eq(orders.id, id), eq(orders.customerId, userId)));
     if (!order) throw myOrderNotFound();
     if (!canReorder(order.status)) {
@@ -411,7 +413,7 @@ export class OrdersService {
         : [{ productId: l.productId, quantity: l.quantity, optionIds: l.optionIds ?? [], removedIngredientIds: l.removedIngredientIds ?? [] }],
     );
     if (!items.length) throw new ApiException(HttpStatus.CONFLICT, 'CART_ITEM_UNAVAILABLE', 'An item or its choices are unavailable');
-    const { cart, skipped } = await this.carts.reorder(userId, order.storeId, items, input.replaceCartId);
+    const { cart, skipped } = await this.carts.reorder(userId, order.storeId, items);
     return { cart, skipped: skipped + lines.length - items.length };
   }
 
@@ -453,7 +455,7 @@ export class OrdersService {
    * Placing (`lock`) locks the code's row.
    */
   private async bill(tx: Tx, userId: number, input: CheckoutQuoteInput, lock = false): Promise<Bill> {
-    const cart = await this.carts.ready(tx, userId);
+    const cart = await this.carts.ready(tx, userId, input.cartId);
     const [store] = await tx.select().from(stores).where(eq(stores.id, cart.store.id));
     if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
     const slots = deliverySlots(cairoMinuteOfDay(new Date()), { opensAt: hhmm(store.opensAt), closesAt: hhmm(store.closesAt), closedNow: store.closedNow });

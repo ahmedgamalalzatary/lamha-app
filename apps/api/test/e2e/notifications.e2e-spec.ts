@@ -37,8 +37,8 @@ describe('notifications and push (e2e, contract §8.14, §9, §10, §11)', () =>
   const list = async (as: Auth) => (await http().get('/v1/me/notifications').set(as).expect(200)).body;
 
   async function placeOrder(): Promise<number> {
-    await http().post('/v1/me/cart/lines').set(customer).send({ productId: product, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-    const bill = (await http().post('/v1/me/checkout/quote').set(customer).send({ addressId: address }).expect(200)).body;
+    const { cart } = (await http().post('/v1/me/cart/lines').set(customer).send({ productId: product, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
+    const bill = (await http().post('/v1/me/checkout/quote').set(customer).send({ cartId: cart.id, addressId: address }).expect(200)).body;
     const requestId = `00000000-0000-4000-8000-${String(++requests).padStart(12, '0')}`;
     return (
       await http().post('/v1/me/orders').set(customer).send({ addressId: address, cartId: bill.cartId, slot: null, expectedTotal: bill.total, requestId }).expect(201)

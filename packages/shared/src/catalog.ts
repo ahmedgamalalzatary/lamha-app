@@ -139,6 +139,11 @@ export interface CatalogStore {
   layout: StoreLayout;
   pickupAllowed: boolean;
   isOpen: boolean;
+  /**
+   * "HH:MM" in Cairo when the store is closed by its hours, for "يفتح الساعة 11:00 ص" (§8.4); null
+   * while it is open or closed by its switch.
+   */
+  opensAt: string | null;
   /** null shows "جديد" until the store has ratings (Phase 15). */
   rating: number | null;
   ratingCount: number;

@@ -1,5 +1,5 @@
 import { CART_MODES, CART_NOTE_LIMIT, type CartResponse, type CustomerCart, formatMoney, ORDERED_TOGETHER } from '@tawsela/shared';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Check, MessageSquare, ShoppingCart } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -25,15 +25,17 @@ import { useProductTaps } from '@/features/store/hooks/useProductTaps';
 import { cartApi, useCart } from '../api/cart';
 import { CartLineRow } from '../components/CartLineRow';
 
+/** One store's cart (contract §8.6), opened from "سلاتي" or the store page's bar. */
 export function CartScreen() {
   const t = useT();
-  const { cart, query, run } = useCart();
+  const storeId = Number(useLocalSearchParams<{ storeId: string }>().storeId);
+  const { cart, query, run } = useCart(storeId);
   const browse = () => router.navigate('/customer');
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <BackButton variant="square" onPress={() => (router.canGoBack() ? router.back() : browse())} />
+        <BackButton variant="square" onPress={() => (router.canGoBack() ? router.back() : router.navigate('/customer/cart'))} />
         <View style={styles.grow}>
           <AppText accessibilityRole="header" size={fontSizes.sectionTitle} weight="bold">{t('cart.title')}</AppText>
           {cart ? <AppText color={colors.ink2} numberOfLines={1}>{cart.store.name}</AppText> : null}
@@ -87,8 +89,8 @@ function CartContents({ cart, run, refresh, refreshing }: {
     }
   });
   const validate = useSubmit(async () => {
-    await run(cartApi.validate);
-    router.push('/checkout');
+    await run(() => cartApi.validate(cart.store.id));
+    router.push(`/checkout?storeId=${cart.store.id}`);
   });
   const busy = edit.busy || saveNote.busy || validate.busy;
 
@@ -199,12 +201,11 @@ function CartContents({ cart, run, refresh, refreshing }: {
 function CartSuggestions({ cart }: { cart: CustomerCart }) {
   const t = useT();
   const page = useStorePage(cart.store.id);
-  const { cart: actionsCart, actions, conflict, sheet, setSheet } = useProductTaps(cart.store.id);
+  const { cart: actionsCart, actions, sheet, setSheet } = useProductTaps(cart.store.id);
   const menu = page.data?.categories.flatMap((category) => category.products).filter((product) => product.active) ?? [];
-  const inCart = new Set(cart.lines.map((line) => line.product.id));
-  const suggestions = menu.filter((product) => !inCart.has(product.id)).slice(0, ORDERED_TOGETHER);
-  // An open product sheet stays when its own add takes the last suggestion; only the rail goes.
-  if (!suggestions.length && !sheet && conflict.storeName === undefined) return null;
+  // Tawsilty's rail also offers what is already in the cart, with its "+" (customer/cart/cart-suggestions-include-cart-item.png).
+  const suggestions = menu.slice(0, ORDERED_TOGETHER);
+  if (!suggestions.length && !sheet) return null;
 
   return (
     <View style={suggestions.length ? styles.upsell : null}>
@@ -218,7 +219,7 @@ function CartSuggestions({ cart }: { cart: CustomerCart }) {
                   <ProductPicture product={product} size={120} />
                 </PressableScale>
                 <View style={styles.upsellAdd}>
-                  <AddButton product={product} count={actions.countOf(product.id)} onPress={() => actions.add(product)} />
+                  <AddButton product={product} count={0} onPress={() => actions.add(product)} />
                 </View>
                 <AppText numberOfLines={2}>{product.name}</AppText>
                 <ProductPrice product={product} />
@@ -227,7 +228,7 @@ function CartSuggestions({ cart }: { cart: CustomerCart }) {
           </ScrollView>
         </>
       ) : null}
-      <ProductSheet product={sheet} conflict={conflict} menu={menu} countOf={actions.countOf} onAdd={actionsCart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
+      <ProductSheet product={sheet} menu={menu} countOf={actions.countOf} onAdd={actionsCart.add} onOpen={setSheet} onClose={() => setSheet(null)} />
     </View>
   );
 }

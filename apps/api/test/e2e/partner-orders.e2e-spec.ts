@@ -50,10 +50,9 @@ describe('the store\'s orders, products and hours (e2e, contract §9, §11.1)', 
 
   /** The customer orders 2 × شاورما فراخ (85) with a note, as a delivery or a pickup. */
   async function order(mode: 'delivery' | 'pickup' = 'delivery'): Promise<number> {
-    await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    const { cart } = (await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
     await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode, note: '01021327197 ده رقم الاستلام' }).expect(200);
-    const where = mode === 'delivery' ? { addressId: address } : {};
+    const where = mode === 'delivery' ? { cartId: cart.id, addressId: address } : { cartId: cart.id };
     const bill = (await http().post('/v1/me/checkout/quote').set(customer).send(where).expect(200)).body;
     const requestId = `00000000-0000-4000-8000-${String(++requests).padStart(12, '0')}`;
     const placed = await http()

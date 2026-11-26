@@ -1,8 +1,8 @@
 import { formatMoney } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Star, Trash2, User, Wallet } from 'lucide-react-native';
+import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Share2, Star, Trash2, User, Wallet } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
@@ -189,6 +189,8 @@ export function AccountScreen() {
             <AppText weight="semibold" color={colors.ink2} style={styles.group}>
               {t('account.groupApp')}
             </AppText>
+            {/* customer/account/account-app-group-share-app.png. [Open] Tawsilty's shared text is not captured. */}
+            <AccountRow icon={Share2} label={t('account.shareApp')} onPress={() => void Share.share({ message: t('account.shareAppMessage') })} />
             <AccountRow icon={Trash2} label={t('account.delete')} danger onPress={() => setDeleting(true)} />
           </>
         ) : null}

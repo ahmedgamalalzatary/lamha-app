@@ -23,6 +23,10 @@ export const colors = {
   /** "مطلوب" tag and the selected sub-category ring. */
   black: '#141414',
   backdrop: 'rgba(0,0,0,0.45)',
+  /** Over a closed store's picture where the greyscale filter is missing (iOS), and behind "مغلق". */
+  closedShade: 'rgba(40,40,40,0.55)',
+  /** The dark pills over a store cover: "يفتح الساعة 11:00 ص". */
+  pillDark: 'rgba(0,0,0,0.75)',
   toastDark: '#2B2B2B',
   /** The pale grey page behind white cards (wallet, points' lists, invite, notifications, profile). */
   page: '#F5F6FA',

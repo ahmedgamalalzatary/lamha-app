@@ -380,7 +380,7 @@ Contract §8.8: the order's status while it is active (no driver location: live 
 - **Shared (TDD):** `customerSteps` (review → preparing → ready → out for delivery → delivered; a pickup has no "out for delivery"; none for a rejected or cancelled order), `customerStatusLabel` (a pickup reads "جاهز للاستلام" and "تم الاستلام"), `canReorder`; the details and reorder shapes.
 - **API:**
   - `GET /v1/me/orders/:id`: the customer's own order with its lines, address, captain and payment (404 for anyone else's).
-  - `POST /v1/me/orders/:id/reorder` (`replaceCartId` optional): the order's lines back in the cart with their choices, added like "+" (up to the quantity limit). Lines gone from the menu or whose choices changed are left out and counted (`skipped`); none left is `CART_ITEM_UNAVAILABLE`. Another store's cart needs the customer's yes (`CART_STORE_CONFLICT`); a closed store is `CART_STORE_CLOSED`; an order still running is `ORDER_STATUS`.
+  - `POST /v1/me/orders/:id/reorder` (`replaceCartId` optional): the order's lines back in the cart with their choices, added like "+" (up to the quantity limit). Lines gone from the menu or whose choices changed are left out and counted (`skipped`); none left is `CART_ITEM_UNAVAILABLE`. An order still running is `ORDER_STATUS`. (Changed 2026-11-26: the lines go in that store's own cart beside any other, also while it is closed, and `replaceCartId` is gone; see the rework below.)
   - Live socket: a customer joins their own room and hears `order.status` when the store moves the order, a delivery man takes it or moves it, or the admin assigns one.
 - **App:**
   - طلباتي: a card opens تفاصيل الطلب; the list and the open order refresh live.
@@ -656,14 +656,16 @@ Brand assets, store listings, Android and iOS builds, release checks on real pho
 
 The phone showed that some guesses were wrong. The contract now follows Tawsilty; the code still has to change. Each item reopens its phase's phone check.
 
-- **Phase 10 (cart):**
-  - Several carts, one per store, with the "سلاتي" list and "حذف كل السلات؟"; drop the replace dialog (contract §8.6).
-  - Adding from a closed store is allowed; the closed message moves to "تابع للدفع".
-  - "قد تعجبك أيضًا" may include products already in the cart.
-- **Phase 7 (store page):** tapping a count badge does nothing; a closed store's cover shows the "يفتح الساعة <time>" pill.
-- **Phases 6 and 7:** closed stores' pictures in greyscale, not darkened.
-- **Phase 20:** an unknown code reads "الكود الذى أدخلته غير صحيح" in the dark toast.
-- **Phase 18:** the empty المنفقة tab reads "استبدل نقاطك بخصومات على طلباتك".
-- **حسابي (Phase 1):** the "مشاركة التطبيق" row under التطبيق (contract §8.14 lists it; it was never built).
+**Done (2026-11-26):**
+- Several carts, one per store (contract §8.6). Migration 0020 makes a cart unique per customer and store. `GET /me/carts` lists them, `DELETE /me/carts` empties them all, and `GET /me/carts/:storeId` and `POST /me/carts/:storeId/validate` work on one store's cart. The quote takes `cartId`. The replace dialog, `CART_STORE_CONFLICT` and `replaceCartId` are gone. The السلة tab is "سلاتي", and a store's cart opens at `/cart/<storeId>`. "اطلب تاني" fills that store's cart beside the others.
+- Items from a closed store go in the cart; "تابع للدفع" says "عذراً الخدمة مغلقة الآن".
+- The first item of a store's cart shows the dark toast "تمت الاضافة الى السلة".
+- "قد تعجبك أيضًا" lists the store's first ten products, those already in the cart too, each with its "+".
+- Tapping a count badge does nothing; it still takes the tap, so the product behind it does not open.
+- A store closed by its hours shows "يفتح الساعة 11:00 ص" on its cover (`opensAt` on every store the apps read, null while open or closed by the switch); "مغلق" sits on its logo.
+- Closed stores' pictures are greyscale on Android. [Derived] React Native has no greyscale filter on iOS, so iOS keeps the dark shade.
+- An unknown code reads "الكود الذى أدخلته غير صحيح"; code errors show in the dark toast.
+- The empty المنفقة tab reads "استبدل نقاطك بخصومات على طلباتك".
+- "مشاركة التطبيق" under التطبيق opens the phone's share sheet. [Open] Tawsilty's shared text is not captured; ours reads "جرّب تطبيق توصيلة لطلب الأكل والبقالة والأدوية." until the app's store links exist (§15.1 #8).
 
 Kept on purpose (owner or client decisions): no رسوم الخدمة (§8.7, also on pharmacy requests), the language row (§7, client).

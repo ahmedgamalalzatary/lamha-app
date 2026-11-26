@@ -20,10 +20,24 @@ export interface CartResponse {
   cart: CustomerCart | null;
 }
 
+/**
+ * A card on "سلاتي" (§8.6): one cart per store, newest first [Derived]. "<n> أصناف" counts the
+ * cart's lines [Derived: the capture shows a one-line cart].
+ */
+export interface CartSummary {
+  id: number;
+  store: Pick<CatalogStore, 'id' | 'name' | 'logo'>;
+  items: number;
+}
+
+/** GET and DELETE /v1/me/carts */
+export interface CartsResponse {
+  carts: CartSummary[];
+}
+
 export interface AddCartLine {
   productId: number;
   quantity: number;
   optionIds: number[];
   removedIngredientIds: number[];
-  replaceCartId?: number;
 }

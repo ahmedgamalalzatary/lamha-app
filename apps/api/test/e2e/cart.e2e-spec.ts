@@ -17,7 +17,8 @@ describe('customer cart (contract §8.6)', () => {
   const signIn = async (phone: string) =>
     (await http().post('/v1/auth/login').send({ phone, password: 'secret123' }).expect(201)).body.accessToken as string;
   const item = (id: number) => ({ productId: id, quantity: 1, optionIds: [], removedIngredientIds: [] });
-  const get = (token = customer) => http().get(path).auth(token, { type: 'bearer' });
+  const get = (token = customer, storeId = store) => http().get(`/v1/me/carts/${storeId}`).auth(token, { type: 'bearer' });
+  const list = () => http().get('/v1/me/carts').auth(customer, { type: 'bearer' });
   const add = (body: object) => http().post(`${path}/lines`).auth(customer, { type: 'bearer' }).send(body);
 
   beforeAll(async () => { app = await createTestApp(); });
@@ -35,7 +36,7 @@ describe('customer cart (contract §8.6)', () => {
   });
 
   it('isolates customers, merges racing adds and reprices from the catalog', async () => {
-    await http().get(path).expect(401);
+    await http().get(`/v1/me/carts/${store}`).expect(401);
     await get(admin).expect(403);
     await add({ ...item(product), quantity: 0 }).expect(400);
     await add({ ...item(product), unitPrice: 1 }).expect(400);
@@ -53,23 +54,41 @@ describe('customer cart (contract §8.6)', () => {
     expect((await get(otherCustomer).expect(200)).body.cart).toBeNull();
   });
 
-  it('replaces the earlier store only with explicit confirmation and clears its note and pickup', async () => {
+  it('keeps one cart per store, lists them newest first and deletes them all (سلاتي)', async () => {
     const secondStore = await insertStore({ pickupAllowed: false });
     const second = await insertProduct(secondStore, await insertCategory(secondStore));
+    await sql('UPDATE stores SET logo = ? WHERE id = ?', ['/uploads/logo.png', secondStore]);
     const first = (await add(item(product)).expect(201)).body.cart;
     await http().patch(path).auth(customer, { type: 'bearer' }).send({ cartId: first.id, note: 'بدون صوص', mode: 'pickup' }).expect(200);
-    await add(item(second)).expect(409).expect(({ body }) => expect(body.code).toBe('CART_STORE_CONFLICT'));
-    await add({ ...item(second), replaceCartId: first.id + 1 }).expect(409);
-    expect((await get().expect(200)).body.cart).toMatchObject({ id: first.id, note: 'بدون صوص', mode: 'pickup' });
-    const replaced = (await add({ ...item(second), replaceCartId: first.id }).expect(201)).body.cart;
-    expect(replaced).toMatchObject({ store: { id: secondStore }, note: '', mode: 'delivery', count: 1 });
-    await http().patch(path).auth(customer, { type: 'bearer' }).send({ cartId: replaced.id, mode: 'pickup' }).expect(409);
+    await add({ ...item(product), quantity: 2 }).expect(201);
+    const other = (await add(item(second)).expect(201)).body.cart;
+    expect(other).toMatchObject({ store: { id: secondStore }, note: '', mode: 'delivery', count: 1 });
+    expect((await get().expect(200)).body.cart).toMatchObject({ id: first.id, note: 'بدون صوص', mode: 'pickup', count: 3 });
+    expect((await list().expect(200)).body.carts).toEqual([
+      { id: other.id, store: { id: secondStore, name: expect.any(String), logo: '/uploads/logo.png' }, items: 1 },
+      { id: first.id, store: { id: store, name: expect.any(String), logo: null }, items: 1 },
+    ]);
+    expect((await get(otherCustomer).expect(200)).body.cart).toBeNull();
+    expect((await http().get('/v1/me/carts').auth(otherCustomer, { type: 'bearer' }).expect(200)).body.carts).toEqual([]);
+
+    await http().delete('/v1/me/carts').auth(customer, { type: 'bearer' }).expect(200).expect(({ body }) => expect(body.carts).toEqual([]));
+    expect((await get().expect(200)).body.cart).toBeNull();
+    expect((await get(customer, secondStore).expect(200)).body.cart).toBeNull();
+  });
+
+  it('takes items from a closed store and stops it at checkout', async () => {
+    await sql('UPDATE stores SET closed_now = true WHERE id = ?', [store]);
+    const { cart } = (await add(item(product)).expect(201)).body;
+    expect(cart.store.isOpen).toBe(false);
+    await http().patch(`${path}/lines/${cart.lines[0].id}`).auth(customer, { type: 'bearer' }).send({ delta: 1 }).expect(200);
+    await http().post(`/v1/me/carts/${store}/validate`).auth(customer, { type: 'bearer' }).expect(409)
+      .expect(({ body }) => expect(body.code).toBe('CART_STORE_CLOSED'));
   });
 
   it('validates current availability and never accepts options from another product', async () => {
     await add({ ...item(product), optionIds: [999] }).expect(400);
     await add(item(product)).expect(201);
-    const validate = () => http().post(`${path}/validate`).auth(customer, { type: 'bearer' });
+    const validate = () => http().post(`/v1/me/carts/${store}/validate`).auth(customer, { type: 'bearer' });
     await validate().expect(200);
     await sql('UPDATE stores SET closed_now = true WHERE id = ?', [store]);
     await validate().expect(409).expect(({ body }) => expect(body.code).toBe('CART_STORE_CLOSED'));

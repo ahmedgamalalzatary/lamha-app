@@ -10,24 +10,29 @@ import { mediaUrl } from '@/core/api/client';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { OfferBadges } from '@/features/offers/OfferBadges';
+import { closedLook, GREYSCALE } from './closed-look';
 import { StoreMeta } from './StoreMeta';
 
 const SIZE = 96;
 
-/** A store's square picture: its cover with the logo in the corner; dark with "مغلق" while closed (§6.3). */
+/** A store's square picture: its cover with the logo in the corner; greyscale with "مغلق" while closed (§6.3). */
 export function StorePicture({ store, size = SIZE }: { store: CatalogStore; size?: number }) {
   const t = useT();
   const cover = mediaUrl(store.cover ?? store.logo);
   const logo = store.cover ? mediaUrl(store.logo) : null;
   return (
     <View style={[styles.picture, { width: size, height: size }]}>
-      {cover ? <Image source={{ uri: cover }} contentFit="cover" style={StyleSheet.absoluteFill} transition={150} /> : <Store size={size / 3} color={colors.primary} />}
-      {logo ? <Image source={{ uri: logo }} contentFit="cover" style={styles.logo} /> : null}
+      <View style={[styles.images, !store.isOpen && GREYSCALE ? closedLook.greyscale : null]}>
+        {cover ? <Image source={{ uri: cover }} contentFit="cover" style={StyleSheet.absoluteFill} transition={150} /> : <Store size={size / 3} color={colors.primary} />}
+        {logo ? <Image source={{ uri: logo }} contentFit="cover" style={styles.logo} /> : null}
+      </View>
       {store.isOpen ? null : (
-        <View style={styles.closed}>
-          <AppText weight="medium" color={colors.bg}>
-            {t('stores.closed')}
-          </AppText>
+        <View style={[styles.closed, GREYSCALE ? null : closedLook.shade]}>
+          <View style={GREYSCALE ? styles.closedPill : null}>
+            <AppText weight="medium" color={colors.bg}>
+              {t('stores.closed')}
+            </AppText>
+          </View>
         </View>
       )}
     </View>
@@ -88,6 +93,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: { position: 'absolute', top: 6, end: 6, width: 36, height: 36, borderRadius: radius.sm },
-  closed: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(40,40,40,0.55)', alignItems: 'center', justifyContent: 'center' },
+  images: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  closed: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  closedPill: { backgroundColor: colors.closedShade, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   text: { flex: 1, gap: spacing.sm, alignItems: 'flex-start' },
 });

@@ -49,10 +49,9 @@ describe('points (e2e, contract §8.16, §11 A5, A21)', () => {
 
   /** 2 × شاورما فراخ (85): items 170; a delivery adds 30. */
   async function bill(mode: 'delivery' | 'pickup' = 'delivery') {
-    await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201);
-    const { cart } = (await http().get('/v1/me/cart').set(customer).expect(200)).body;
+    const { cart } = (await http().post('/v1/me/cart/lines').set(customer).send({ productId: shawarma, quantity: 2, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
     await http().patch('/v1/me/cart').set(customer).send({ cartId: cart.id, mode }).expect(200);
-    return (await http().post('/v1/me/checkout/quote').set(customer).send(mode === 'delivery' ? { addressId: address } : {}).expect(200)).body;
+    return (await http().post('/v1/me/checkout/quote').set(customer).send(mode === 'delivery' ? { cartId: cart.id, addressId: address } : { cartId: cart.id }).expect(200)).body;
   }
   const place = (body: object) => http().post('/v1/me/orders').set(customer).send({ addressId: address, slot: null, requestId: nextRequest(), ...body });
 

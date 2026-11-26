@@ -13,7 +13,7 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
  * lock, which turns into "عرض السلة · <count> · <total>" once something is in the cart.
  * [Open] A store with no minimum shows no bar until the cart has items.
  */
-export function CartBar({ count, total, minimumOrder }: { count: number; total: number; minimumOrder: number }) {
+export function CartBar({ storeId, count, total, minimumOrder }: { storeId: number; count: number; total: number; minimumOrder: number }) {
   const locale = useLocale();
   const t = useT();
   const insets = useSafeAreaInsets();
@@ -22,7 +22,7 @@ export function CartBar({ count, total, minimumOrder }: { count: number; total: 
   return (
     <View testID="cart-bar" style={[styles.wrap, { paddingBottom: insets.bottom + spacing.sm }]}>
       {count ? (
-        <PressableScale accessibilityRole="button" onPress={() => router.navigate('/customer/cart')} scaleTo={0.98} style={styles.cart}>
+        <PressableScale accessibilityRole="button" onPress={() => router.navigate(`/cart/${storeId}`)} scaleTo={0.98} style={styles.cart}>
           <View style={styles.count}>
             <AppText weight="bold" color={colors.primary}>
               {count}

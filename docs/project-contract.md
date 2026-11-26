@@ -376,7 +376,7 @@ Built in Phase 6: the list, opened from a home tile, with the tile's label as it
 - The "خصومات" and "عروض التوصيل" chips and the offer badges on the rows came with Phase 20.
 - "اطلب من جديد" arrives once customers have past orders.
 - The pharmacy list's "سهلنا الطلب عليك" card arrives in Phase 22.
-- [Tawsilty, capture 2026-11-26] A closed store's picture is greyscale with "مغلق" on it (§6). The darkened stand-in is to be replaced.
+- [Tawsilty, capture 2026-11-26] A closed store's picture is greyscale with "مغلق" on it (§6). [Derived] iOS has no greyscale filter in React Native, so it keeps a dark shade there.
 
 ### 8.4 Store page [Tawsilty]
 
@@ -422,6 +422,9 @@ Built in Phase 7: the admin sets each product's option groups (title, required, 
 
 - [Tawsilty, capture 2026-11-26, `customer/cart/my-carts-*`] **One cart per store, several at once.** Adding from another store starts that store's cart with a grey toast "تمت الاضافة الى السلة"; there is no replace dialog. The السلة tab opens **"سلاتي"**: a card per cart (logo, store name, "<n> أصناف", an arrow) that opens that store's cart, and a trash icon at the top that asks "حذف كل السلات؟" / "سيتم حذف جميع السلات المعلقة" (إلغاء · حذف). Empty: "سلتك فارغة" (below).
 - [Tawsilty, capture 2026-11-26] A closed store's products can still be added; the closed message comes at "تابع للدفع".
+- [Derived] "سلاتي" lists the newest cart first, and "<n> أصناف" counts the cart's lines; the capture shows only one cart with one line.
+- [Open] The toast shows when an add starts a store's cart; the capture does not show whether later adds show it too.
+- [Open] The capture shows a red count on the السلة tab (1 with one cart of one line); it is not built, because what it counts is not known.
 - [Open] The pickup selector is not captured.
 - Header "سلة المشتريات" + store name.
 - Lines: image with a stepper (trash icon at 1, with a "حذف المنتج" confirm dialog), name, price.

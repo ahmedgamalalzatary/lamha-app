@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { fireEvent, screen } from 'expo-router/testing-library';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderApp, testQueryClient } from '../utils/render';
-import { Text } from 'react-native';
+import { Share, Text } from 'react-native';
 import { ToastHost, toast } from '@/components/Toast';
 import { session, useSession } from '@/core/auth/session';
 import { AccountScreen } from '@/features/account/screens/AccountScreen';
@@ -89,6 +89,16 @@ describe('حسابي (contract §8.14; real API)', () => {
     expect(await screen.findByText('شاشة الدخول')).toBeTruthy();
     expect(useSession.getState().status).toBe('signedOut');
     expect(await refreshWorks(refreshToken)).toBe(false);
+  });
+
+  it('"مشاركة التطبيق" under التطبيق opens the share sheet (contract §8.14)', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction', activityType: undefined });
+    await signedInCustomer();
+    await renderApp(ROUTES, { initialUrl: '/customer/account' });
+
+    await press('مشاركة التطبيق');
+    expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('توصيلة') });
+    share.mockRestore();
   });
 
   it('deletes a customer account after the password', async () => {
