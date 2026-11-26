@@ -25,6 +25,7 @@ import { SupportRows } from '@/features/support/SupportRows';
 import { useNotifications } from '@/features/notifications/api';
 import { useWallet } from '@/features/wallet/api';
 import { usePoints } from '@/features/points/api';
+import { AccountInviteCard } from '@/features/invite/AccountInviteCard';
 
 /** The wallet icon's blue, as captured. */
 const WALLET_BLUE = '#2F6FED';
@@ -151,7 +152,12 @@ export function AccountScreen() {
           <DirectionalIcon icon={ChevronLeft} size={22} color={colors.ink2} />
         </PressableScale>
 
-        {user.role === 'customer' ? <MoneyTiles /> : null}
+        {user.role === 'customer' ? (
+          <>
+            <MoneyTiles />
+            <AccountInviteCard />
+          </>
+        ) : null}
 
         {user.role === 'customer' ? <SupportRows /> : null}
 

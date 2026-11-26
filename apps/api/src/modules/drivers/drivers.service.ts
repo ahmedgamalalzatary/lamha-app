@@ -35,7 +35,7 @@ import type { Tx } from '../catalog/catalog.repository.js';
 import { stores } from '../catalog/catalog.schema.js';
 import { locationOf } from '../catalog/store-view.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
-import { PointsService } from '../points/points.service.js';
+import { OrdersService } from '../orders/orders.service.js';
 import { OrdersGateway } from '../orders/orders.gateway.js';
 import { orderEvents, orderLines, type OrderRow, orders } from '../orders/orders.schema.js';
 import { generatePassword } from '../users/generated-password.js';
@@ -80,7 +80,7 @@ export class DriversService {
     private readonly sessions: SessionsRepository,
     private readonly live: OrdersGateway,
     private readonly notices: NotificationsService,
-    private readonly points: PointsService,
+    private readonly orders: OrdersService,
   ) {}
 
   // Shifts.
@@ -359,7 +359,7 @@ export class DriversService {
         .where(eq(orders.id, orderId));
       if (change.status) await tx.insert(orderEvents).values({ orderId, status: change.status, byUserId: driverId });
       // Points come once the order is delivered (§8.16).
-      if (change.status === 'delivered') await this.points.earn(tx, row.customerId, orderId, row.pointsEarned);
+      if (change.status === 'delivered') await this.orders.delivered(tx, row);
       return { row, status: change.status ?? row.status, moved: change.status !== undefined };
     });
     this.live.orderChanged(row, { id: orderId, status });

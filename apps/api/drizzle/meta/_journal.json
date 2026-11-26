@@ -127,6 +127,13 @@
       "when": 1795671790336,
       "tag": "0017_points",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1795673955694,
+      "tag": "0018_invites",
+      "breakpoints": true
     }
   ]
 }

@@ -200,7 +200,8 @@ function Details({
         <Money label={t('partner.deliveryFee')} value={money(o.deliveryFee)} />
         <Money label={t('partner.paymentFee')} value={money(0)} />
         {/* A discount shows in red (§9): here what the wallet paid; المجموع is what the customer still pays. */}
-        {o.walletPaid > 0 ? <Money label={t('wallet.paid')} value={`-${money(o.walletPaid)}`} color={colors.danger} /> : null}
+        {o.walletPaid - o.invitePaid > 0 ? <Money label={t('wallet.paid')} value={`-${money(o.walletPaid - o.invitePaid)}`} color={colors.danger} /> : null}
+        {o.invitePaid > 0 ? <Money label={t('wallet.invitePaid')} value={`-${money(o.invitePaid)}`} color={colors.danger} /> : null}
         {o.pointsPaid > 0 ? <Money label={t('points.paid')} value={`-${money(o.pointsPaid)}`} color={colors.danger} /> : null}
       </Section>
 

@@ -24,6 +24,7 @@ import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { WalletModule } from './modules/wallet/wallet.module.js';
 import { PointsModule } from './modules/points/points.module.js';
+import { InvitesModule } from './modules/invites/invites.module.js';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { PointsModule } from './modules/points/points.module.js';
     SupportModule,
     WalletModule,
     PointsModule,
+    InvitesModule,
     FavoritesModule,
     AddressesModule,
     PartnersModule,

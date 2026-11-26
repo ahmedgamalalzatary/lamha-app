@@ -4,7 +4,6 @@ import {
   type CatalogStore,
   type Cuisine,
   type HomeScreen,
-  INVITE_REWARDS,
   inSearchScope,
   type LatLng,
   type SearchResult,
@@ -19,6 +18,7 @@ import { AddressesService } from '../addresses/addresses.service.js';
 import { CatalogRepository } from './catalog.repository.js';
 import type { StoreRow } from './catalog.schema.js';
 import { SettingsService } from '../settings/settings.service.js';
+import { InvitesService } from '../invites/invites.service.js';
 import { feeFrom, toCatalogStore, toCategory, toCuisine, toHomeTile } from './store-view.js';
 
 /** Suggestions shown while typing. */
@@ -34,6 +34,7 @@ export class CatalogService {
     private readonly catalog: CatalogRepository,
     private readonly addresses: AddressesService,
     private readonly settings: SettingsService,
+    private readonly invites: InvitesService,
   ) {}
 
   /** The chosen address's zone and spot; none chosen lists every store (§8.9). */
@@ -121,7 +122,7 @@ export class CatalogService {
   /** The customer home (§8.2): the tiles customers may open and the invite card's rewards. */
   async home(): Promise<HomeScreen> {
     const tiles = (await this.catalog.listVisibleHomeTiles()).map(toHomeTile);
-    return { tiles, invite: INVITE_REWARDS };
+    return { tiles, invite: await this.invites.rewards() };
   }
 
   async cuisines(): Promise<Cuisine[]> {

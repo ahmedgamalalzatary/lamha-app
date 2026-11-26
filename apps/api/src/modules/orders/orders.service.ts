@@ -28,7 +28,6 @@ import {
   payout,
   type PlacedOrder,
   type PlaceOrderInput,
-  walletPays,
   pointsPay,
   pointsEarned,
   earnBase,
@@ -49,6 +48,7 @@ import { ratings } from '../support/support.schema.js';
 import { users } from '../users/users.schema.js';
 import { WalletService } from '../wallet/wallet.service.js';
 import { PointsService } from '../points/points.service.js';
+import { InvitesService } from '../invites/invites.service.js';
 import { nameOf } from '../audit/audit.service.js';
 import { OrdersGateway } from './orders.gateway.js';
 
@@ -85,6 +85,7 @@ export class OrdersService {
     private readonly notices: NotificationsService,
     private readonly wallet: WalletService,
     private readonly points: PointsService,
+    private readonly invites: InvitesService,
   ) {}
 
   quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
@@ -134,7 +135,8 @@ export class OrdersService {
       // "رصيد المحفظة" pays what it holds, up to the total; a balance that moved since the screen
       // loaded is a changed bill. The customer's row is locked, so nothing spends it meanwhile.
       const expectedWalletPaid = input.expectedWalletPaid ?? 0;
-      const walletPaid = expectedWalletPaid > 0 ? walletPays(bill.walletBalance, bill.total) : 0;
+      const plan = expectedWalletPaid > 0 ? await this.wallet.plan(tx, userId, bill.store.vertical, bill.total) : undefined;
+      const walletPaid = plan?.paid ?? 0;
       if (walletPaid !== expectedWalletPaid) {
         throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_TOTAL_CHANGED', 'The wallet balance changed; check the bill again');
       }
@@ -171,6 +173,7 @@ export class OrdersService {
           deliveryFee: bill.deliveryFee,
           total: bill.total,
           walletPaid,
+          invitePaid: cents((plan?.credits ?? []).reduce((n, c) => n + c.amount, 0)),
           pointsSpent: spent.points,
           pointsPaid: spent.value,
           pointsEarned: pointsEarned(earnBase(bill.itemsTotal, spent.value), bill.points.earnEvery),
@@ -180,7 +183,7 @@ export class OrdersService {
         })
         .$returningId();
       const orderId = created!.id;
-      await this.wallet.pay(tx, userId, orderId, walletPaid);
+      await this.wallet.pay(tx, userId, orderId, plan);
       await this.points.spend(tx, userId, orderId, spent.points);
       await tx.insert(orderLines).values(
         bill.cart.lines.map((line) => {
@@ -213,6 +216,15 @@ export class OrdersService {
       await this.announce(placed.order, id).catch((err: unknown) => this.log.warn(`New order ${id} not announced: ${String(err)}`));
     }
     return placed;
+  }
+
+  /**
+   * What follows an order's delivery, by the store or its delivery man, in the same save: the points it
+   * earns (§8.16) and, for a friend's first order, the inviter's reward (§8.17).
+   */
+  async delivered(tx: Tx, row: Pick<OrderRow, 'id' | 'customerId' | 'pointsEarned'>): Promise<void> {
+    await this.points.earn(tx, row.customerId, row.id, row.pointsEarned);
+    await this.invites.onDelivered(tx, row.customerId);
   }
 
   private async announce(order: CustomerOrder, id: number): Promise<void> {
@@ -289,7 +301,7 @@ export class OrdersService {
         await this.points.refund(tx, row.customerId, id, row.pointsSpent);
       }
       // Points come once the order is delivered (§8.16).
-      if (next === 'delivered') await this.points.earn(tx, row.customerId, id, row.pointsEarned);
+      if (next === 'delivered') await this.delivered(tx, row);
       return { status: next, row };
     });
     this.live.orderChanged(row, { id, status });
@@ -412,7 +424,8 @@ export class OrdersService {
     const [store] = await tx.select().from(stores).where(eq(stores.id, cart.store.id));
     if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
     const slots = deliverySlots(cairoMinuteOfDay(new Date()), { opensAt: hhmm(store.opensAt), closesAt: hhmm(store.closesAt), closedNow: store.closedNow });
-    const walletBalance = await this.wallet.balanceOf(tx, userId);
+    // What the wallet can pay on this order: its regular money and the invite money this store may take.
+    const walletBalance = (await this.wallet.plan(tx, userId, store.vertical)).paid;
     const pointsBalance = await this.points.balanceOf(tx, userId);
     const points = await this.points.settings(tx);
     const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, walletBalance, pointsBalance, points, cart, store };
@@ -482,6 +495,7 @@ function toPartnerOrder(row: OrderRow, count: number): PartnerOrder {
     itemsTotal: row.itemsTotal,
     total: row.total,
     walletPaid: row.walletPaid,
+    invitePaid: row.invitePaid,
     pointsPaid: row.pointsPaid,
     note: row.note,
     paymentMethod: 'cash',
@@ -502,6 +516,7 @@ function toCustomerOrder(row: OrderRow, store: CustomerOrder['store'], count: nu
     deliveryFee: row.deliveryFee,
     total: row.total,
     walletPaid: row.walletPaid,
+    invitePaid: row.invitePaid,
     pointsSpent: row.pointsSpent,
     pointsPaid: row.pointsPaid,
     createdAt: row.createdAt.toISOString(),

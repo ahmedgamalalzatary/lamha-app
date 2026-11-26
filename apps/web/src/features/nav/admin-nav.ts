@@ -50,7 +50,15 @@ export const ADMIN_NAV: NavGroup[] = [
       { label: 'مربعات الرئيسية', href: '/catalog/home-tiles' },
     ],
   },
-  { label: 'التسويق والعروض', icon: Megaphone, items: [{ label: 'الإشعارات التفاعلية', href: '/marketing/notifications' }] },
+  {
+    label: 'التسويق والعروض',
+    icon: Megaphone,
+    items: [
+      { label: 'الإشعارات التفاعلية', href: '/marketing/notifications' },
+      // Phase 19: the invite rewards, limits and cap (§8.17, A17) [Open: name and layout ours].
+      { label: 'مكافآت الدعوة', href: '/marketing/invites' },
+    ],
+  },
   { label: 'التقارير', icon: ChartLine, items: [{ label: 'التقارير', href: '/reports' }] },
   {
     label: 'الإعدادات',

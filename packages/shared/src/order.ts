@@ -96,7 +96,10 @@ export interface CheckoutQuote {
   distanceKm: number | null;
   /** Today's later-delivery slots (see deliverySlots). */
   slots: number[];
-  /** رصيد المحفظة now (§8.15): "رصيدك" pays walletPays(walletBalance, total) when switched on. */
+  /**
+   * What رصيد المحفظة can pay on this order (§8.15): the regular balance and the invite money this
+   * order may use (§8.17). "رصيدك" pays walletPays(walletBalance, total) when switched on.
+   */
   walletBalance: number;
   /** نقاطي now (§8.16): pointsPay(pointsBalance, what the wallet left, points) when switched on. */
   pointsBalance: number;
@@ -137,6 +140,8 @@ export interface CustomerOrder {
   total: number;
   /** Paid from the wallet (§8.15); the rest, cashDue, is paid in cash. */
   walletPaid: number;
+  /** Of walletPaid, what invite money paid: "المدفوع من رصيد دعوة الأصدقاء" (§8.17). */
+  invitePaid: number;
   /** Paid with points (§8.16): pointsSpent points worth pointsPaid ج.م. */
   pointsSpent: number;
   pointsPaid: number;
@@ -199,6 +204,8 @@ export interface PartnerOrder {
   total: number;
   /** Paid from the wallet: "المدفوع من المحفظة"; المجموع is what is left to collect (cashDue). */
   walletPaid: number;
+  /** Of walletPaid, what invite money paid: "المدفوع من رصيد دعوة الأصدقاء". */
+  invitePaid: number;
   /** Paid with points: "المدفوع بالنقاط". */
   pointsPaid: number;
   /** ملاحظات العميل, shown in red. */

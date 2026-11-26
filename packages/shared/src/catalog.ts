@@ -200,7 +200,7 @@ export interface Cuisine {
   sortOrder: number;
 }
 
-/** The invite card's rewards (§8.2, §8.17). Admin settings from Phase 19; these are Tawsilty's amounts. */
+/** The invite card's rewards (§8.2, §8.17), from the admin's invite settings (Phase 19). */
 export interface InviteRewards {
   /** What the customer earns per friend. */
   reward: number;
@@ -208,7 +208,6 @@ export interface InviteRewards {
   friendReward: number;
 }
 
-export const INVITE_REWARDS: InviteRewards = { reward: 300, friendReward: 25 };
 
 /** GET /v1/catalog/home: what the customer home shows (§8.2). Banners and sections arrive in Phase 20. */
 export interface HomeScreen {

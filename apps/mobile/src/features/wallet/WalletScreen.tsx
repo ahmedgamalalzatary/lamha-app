@@ -123,8 +123,17 @@ function Row({ entry: e }: { entry: WalletEntry }) {
   const locale = useLocale();
   const ago = useAgo();
   const add = e.kind === 'add';
+  const titles: Partial<Record<WalletEntry['reason'], string>> = {
+    invite_reward: t('wallet.inviteReward'),
+    invite_welcome: t('wallet.inviteWelcome'),
+    invite_expired: t('wallet.inviteExpired'),
+  };
   const title =
-    e.reason === 'order' && e.orderCode ? t('wallet.paidOrder', { code: e.orderCode }) : e.reason === 'refund' && e.orderCode ? t('wallet.refund', { code: e.orderCode }) : e.note;
+    e.reason === 'order' && e.orderCode
+      ? t('wallet.paidOrder', { code: e.orderCode })
+      : e.reason === 'refund' && e.orderCode
+        ? t('wallet.refund', { code: e.orderCode })
+        : (titles[e.reason] ?? e.note);
   const amount = `${add ? '+' : '-'}${formatMoney(e.amount, locale)}`;
   const Icon = add ? ArrowDownLeft : ArrowUpRight;
   return (

@@ -5,6 +5,7 @@ import { AUTH, type AuthResponse, maskEmail, type Me, OTP, type OtpPurpose, type
 import { ApiException } from '../../common/api-exception.js';
 import { Mailer, type MailMessage } from '../../core/mail/mailer.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { InvitesService } from '../invites/invites.service.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { toMe, UsersService } from '../users/users.service.js';
 import type { LoginDto, ResetPasswordDto, SignupDto } from './dto/auth.dto.js';
@@ -50,6 +51,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly mailer: Mailer,
     private readonly notifications: NotificationsService,
+    private readonly invites: InvitesService,
   ) {}
 
   /** Tawsilty's phone step (contract §8.1): a live account on this phone means sign-in. */
@@ -178,6 +180,8 @@ export class AuthService {
       inviteCode: await this.profiles.uniqueInviteCode(),
       invitedById,
     });
+    // The friend's welcome money (§8.17); the inviter's reward waits for the first delivered order.
+    if (invitedById !== null) await this.invites.onSignup(id, invitedById);
     return this.issue(id, 0);
   }
 

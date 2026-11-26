@@ -6,8 +6,11 @@ const cents = (n: number) => Math.round(n * 100) / 100;
 export const WALLET_KINDS = ['add', 'deduct'] as const;
 export type WalletKind = (typeof WALLET_KINDS)[number];
 
-/** Why money moved: the admin, an order paid with it, or a rejected or cancelled order's money back. */
-export const WALLET_REASONS = ['admin', 'order', 'refund'] as const;
+/**
+ * Why money moved: the admin, an order paid with it, a rejected or cancelled order's money back, the
+ * inviter's reward, the friend's welcome money, and invite money that expired (§8.17).
+ */
+export const WALLET_REASONS = ['admin', 'order', 'refund', 'invite_reward', 'invite_welcome', 'invite_expired'] as const;
 export type WalletReason = (typeof WALLET_REASONS)[number];
 
 /** A row of الإضافات or الخصومات. */

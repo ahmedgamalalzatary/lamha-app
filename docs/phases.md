@@ -43,7 +43,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 16 | Notifications and push (Expo push) | 🔍 in-verify | none (Expo project made; real pushes need a workflow-built app and FCM) |
 | 17 | Wallet (top-up excluded for now) | 🔍 in-verify | none (movement rows and the العملاء page marked [Open]) |
 | 18 | Points | 🔍 in-verify | none (movement rows and the checkout row marked [Open]) |
-| 19 | Invite friends | ⬜ | |
+| 19 | Invite friends | 🔍 in-verify | none (friends' rows and the share message marked [Open]) |
 | 20 | Offers, coupons and banners | ⬜ | |
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
 | 22 | Pharmacy: prescriptions and product photos | ⬜ | |
@@ -548,6 +548,37 @@ Owner's answers before the phase (2026-11-26):
 ## Phase 19: Invite friends
 
 Contract §8.17: codes, rewards with their limits and expiry, monthly cap, friends list, share sheet and WhatsApp.
+
+Owner's answers before the phase (2026-11-26):
+- Tawsilty's rules, as admin settings: the inviter gets 300 ج.م (at most 30 an order, 30 days) once the friend's first order is delivered; the friend gets 25 ج.م at sign-up (30 days) and must get a first order within 30 days; invite money pays restaurant and market orders only.
+- The monthly cap is in ج.م: 1000 ج.م of rewards a month.
+- Expiry is a switch in the settings.
+
+- **Migration 0018:** `invite_settings` (one row with Tawsilty's numbers), `invites` (inviter, friend, waiting / rewarded / missed, the reward), `invite_credits` (each piece of invite money: what is left, the per-order limit, the expiry), `invite_credit_uses` (what an order took, so a rejection puts it back); `orders.invite_paid`; the wallet's reasons gain the invite reward, the welcome money and expiry.
+- **Shared (TDD):** `walletPlan` (invite money first, the soonest to expire first, each piece within its per-order limit, restaurant and market orders only, then the regular balance), `inviteRewardFor` (the month's cap), `firstOrderInTime`, `inviteExpiry`, `inviteSettingsProblem`, `INVITE_DEFAULTS`; the overview shapes; the audit action `settings.invites`.
+- **API:**
+  - Sign-up with a code keeps the invite and gives the friend the welcome money.
+  - A friend's first delivered order (by the store, a pickup, or the delivery man), within the days, gives the inviter the reward up to what the month allows; otherwise the invite is missed. One step after every delivery does this and the points.
+  - The checkout quote's `walletBalance` is what the wallet can pay on this order; placing takes invite money piece by piece and records `invitePaid`; a rejection puts it back on its pieces.
+  - Expired invite money leaves the wallet with its own row, when a wallet is read or every hour; with the switch off it never expires.
+  - `GET /v1/me/invite` (the code, the rules, ربحت, رصيدك المتاح, what the month still allows, the friends); `GET|PATCH /v1/admin/settings/invites`, recorded in سجل التغييرات; the home card's amounts come from the settings.
+- **Dashboard:** التسويق والعروض › مكافآت الدعوة with every amount, the days and the expiry switch; the store's details show "المدفوع من رصيد دعوة الأصدقاء" in red.
+- **App:**
+  - ادعُ أصدقاءك as in the photos: the orange card with the reward, رمز دعوتك with نسخ, واتساب and مشاركة; ربحت and رصيدك المتاح (opening the wallet); "كيف تعمل الدعوة؟" with the admin's rules (without the days when nothing expires) and "متبقٍ لك <n> مكافآت هذا الشهر."; the friends, or "لم يسجّل أحد برمزك بعد".
+  - حسابي: the orange invite card with رمزك and مشاركة, as in the photo; الرئيسية's invite card opens ادعُ أصدقاءك.
+  - حركة المحفظة names the invite rows; the order details show what invite money paid.
+- **[Open]**
+  - The friends' rows, the shared message's wording and the dashboard page (not captured).
+- **[Derived]**
+  - Invite money pays before the regular balance, the soonest to expire first.
+  - A reward the month's cap leaves at 0 counts as missed; a partial one is paid.
+  - Friends show by first name only.
+  - The admin's deduction takes regular money first, then invite money.
+  - The month is Cairo's calendar month.
+- **Phone verification:**
+  - Customer A shares the code by WhatsApp; customer B signs up with it: B's wallet shows 25 ج.م as "رصيد دعوة صديق"; A's ادعُ أصدقاءك lists B as "بانتظار أول طلب".
+  - B's first order is delivered: A gets 300 ج.م ("مكافأة دعوة صديق"), ربحت shows 300, and "متبقٍ لك 700 مكافآت هذا الشهر.".
+  - A orders from a restaurant with the wallet on: only 30 of the 300 is taken; from a pharmacy none of it is.
 
 ## Phase 20: Offers, coupons and banners
 

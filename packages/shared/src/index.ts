@@ -16,3 +16,4 @@ export * from './support.js';
 export * from './notification.js';
 export * from './wallet.js';
 export * from './points.js';
+export * from './invite.js';

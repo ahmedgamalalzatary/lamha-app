@@ -1,4 +1,5 @@
 import { formatAmount, type InviteRewards } from '@tawsela/shared';
+import { router } from 'expo-router';
 import { UserPlus, X } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
@@ -8,24 +9,26 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 
 /**
  * Tawsilty's invite card (contract §8.2): "اربح 300 ج.م عن كل صديق — وصديقك يحصل على 25 ج.م فور
- * تسجيله", with ✕ to close it. The invite screen it opens arrives in Phase 19.
+ * تسجيله", with ✕ to close it. Tapping it opens ادعُ أصدقاءك (Phase 19).
  */
 export function InviteCard({ rewards, onClose }: { rewards: InviteRewards; onClose: () => void }) {
   const locale = useLocale();
   const t = useT();
   return (
     <View style={styles.card}>
-      <View style={styles.icon}>
-        <UserPlus size={26} color={colors.bg} />
-      </View>
-      <View style={styles.text}>
-        <AppText weight="bold" size={fontSizes.listTitle}>
-          {t('home.inviteTitle', { amount: formatAmount(rewards.reward, locale) })}
-        </AppText>
-        <AppText color={colors.ink2} size={13}>
-          {t('home.inviteText', { amount: formatAmount(rewards.friendReward, locale) })}
-        </AppText>
-      </View>
+      <PressableScale accessibilityRole="button" accessibilityLabel={t('invite.title')} onPress={() => router.push('/invite')} scaleTo={0.98} style={styles.open}>
+        <View style={styles.icon}>
+          <UserPlus size={26} color={colors.bg} />
+        </View>
+        <View style={styles.text}>
+          <AppText weight="bold" size={fontSizes.listTitle}>
+            {t('home.inviteTitle', { amount: formatAmount(rewards.reward, locale) })}
+          </AppText>
+          <AppText color={colors.ink2} size={13}>
+            {t('home.inviteText', { amount: formatAmount(rewards.friendReward, locale) })}
+          </AppText>
+        </View>
+      </PressableScale>
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={t('home.hideInvite')}
@@ -61,5 +64,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: { flex: 1, gap: spacing.xs },
+  open: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   close: { alignSelf: 'flex-start' },
 });

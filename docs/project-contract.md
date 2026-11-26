@@ -584,6 +584,11 @@ Orange card: balance, progress bar, "باقي <n> نقطة للاستبدال", 
 
 Code with copy, WhatsApp and share buttons; ربحت / رصيدك المتاح; "كيف تعمل الدعوة؟" (share code → friend signs up → both rewarded); rules: you get 300 ج.م at most 30 ج.م per order, valid 30 days; friend gets 25 ج.م valid 30 days and must receive their first order within 30 days of signing up; invite credit is only for restaurant and store orders; "متبقٍ لك 1000 مكافآت هذا الشهر"; list of friends who joined.
 
+[Owner, 2026-11-26] Before Phase 19:
+- **Rules:** Tawsilty's, as admin settings (التسويق والعروض › مكافآت الدعوة, §11 A17): every amount, limit and number of days.
+- **Monthly cap:** in ج.م, 1000 ج.م of rewards a month.
+- **Expiry:** a switch; off, invite money never expires.
+
 ---
 
 ## 9. Features: partner (store)
@@ -837,3 +842,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-25 | Phase 16 built (§8.14, §9, §10, §11, §15.1 #7), migration 0015: push through Expo's HTTP API with no SDK; tokens per phone; الإشعارات with the unread dot; إعدادات الإشعارات (تفعيل الإشعار only); the owner's push events; الإشعارات التفاعلية sent now to every customer or one zone [Owner]. Real pushes wait for the Expo project ID [Open]. |
 | 2026-11-26 | Phase 17 built (§8.15, §8.7, §9, §10, §11 A3, A5), migration 0016: حركة المحفظة as in the photos without top-up; محفظتي on حسابي; "رصيدك" at checkout paying as much as the wallet holds [Owner]; a rejected order's wallet money back at once [Owner]; the delivery man collects the cash part only, the app owes him the rest [Owner]; العملاء in the dashboard with add and deduct, never below 0 [Owner]. The movement rows and the العملاء page are not captured [Open]. |
 | 2026-11-26 | Phase 18 built (§8.16, §8.2, §8.7, §11 A5, A21), migration 0017: نقاطي as in the photo; نقاطي on حسابي and "استخدم ووفر" on الرئيسية; two point settings [Owner] in الإعدادات › النقاط; points earned on the items once delivered, the wallet counting as cash [Owner]; spent at checkout after the wallet [Owner], down to the minimum; a rejected order's points back; the admin adds or deducts points in العملاء. The delivery man's speed points moved to Phase 24 [Owner]. |
+| 2026-11-26 | Phase 19 built (§8.17, §8.1, §8.2, §8.14, §11 A17), migration 0018: ادعُ أصدقاءك as in the photos; حسابي's invite card; Tawsilty's rules as admin settings [Owner] with the cap in ج.م [Owner] and an expiry switch [Owner]; the friend's welcome money at sign-up; the inviter's reward on the friend's first delivered order in time; invite money kept piece by piece in the wallet, first to pay, within its per-order limit, for restaurant and market orders only, back on a rejection, and taken out when it expires. The friends' rows are not captured [Open]. |

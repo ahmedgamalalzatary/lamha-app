@@ -6,6 +6,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AUTH } from '@tawsela/shared';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import type { Env } from '../../core/config/env.js';
+import { InvitesModule } from '../invites/invites.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -17,6 +18,7 @@ import { OtpRepository } from './otp.repository.js';
 @Module({
   imports: [
     UsersModule,
+    InvitesModule,
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],

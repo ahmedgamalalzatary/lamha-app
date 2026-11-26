@@ -40,6 +40,8 @@ export const orders = mysqlTable(
      * app owes it to the delivery man [Owner, 2026-11-26].
      */
     walletPaid: money('wallet_paid').notNull().default(0),
+    /** Of walletPaid, what invite money paid (§8.17). */
+    invitePaid: money('invite_paid').notNull().default(0),
     /** Points spent on it (§8.16) and what they paid; the app owes that cash like the wallet's. */
     pointsSpent: int('points_spent', { unsigned: true }).notNull().default(0),
     pointsPaid: money('points_paid').notNull().default(0),
