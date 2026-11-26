@@ -118,6 +118,14 @@ export class DriverFeeDto {
   fee: DeliveryFeeRule | null;
 }
 
+/** POST /v1/admin/drivers/:id/payouts: the balance the admin saw when he pressed تم الصرف. */
+export class PayoutDto {
+  @ApiProperty({ example: 12 })
+  @IsInt()
+  @Min(1)
+  points: number;
+}
+
 /** POST /v1/admin/drivers/:id/fines */
 export class FineDto {
   @ApiProperty({ example: 20 })

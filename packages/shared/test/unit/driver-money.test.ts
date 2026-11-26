@@ -6,6 +6,7 @@ import {
   isDayString,
   isFeeRuleOrNull,
   isSpeedLevels,
+  MINUTES_PER_KM_MAX,
   minutesPerKm,
   netEarnings,
   speedPoints,
@@ -20,6 +21,11 @@ describe('minutesPerKm', () => {
   it('is null without a distance (a pickup, an order before distances)', () => {
     expect(minutesPerKm(20, null)).toBeNull();
     expect(minutesPerKm(20, 0)).toBeNull();
+  });
+
+  it('stops at the most the orders table holds, so a late, very short trip still delivers', () => {
+    expect(minutesPerKm(101, 0.001)).toBe(MINUTES_PER_KM_MAX);
+    expect(minutesPerKm(60 * 24 * 30, 0.01)).toBe(99_999.99);
   });
 });
 

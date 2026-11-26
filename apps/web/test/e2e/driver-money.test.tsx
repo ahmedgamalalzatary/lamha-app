@@ -97,9 +97,10 @@ describe('المندوبين › الحساب and الرسوم (contract §10, �
 
     expect(within(dialog).getByText(/نقاط لم تُصرف/)).toHaveTextContent('نقاط لم تُصرف: 4 نقطة (10.00 ج.م)');
     await user.click(within(dialog).getByRole('button', { name: 'تم الصرف' }));
+    // He earns 2 more while the admin reads the question: only the 4 he confirmed are paid.
+    await insertOrder(2);
     await user.click(screen.getByRole('button', { name: 'تأكيد' }));
-    await waitFor(() => expect(within(dialog).getByText(/نقاط لم تُصرف/)).toHaveTextContent('نقاط لم تُصرف: 0 نقطة (0.00 ج.م)'));
-    expect(within(dialog).getByRole('button', { name: 'تم الصرف' })).toBeDisabled();
+    await waitFor(() => expect(within(dialog).getByText(/نقاط لم تُصرف/)).toHaveTextContent('نقاط لم تُصرف: 2 نقطة (5.00 ج.م)'));
     expect(await sql('SELECT points, value FROM driver_payouts')).toEqual([{ points: 4, value: '10.00' }]);
   });
 });

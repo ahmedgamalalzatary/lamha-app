@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { fireEvent, screen, waitFor } from 'expo-router/testing-library';
+import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
 import type { ResultSetHeader } from 'mysql2/promise';
 import { ToastHost, toast } from '@/components/Toast';
 import { session } from '@/core/auth/session';
@@ -92,7 +92,8 @@ describe("the delivery man's money (contract §10; real API)", () => {
 
     await press('فواتيري 30.00 ج.م');
     expect(await screen.findByLabelText('صافي أرباحك 30.00 ج.م')).toBeTruthy();
-    expect(screen.getByLabelText('تأخير في التوصيل، - 5.00 ج.م')).toBeTruthy();
+    // The order and the time are read out with it.
+    expect(screen.getByLabelText(new RegExp(`^تأخير في التوصيل، - 5.00 ج.م، الطلب #${code(delivered)} · `))).toBeTruthy();
     expect(screen.getByText(new RegExp(`الطلب #${code(delivered)}`))).toBeTruthy();
   });
 
@@ -157,6 +158,27 @@ describe("the delivery man's money (contract §10; real API)", () => {
     expect(await screen.findByRole('button', { name: `من ${today}` })).toBeTruthy();
     expect(screen.getByRole('button', { name: `إلى ${today}` })).toBeTruthy();
     expect(await screen.findByText('لا يوجد طلبات')).toBeTruthy();
+
+    // بحث with the same dates reads them again.
+    const delivered = await insertOrder('delivered');
+    await press('بحث');
+    expect(await screen.findByText(`الطلب #${code(delivered)}`)).toBeTruthy();
+  });
+
+  it('opening the order and complaining are separate buttons, so a screen reader reaches both', async () => {
+    const delivered = await insertOrder('delivered');
+    await renderApp(ROUTES, { initialUrl: '/driver-history' });
+    const open = await screen.findByRole('button', { name: `تفاصيل الطلب #${code(delivered)}` });
+    expect(within(open).queryByRole('button', { name: `تقديم شكوى عن الطلب #${code(delivered)}` })).toBeNull();
+    expect(screen.getByRole('button', { name: `تقديم شكوى عن الطلب #${code(delivered)}` })).toBeTruthy();
+  });
+
+  it('تحصيل النقود is only the cash left after the wallet and the points, never "مدفوعة مسبقاً" while some is left', async () => {
+    const delivered = await insertOrder('delivered');
+    await sql('UPDATE orders SET wallet_paid = 120, points_paid = 30 WHERE id = ?', [delivered]);
+    await renderApp(ROUTES, { initialUrl: `/driver-order/${delivered}` });
+    expect(await screen.findByText('50.00 ج.م')).toBeTruthy();
+    expect(screen.queryByText('مدفوعة مسبقاً')).toBeNull();
   });
 
   it('a card opens the order without a step button; nothing to collect reads "مدفوعة مسبقاً"', async () => {

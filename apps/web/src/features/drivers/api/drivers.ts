@@ -51,7 +51,9 @@ export const useAddFine = (id: number) => useMoneyMutation(id, (body: FineInput)
 
 export const useRemoveFine = (id: number) => useMoneyMutation(id, (fineId: number) => api.request<void>(`/admin/drivers/${id}/fines/${fineId}`, { method: 'DELETE' }));
 
-export const usePayOut = (id: number) => useMoneyMutation(id, () => api.request<{ points: number; value: number }>(`/admin/drivers/${id}/payouts`, { method: 'POST' }));
+/** تم الصرف: pays exactly the points the admin confirmed; later ones stay for the next payout. */
+export const usePayOut = (id: number) =>
+  useMoneyMutation(id, (points: number) => api.request<{ points: number; value: number }>(`/admin/drivers/${id}/payouts`, { method: 'POST', body: { points } }));
 
 export const useStartDriverShift = () => useDriverMutation((id: number) => api.request<DriverAccount>(`/admin/drivers/${id}/shift`, { method: 'POST' }));
 

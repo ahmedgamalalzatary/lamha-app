@@ -20,10 +20,17 @@ export const SPEED_LEVELS_MAX = 10;
 export const SPEED_MINUTES_MAX = 600;
 export const SPEED_POINTS_MAX = 10_000;
 
-/** From taking the order to delivering it, per km of the store-to-customer line; null without a distance. */
+/** The most `orders.minutes_per_km` (DECIMAL(7,2)) holds. */
+export const MINUTES_PER_KM_MAX = 99_999.99;
+
+/**
+ * From taking the order to delivering it, per km of the store-to-customer line; null without a
+ * distance. Capped at what the orders table holds: a late, very short trip earns no points anyway,
+ * and a bigger number would fail the save and with it the delivery.
+ */
 export function minutesPerKm(minutes: number, km: number | null): number | null {
   if (km === null || km <= 0) return null;
-  return cents(minutes / km);
+  return Math.min(cents(minutes / km), MINUTES_PER_KM_MAX);
 }
 
 /** The points of the fastest level reached; 0 slower than all of them. */

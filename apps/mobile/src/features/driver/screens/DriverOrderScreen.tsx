@@ -193,9 +193,10 @@ function Details({ order: o, busy, onStep }: { order: DriverOrderDetails; busy: 
             <AppText color={colors.ink2} style={styles.grow}>
               {t('driver.collectCash')}
             </AppText>
-            {/* driver/driver-order-details-delivered-prepaid.jpg. [Derived] When the wallet and the points covered it all. */}
+            {/* `total` is already the cash he collects, wallet and points taken off (cashDue in the API).
+                driver/driver-order-details-delivered-prepaid.jpg. [Derived] When nothing is left to collect. */}
             <AppText weight="bold" size={fontSizes.listTitle + 2}>
-              {o.total - o.walletPaid - o.pointsPaid <= 0 ? t('driver.prepaid') : money(o.total)}
+              {o.total <= 0 ? t('driver.prepaid') : money(o.total)}
             </AppText>
           </View>
           {/* [Derived] He collects that much less; the app owes it to him [Owner, 2026-11-26]. */}

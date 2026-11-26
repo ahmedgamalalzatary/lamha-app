@@ -25,9 +25,12 @@ async function locationOn(): Promise<boolean> {
 export function useLocationOn() {
   const [on, setOn] = useState<boolean | null>(null);
   const mounted = useRef(true);
+  // Checks can overlap (coming back to the app while one runs): only the latest sets the state.
+  const latest = useRef(0);
   const check = useCallback(async () => {
+    const mine = ++latest.current;
     const now = await locationOn();
-    if (mounted.current) setOn(now);
+    if (mounted.current && mine === latest.current) setOn(now);
     return now;
   }, []);
 

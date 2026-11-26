@@ -74,6 +74,15 @@ describe('send anything: the "اطلب دليفري" store (e2e, contract §8.12
     expect((await http().get('/v1/admin/orders').set(admin).expect(200)).body[0]).toMatchObject({ id: order.id, note: NOTE });
   });
 
+  it('a courier store that delivers itself waits for it to accept, as no delivery man will be told', async () => {
+    await sql("UPDATE stores SET delivered_by = 'store' WHERE id = ?", [courier]);
+    const { cart } = (await http().post('/v1/me/cart/lines').set(customer).send({ productId: service, quantity: 1, optionIds: [], removedIngredientIds: [] }).expect(201)).body;
+    const bill = (await http().post('/v1/me/checkout/quote').set(customer).send({ cartId: cart.id, addressId: address }).expect(200)).body;
+    const { order } = (await http().post('/v1/me/orders').set(customer)
+      .send({ cartId: cart.id, addressId: address, slot: null, expectedTotal: bill.total, requestId: '00000000-0000-4000-8000-000000000003' }).expect(201)).body;
+    expect(order.status).toBe('pending_review');
+  });
+
   it('an order of any other store still waits for the store to accept it', async () => {
     const shop = await insertStore({ name: 'شاورما الساقية' });
     await sql('UPDATE stores SET zone_id = (SELECT id FROM zones LIMIT 1), lat = 29.3, lng = 30.82 WHERE id = ?', [shop]);

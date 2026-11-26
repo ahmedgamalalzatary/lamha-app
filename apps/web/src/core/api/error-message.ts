@@ -10,6 +10,7 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   OWN_ACCOUNT: 'لا يمكنك تغيير حسابك من هنا، اطلب ذلك من مسؤول آخر',
   LAST_ADMIN: 'يجب أن يبقى مسؤول واحد مفعّل على الأقل',
   ACCOUNT_NOT_FOUND: 'الحساب غير موجود',
+  POINTS_CHANGED: 'تغيّر رصيد نقاط المندوب، راجعه ثم اضغط تم الصرف مرة أخرى',
   NOT_FOUND: 'العنصر غير موجود، ربما حُذف',
   CATEGORY_NOT_EMPTY: 'احذف منتجات القسم وأقسامه الفرعية أو انقلها أولاً',
   CATEGORY_OTHER_STORE: 'هذا القسم تابع لمتجر آخر',

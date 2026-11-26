@@ -74,8 +74,12 @@ export class DriverMoneyService {
       earning: order.status === 'delivered' ? Number(earning) : null,
       createdAt: order.createdAt.toISOString(),
     }));
-    const done = cards.filter((c) => c.earning !== null);
-    return { orders: cards, earnings: cents(done.reduce((sum, c) => sum + c.earning!, 0)), delivered: done.length };
+    // The panel's totals cover the whole range, not only the cards sent.
+    const [totals] = await this.db
+      .select({ earnings: sql<string | null>`sum(${earningSql})`, delivered: sql<string>`count(*)` })
+      .from(orders)
+      .where(and(eq(orders.driverId, driverId), eq(orders.status, 'delivered'), gte(orders.createdAt, range.from), lt(orders.createdAt, range.to)));
+    return { orders: cards, earnings: cents(Number(totals?.earnings ?? 0)), delivered: Number(totals?.delivered ?? 0) };
   }
 
   /** فواتيري. */
@@ -143,17 +147,22 @@ export class DriverMoneyService {
     return fine;
   }
 
-  /** "تم الصرف": his whole balance at today's value; his row is locked so two taps pay once. */
-  async payout(adminId: number, driverId: number): Promise<{ points: number; value: number }> {
+  /**
+   * "تم الصرف": the points the admin saw and confirmed, at today's value; his row is locked so two
+   * taps pay once. Points earned since he looked stay for the next payout; fewer than he confirmed
+   * means the balance changed under him (409 POINTS_CHANGED).
+   */
+  async payout(adminId: number, driverId: number, points: number): Promise<{ points: number; value: number }> {
     await this.driver(driverId);
     return this.db.transaction(async (tx) => {
       await tx.select({ id: drivers.userId }).from(drivers).where(eq(drivers.userId, driverId)).for('update');
       const { balance } = await this.pointsTotals(tx, driverId);
       if (balance <= 0) throw new ApiException(HttpStatus.CONFLICT, 'NO_POINTS', 'He has no speed points to pay out');
+      if (points > balance) throw new ApiException(HttpStatus.CONFLICT, 'POINTS_CHANGED', 'His balance changed; look again');
       const { pointValue } = await this.settings.get(tx);
-      const value = cents(balance * pointValue);
-      await tx.insert(driverPayouts).values({ driverId, points: balance, value, byId: adminId });
-      return { points: balance, value };
+      const value = cents(points * pointValue);
+      await tx.insert(driverPayouts).values({ driverId, points, value, byId: adminId });
+      return { points, value };
     });
   }
 
@@ -168,16 +177,16 @@ export class DriverMoneyService {
     return rows.map((f) => ({ id: f.id, amount: f.amount, reason: f.reason, order: orderRef(f.orderId), createdAt: f.createdAt.toISOString() }));
   }
 
+  /** One statement, so a delivery or a payout between two reads can't make the balance go negative. */
   private async pointsTotals(tx: Db | Tx, driverId: number): Promise<{ balance: number; paidValue: number }> {
-    const [earned] = await tx
-      .select({ points: sql<string | null>`sum(${orders.driverPoints})` })
-      .from(orders)
-      .where(and(eq(orders.driverId, driverId), eq(orders.status, 'delivered')));
-    const [paid] = await tx
-      .select({ points: sql<string | null>`sum(${driverPayouts.points})`, value: sql<string | null>`sum(${driverPayouts.value})` })
-      .from(driverPayouts)
-      .where(eq(driverPayouts.driverId, driverId));
-    return { balance: Number(earned?.points ?? 0) - Number(paid?.points ?? 0), paidValue: Number(paid?.value ?? 0) };
+    const [row] = await tx
+      .select({
+        earned: sql<string | null>`(select sum(${orders.driverPoints}) from ${orders} where ${orders.driverId} = ${driverId} and ${orders.status} = 'delivered')`,
+        paid: sql<string | null>`(select sum(${driverPayouts.points}) from ${driverPayouts} where ${driverPayouts.driverId} = ${driverId})`,
+        paidValue: sql<string | null>`(select sum(${driverPayouts.value}) from ${driverPayouts} where ${driverPayouts.driverId} = ${driverId})`,
+      })
+      .from(sql`(select 1) as one`);
+    return { balance: Number(row?.earned ?? 0) - Number(row?.paid ?? 0), paidValue: Number(row?.paidValue ?? 0) };
   }
 
   private async driver(id: number): Promise<void> {

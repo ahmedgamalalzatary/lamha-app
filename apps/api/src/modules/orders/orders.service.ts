@@ -186,7 +186,9 @@ export class OrdersService {
         delivery: bill.store.deliveredBy === 'platform' ? delivery : null,
       });
       // "اطلب دليفري" has nothing to prepare: its order goes straight to the delivery men [Owner, 2026-11-26].
-      const status: OrderStatus = bill.store.vertical === 'courier' && bill.mode === 'delivery' ? 'ready' : 'pending_review';
+      // Only when the app's delivery men carry it: a store delivering itself is never announced to them.
+      const straightToDrivers = bill.store.vertical === 'courier' && bill.mode === 'delivery' && bill.store.deliveredBy === 'platform';
+      const status: OrderStatus = straightToDrivers ? 'ready' : 'pending_review';
       const [created] = await tx
         .insert(orders)
         .values({

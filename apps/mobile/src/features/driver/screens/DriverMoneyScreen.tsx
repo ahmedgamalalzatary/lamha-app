@@ -99,15 +99,16 @@ function FineRow({ fine: f }: { fine: DriverFine }) {
   const locale = useLocale();
   const ago = useAgo();
   const amount = `- ${formatMoney(f.amount, locale)}`;
+  const when = f.order ? `${t('driver.historyOrder', { code: f.order.code })} · ${ago(f.createdAt)}` : ago(f.createdAt);
   return (
-    <View accessible accessibilityLabel={`${f.reason}، ${amount}`} style={styles.row}>
+    <View accessible accessibilityLabel={`${f.reason}، ${amount}، ${when}`} style={styles.row}>
       <View style={styles.rowIcon}>
         <BadgeMinus size={20} color={colors.danger} />
       </View>
       <View style={styles.grow}>
         <AppText weight="semibold">{f.reason}</AppText>
         <AppText size={fontSizes.caption} color={colors.ink2}>
-          {f.order ? `${t('driver.historyOrder', { code: f.order.code })} · ${ago(f.createdAt)}` : ago(f.createdAt)}
+          {when}
         </AppText>
       </View>
       <AppText weight="bold" color={colors.danger}>

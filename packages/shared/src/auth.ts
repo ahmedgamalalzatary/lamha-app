@@ -164,6 +164,8 @@ export type ApiErrorCode =
   | 'NO_STORE'
   /** The delivery man has no speed points to pay out (§10). */
   | 'NO_POINTS'
+  /** He has fewer speed points than the admin confirmed paying out: the balance changed (§10). */
+  | 'POINTS_CHANGED'
   /** The upload is not an image the server can read. */
   | 'IMAGE_INVALID'
   /** A home tile must open exactly one vertical or one store. */

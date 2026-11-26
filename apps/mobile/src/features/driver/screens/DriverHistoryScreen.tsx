@@ -49,6 +49,8 @@ export function DriverHistoryScreen() {
   const history = useDriverHistory(range.from, range.to);
 
   const pick = (field: Field, date: Date) => setDraft((d) => ({ ...d, [field]: dayOf(date) }));
+  // The same dates again: read them again, as the same range would not change the query.
+  const search = () => (draft.from === range.from && draft.to === range.to ? void history.refetch() : setRange(draft));
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -66,7 +68,7 @@ export function DriverHistoryScreen() {
         <DateBox label={t('driver.historyFrom')} day={draft.from} onPress={() => setEditing('from')} />
         <DateBox label={t('driver.historyTo')} day={draft.to} onPress={() => setEditing('to')} />
       </View>
-      <PressableScale accessibilityRole="button" accessibilityLabel={t('driver.historySearch')} onPress={() => setRange(draft)} style={styles.search}>
+      <PressableScale accessibilityRole="button" accessibilityLabel={t('driver.historySearch')} onPress={search} style={styles.search}>
         <Search size={22} color={colors.success} />
         <AppText size={fontSizes.listTitle + 2} color={colors.info}>
           {t('driver.historySearch')}
@@ -149,39 +151,41 @@ function Card({ order: o }: { order: DriverHistoryOrder }) {
   const locale = useLocale();
   const delivered = o.status === 'delivered';
   const tone = delivered ? colors.success : colors.danger;
+  // Opening the order and تقديم شكوى are side by side, never one inside the other: a screen
+  // reader can't reach a button inside another. The status pill sits above تقديم شكوى, as in the photo.
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={t('driver.orderTitle', { code: o.code })}
-      onPress={() => router.push(`/driver-order/${o.id}`)}
-      scaleTo={0.99}
-      style={styles.card}
-    >
-      <View style={styles.cardTop}>
-        <AppText weight="bold" size={fontSizes.sectionTitle + 1} style={styles.grow}>
-          {t('driver.historyOrder', { code: o.code })}
-        </AppText>
-        <View style={[styles.pill, { borderColor: tone }]}>
-          <AppText size={fontSizes.listTitle + 1} color={tone}>
-            {orderStatusLabel(o.status, locale)}
+    <View style={styles.card}>
+      <View style={styles.cardMain}>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={t('driver.orderTitle', { code: o.code })}
+          onPress={() => router.push(`/driver-order/${o.id}`)}
+          scaleTo={0.99}
+          style={[styles.grow, styles.facts]}
+        >
+          <AppText weight="bold" size={fontSizes.sectionTitle + 1}>
+            {t('driver.historyOrder', { code: o.code })}
           </AppText>
-        </View>
-      </View>
-      <View style={styles.cardMiddle}>
-        <View style={[styles.grow, styles.facts]}>
           <AppText size={fontSizes.listTitle + 1}>{o.store.name}</AppText>
           <AppText size={fontSizes.listTitle + 1}>{t('driver.historyCount', { count: o.count })}</AppText>
-        </View>
-        <PressableScale
+        </PressableScale>
+        <View style={styles.cardSide}>
+          <View style={[styles.pill, { borderColor: tone }]}>
+            <AppText size={fontSizes.listTitle + 1} color={tone}>
+              {orderStatusLabel(o.status, locale)}
+            </AppText>
+          </View>
+          <PressableScale
           accessibilityRole="button"
           accessibilityLabel={t('driver.historyComplain', { code: o.code })}
           onPress={() => router.push({ pathname: '/driver-support/[type]', params: { type: 'complaint', orderId: String(o.id), code: o.code } })}
           style={styles.complain}
         >
-          <AppText weight="semibold" size={fontSizes.listTitle + 2} color={colors.danger}>
-            {t('support.complain')}
-          </AppText>
-        </PressableScale>
+            <AppText weight="semibold" size={fontSizes.listTitle + 2} color={colors.danger}>
+              {t('support.complain')}
+            </AppText>
+          </PressableScale>
+        </View>
       </View>
       <View style={styles.cardBottom}>
         <AppText size={fontSizes.listTitle} style={styles.grow}>
@@ -193,7 +197,7 @@ function Card({ order: o }: { order: DriverHistoryOrder }) {
           </AppText>
         ) : null}
       </View>
-    </PressableScale>
+    </View>
   );
 }
 
@@ -255,9 +259,9 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, gap: spacing.lg },
   skeleton: { height: 170, borderRadius: radius.lg },
   card: { borderWidth: 1, borderColor: colors.lineStrong, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md, overflow: 'hidden' },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  cardMain: { flexDirection: 'row', gap: spacing.md },
+  cardSide: { alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing.md },
   pill: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
-  cardMiddle: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   facts: { gap: spacing.md },
   complain: {
     backgroundColor: colors.bg,

@@ -23,7 +23,7 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CreateAdminDto, SetDisabledDto } from '../admins/dto/admins.dto.js';
 import { AuditService } from '../audit/audit.service.js';
 import { DriverMoneyService } from './driver-money.service.js';
-import { AssignDriverDto, DriverFeeDto, DriverScheduleDto, DriverSettingsDto, DriversQuery, FineDto, HistoryQuery } from './dto/drivers.dto.js';
+import { AssignDriverDto, DriverFeeDto, DriverScheduleDto, DriverSettingsDto, DriversQuery, FineDto, HistoryQuery, PayoutDto } from './dto/drivers.dto.js';
 import { DriversService } from './drivers.service.js';
 
 /** The delivery man's app (contract §10): his shift, the offers, and his orders. */
@@ -197,9 +197,11 @@ export class AdminDriversController {
   }
 
   @Post(':id/payouts')
-  @ApiOperation({ summary: 'تم الصرف: pays out his whole speed points balance in cash (409 NO_POINTS without one)' })
-  async payout(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<{ points: number; value: number }> {
-    const paid = await this.money.payout(me.id, id);
+  @ApiOperation({
+    summary: 'تم الصرف: pays out the speed points the admin confirmed, in cash (409 NO_POINTS without any, POINTS_CHANGED when he has fewer)',
+  })
+  async payout(@CurrentUser() me: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: PayoutDto): Promise<{ points: number; value: number }> {
+    const paid = await this.money.payout(me.id, id, body.points);
     await this.audit.recordAccount(me.id, 'driver.payout', id, paid);
     return paid;
   }

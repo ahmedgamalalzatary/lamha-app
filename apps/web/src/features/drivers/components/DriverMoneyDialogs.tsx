@@ -66,10 +66,11 @@ export function DriverMoneyDialog({ driver, onClose }: { driver: DriverAccount; 
           <section className="flex flex-col gap-3">
             <h3 className="font-bold">إضافة خصم</h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              <TextField label="المبلغ (ج.م)" type="number" min={0.01} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
-              <TextField label="رقم الطلب (اختياري)" value={order} onChange={(e) => setOrder(e.target.value)} dir="ltr" placeholder="#100005" />
+              <TextField label="المبلغ (ج.م)" type="number" min={0.01} step="0.01" value={amount} disabled={addFine.isPending} onChange={(e) => setAmount(e.target.value)} />
+              <TextField label="رقم الطلب (اختياري)" value={order} disabled={addFine.isPending} onChange={(e) => setOrder(e.target.value)} dir="ltr" placeholder="#100005" />
             </div>
-            <TextField label="السبب" value={reason} maxLength={FINE_REASON_LIMIT} onChange={(e) => setReason(e.target.value)} />
+            {/* Locked while one is saving: its success clears the fields, and would clear a new one typed meanwhile. */}
+            <TextField label="السبب" value={reason} maxLength={FINE_REASON_LIMIT} disabled={addFine.isPending} onChange={(e) => setReason(e.target.value)} />
             <Button
               disabled={!ready}
               loading={addFine.isPending}
@@ -131,7 +132,7 @@ export function DriverMoneyDialog({ driver, onClose }: { driver: DriverAccount; 
           title="تم الصرف"
           message={`صرفت لـ ${fullName(driver)} ${formatMoney(money.data.points.value)} نقداً عن ${money.data.points.balance} نقطة؟ يبدأ رصيد نقاطه من الصفر.`}
           busy={payOut.isPending}
-          onConfirm={() => payOut.mutate(undefined, { onSettled: () => setPaying(false) })}
+          onConfirm={() => payOut.mutate(money.data!.points.balance, { onSettled: () => setPaying(false) })}
           onClose={() => setPaying(false)}
         />
       ) : null}

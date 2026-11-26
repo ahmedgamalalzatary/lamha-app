@@ -140,9 +140,14 @@ describe("the delivery man's money: earnings, history, speed points and fines (e
     expect(points).toMatchObject({ balance: 3, value: 7.5, pointValue: 2.5 });
     expect(points.entries).toEqual([expect.objectContaining({ kind: 'order', points: 3, order: { id: fast, code: String(100000 + fast) } })]);
 
-    const paid = (await http().post(`/v1/admin/drivers/${karim.id}/payouts`).set(admin).expect(201)).body;
+    // Only the points the admin confirmed: more than he has means they changed.
+    await http().post(`/v1/admin/drivers/${karim.id}/payouts`).set(admin).send({}).expect(400);
+    const more = await http().post(`/v1/admin/drivers/${karim.id}/payouts`).set(admin).send({ points: 4 }).expect(409);
+    expect(more.body.code).toBe('POINTS_CHANGED');
+    const paid = (await http().post(`/v1/admin/drivers/${karim.id}/payouts`).set(admin).send({ points: 3 }).expect(201)).body;
     expect(paid).toEqual({ points: 3, value: 7.5 });
-    await http().post(`/v1/admin/drivers/${karim.id}/payouts`).set(admin).expect(409);
+    const none = await http().post(`/v1/admin/drivers/${karim.id}/payouts`).set(admin).send({ points: 3 }).expect(409);
+    expect(none.body.code).toBe('NO_POINTS');
     const after: DriverPoints = (await http().get('/v1/driver/points').set(karim.auth).expect(200)).body;
     expect(after).toMatchObject({ balance: 0, value: 0 });
     expect(after.entries[0]).toMatchObject({ kind: 'payout', points: 3, value: 7.5 });
@@ -150,6 +155,22 @@ describe("the delivery man's money: earnings, history, speed points and fines (e
     // Paid-out points still count in فواتيري.
     const money: DriverMoney = (await http().get('/v1/driver/money').set(karim.auth).expect(200)).body;
     expect(money.pointsCash).toBe(7.5);
+
+    // Points earned after the admin looked stay for the next payout.
+    const again = await taken(karim.auth);
+    await deliver(karim.auth, again);
+    const part = (await http().post(`/v1/admin/drivers/${karim.id}/payouts`).set(admin).send({ points: 2 }).expect(201)).body;
+    expect(part).toEqual({ points: 2, value: 5 });
+    expect((await http().get('/v1/driver/points').set(karim.auth).expect(200)).body).toMatchObject({ balance: 1, value: 2.5 });
+  });
+
+  it('a late delivery of a very short trip still goes through, with no speed points', async () => {
+    const karim = await newDriver('01011111111');
+    const id = await taken(karim.auth);
+    await sql('UPDATE orders SET distance_km = 0.001, taken_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 HOUR) WHERE id = ?', [id]);
+    await deliver(karim.auth, id);
+    const [row] = await sql<{ status: string; driver_points: number; minutes_per_km: string }[]>('SELECT status, driver_points, minutes_per_km FROM orders WHERE id = ?', [id]);
+    expect(row).toMatchObject({ status: 'delivered', driver_points: 0, minutes_per_km: '99999.99' });
   });
 
   it('the admin fines him with a reason; he is told and sees it in فواتيري, whose net takes it off', async () => {
