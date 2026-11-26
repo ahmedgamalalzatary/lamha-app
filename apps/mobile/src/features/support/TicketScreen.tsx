@@ -18,7 +18,8 @@ import { supportApi } from './api';
  * تقديم شكوى and تقديم اقتراح (contract §8.14, customer/account/complaint-general-form.png and
  * suggestion-form.png): the arrow and the title, an illustration [Open: Tawsilty's drawings are not
  * ours; an icon stands in], "ما هو شكواك" in orange, the underlined field and the orange "ارسال".
- * A complaint about a past order names it under the question [Derived].
+ * About a past order the question names it: "ما هو شكواك لطلب رقم 413600#"
+ * (driver/driver-complaint-for-order-number.jpg).
  */
 export function TicketScreen() {
   const t = useT();
@@ -57,13 +58,10 @@ export function TicketScreen() {
           <Icon size={96} color={colors.primary} strokeWidth={1.4} />
         </View>
         <AppText size={fontSizes.sectionTitle + 1} color={colors.primary700} style={styles.centred}>
-          {t(type === 'complaint' ? 'support.complaintQuestion' : 'support.suggestionQuestion')}
+          {orderId !== undefined && params.code
+            ? t('support.complaintQuestionOrder', { code: params.code })
+            : t(type === 'complaint' ? 'support.complaintQuestion' : 'support.suggestionQuestion')}
         </AppText>
-        {orderId !== undefined && params.code ? (
-          <AppText weight="semibold" color={colors.ink2} style={styles.centred}>
-            {t('support.aboutOrder', { code: params.code })}
-          </AppText>
-        ) : null}
         <View style={styles.field}>
           <AppText size={fontSizes.listTitle + 1}>{t(type === 'complaint' ? 'support.complaintLabel' : 'support.suggestionLabel')}</AppText>
           <TextInput

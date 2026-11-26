@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { type DriverHistoryOrder, formatMoney, orderStatusLabel } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { ArrowRight, CalendarDays, ReceiptText, Search } from 'lucide-react-native';
+import { ArrowRight, CalendarDays, Search } from 'lucide-react-native';
 import { useState } from 'react';
 import { FlatList, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,6 @@ import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { DirectionalIcon } from '@/components/DirectionalIcon';
-import { EmptyState } from '@/components/EmptyState';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
@@ -38,12 +37,13 @@ type Field = 'from' | 'to';
  * طلباتى (حسابي › سجل الطلبات, driver/driver-order-history-date-range-earnings-complaint.jpg): the two
  * date boxes, the outlined blue "بحث", a card per order (code, status pill, store, "الاجمالى" items,
  * the red "تقديم شكوى", the date and the earning in green) and the grey panel with اجمالى الارباح and
- * عدد الطلبات المكتملة. [Derived] The range starts on 1 January and ends today, as in the photo.
+ * عدد الطلبات المكتملة. Both dates start on today and an empty range reads "لا يوجد طلبات"
+ * (driver-order-history-today-empty.jpg); a card opens the order (driver-order-details-delivered-prepaid.jpg).
  */
 export function DriverHistoryScreen() {
   const t = useT();
   const today = CAIRO_DAY.format(new Date());
-  const [draft, setDraft] = useState({ from: `${today.slice(0, 4)}-01-01`, to: today });
+  const [draft, setDraft] = useState({ from: today, to: today });
   const [range, setRange] = useState(draft);
   const [editing, setEditing] = useState<Field | null>(null);
   const history = useDriverHistory(range.from, range.to);
@@ -85,7 +85,9 @@ export function DriverHistoryScreen() {
           <Button label={t('common.retry')} variant="soft" onPress={() => void history.refetch()} />
         </View>
       ) : history.data.orders.length === 0 ? (
-        <EmptyState icon={ReceiptText} title={t('driver.historyEmpty')} />
+        <AppText size={fontSizes.listTitle + 2} style={styles.empty}>
+          {t('driver.historyEmpty')}
+        </AppText>
       ) : (
         <FlatList
           data={history.data.orders}
@@ -148,7 +150,13 @@ function Card({ order: o }: { order: DriverHistoryOrder }) {
   const delivered = o.status === 'delivered';
   const tone = delivered ? colors.success : colors.danger;
   return (
-    <View style={[styles.card, !delivered && styles.cardStopped]}>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={t('driver.orderTitle', { code: o.code })}
+      onPress={() => router.push(`/driver-order/${o.id}`)}
+      scaleTo={0.99}
+      style={styles.card}
+    >
       <View style={styles.cardTop}>
         <AppText weight="bold" size={fontSizes.sectionTitle + 1} style={styles.grow}>
           {t('driver.historyOrder', { code: o.code })}
@@ -185,7 +193,7 @@ function Card({ order: o }: { order: DriverHistoryOrder }) {
           </AppText>
         ) : null}
       </View>
-    </View>
+    </PressableScale>
   );
 }
 
@@ -247,8 +255,6 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, gap: spacing.lg },
   skeleton: { height: 170, borderRadius: radius.lg },
   card: { borderWidth: 1, borderColor: colors.lineStrong, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md, overflow: 'hidden' },
-  // A stopped order's card has the pale orange band of the photo across its top.
-  cardStopped: { borderTopWidth: 28, borderTopColor: colors.primary100 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   pill: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   cardMiddle: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -268,4 +274,5 @@ const styles = StyleSheet.create({
   totals: { backgroundColor: colors.line, borderTopStartRadius: 24, borderTopEndRadius: 24, paddingHorizontal: spacing.xl, paddingTop: spacing.lg, gap: spacing.md },
   totalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.md, paddingBottom: spacing.sm },
   sheet: { gap: spacing.lg, paddingBottom: spacing.md },
+  empty: { textAlign: 'center', marginTop: spacing.lg },
 });

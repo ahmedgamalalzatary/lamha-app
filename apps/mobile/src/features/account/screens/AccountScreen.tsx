@@ -21,7 +21,7 @@ import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { meApi } from '../api/me';
 import { AccountRow } from '../components/AccountRow';
 import { usePartnerOrderCounts } from '@/features/partner/api';
-import { SupportRows } from '@/features/support/SupportRows';
+import { ComplaintTypeMenu, SupportRows } from '@/features/support/SupportRows';
 import { useNotifications } from '@/features/notifications/api';
 import { useWallet } from '@/features/wallet/api';
 import { usePoints } from '@/features/points/api';
@@ -90,10 +90,18 @@ function DriverTiles() {
   );
 }
 
-/** العمل and الدعم والمساعدة of the delivery man, as in the photo: no "التواصل معنا" and no complaint menu. */
+/**
+ * العمل and الدعم والمساعدة of the delivery man, as in the photos: no "التواصل معنا"; تقديم شكوى asks
+ * "نوع الشكوى" first, and طلب سابق opens his طلباتى, whose cards each have تقديم شكوى.
+ */
 function DriverRows() {
   const t = useT();
+  const [menu, setMenu] = useState(false);
   const ticket = (type: 'complaint' | 'suggestion') => router.push({ pathname: '/driver-support/[type]', params: { type } });
+  const go = (to: () => void) => {
+    setMenu(false);
+    to();
+  };
   return (
     <>
       <AppText weight="semibold" color={colors.ink2} style={styles.group}>
@@ -105,7 +113,13 @@ function DriverRows() {
         {t('support.group')}
       </AppText>
       <AccountRow icon={Lightbulb} label={t('support.suggest')} onPress={() => ticket('suggestion')} />
-      <AccountRow icon={TriangleAlert} label={t('support.complain')} onPress={() => ticket('complaint')} />
+      <AccountRow icon={TriangleAlert} label={t('support.complain')} onPress={() => setMenu(true)} />
+      <ComplaintTypeMenu
+        visible={menu}
+        onClose={() => setMenu(false)}
+        onPastOrder={() => go(() => router.push('/driver-history'))}
+        onGeneral={() => go(() => ticket('complaint'))}
+      />
     </>
   );
 }

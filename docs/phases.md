@@ -37,7 +37,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 10 | Cart | 🔍 in-verify | none |
 | 11 | Checkout and placing an order (cash only) | 🔍 in-verify | none (#3, #11 decided) |
 | 12 | Partner: orders and products (mobile and `/partner`) | 🔍 in-verify | none (uncaptured screens marked [Open]) |
-| 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (driver home and current orders marked [Open], #9) |
+| 13 | Driver: shifts, offers and skips | 🔍 in-verify | none (home and current orders rebuilt from the 2026-11-26 captures; the offer card stays [Open]) |
 | 14 | Order status and the delivered view (live tracking out of scope) | 🔍 in-verify | none (the active order view marked [Open]) |
 | 15 | Ratings, complaints and support | 🔍 in-verify | none (good chips and star words marked [Open]) |
 | 16 | Notifications and push (Expo push) | 🔍 in-verify | none (Expo project and Android FCM set up; real pushes need a workflow-built app) |
@@ -48,7 +48,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
 | 22 | Pharmacy: prescriptions and product photos | 🔍 in-verify | none (the partner side and the notice wording marked [Open]) |
 | 23 | Send anything (اطلب دليفري) | 🔍 in-verify | none (the customer's first status marked [Derived]) |
-| 24 | Driver: history and fines | 🔍 in-verify | none (فواتيري, نقاطي and the dashboard pages marked [Open]) |
+| 24 | Driver: history and fines | 🔍 in-verify | none (history rebuilt from the 2026-11-26 captures; the dashboard pages marked [Open]) |
 | 25 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
 | 26 | Release | ⬜ | 8 |
 
@@ -329,6 +329,7 @@ Contract §10: driver accounts generated from the dashboard or the admin's mobil
 
 Owner's answers before the phase (2026-11-25):
 - Build it without the driver home and current-orders screenshots; those parts are [Open].
+- **Rebuilt 2026-11-26** from a Fayoum delivery man's account (contract §10): the location gate ("يرجى تفعيل الموقع" and the "تفعيل خدمة الموقع" dialog), "طلباتى" with the "نشط" pill, "لا يوجد طلبات حاليا" with "اعادة التحميل" on الرئيسية and الطلبات الحالية, "نوبات العمل المتوفرة" with the week strip, and the "نوع الشكوى" menu on حسابي. The offer card and the in-shift screens stay [Open]. The profile's documents, vehicle type and area are not built yet.
 - An order is offered when the store accepts it, to **every delivery man on shift at once**; the first to accept takes it.
 - A delivery man may hold as many orders as he accepts.
 - Nobody accepts in 60 s: it shows again to all of them. Ignoring it is not a skip; only "تخطي" counts.
@@ -692,7 +693,8 @@ Owner's answers before the phase (2026-11-26):
   - Amounts show two decimals like the rest of the app (the photo shows "25.0").
   - An order taken before this phase earns the fee the customer was asked for and no speed points.
   - Speed is from his taking the order (or the admin giving it to him) to تم التوصيل, over the store-to-customer line.
-- **[Open]** The screens behind فواتيري and نقاطي, the fine notice wording, and the dashboard pages are not captured.
+- **[Open]** The fine notice wording and the dashboard pages are not captured. In Tawsilty فواتيري opens nothing and نقاطي is the customer's points screen; ours keep their pages [Derived].
+- **Rebuilt 2026-11-26:** طلباتى starts on today, reads "لا يوجد طلبات" when empty, and a card opens the order without the step button; "مدفوعة مسبقاً" when nothing is to be collected [Derived]; a complaint about an order asks "ما هو شكواك لطلب رقم …#" (customer too).
 - **Phone verification (new dev build):**
   - As the admin, set speed levels and a point value; give one delivery man his own fee.
   - Deliver an order quickly: نقاطي goes up; فواتيري adds the earning and the points.

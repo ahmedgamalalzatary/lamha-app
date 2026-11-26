@@ -138,7 +138,7 @@ describe('الدعم والمساعدة (contract §8.14; real API)', () => {
     fireEvent.press(await screen.findByRole('button', { name: 'طلب سابق' }));
     fireEvent.press(await screen.findByRole('button', { name: `طلب رقم #${100000 + id}` }));
 
-    expect(await screen.findByText(`عن الطلب #${100000 + id}`)).toBeTruthy();
+    expect(await screen.findByText(`ما هو شكواك لطلب رقم ${100000 + id}#`)).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText('الشكوي'), 'وصل بارد');
     await waitFor(() => expect(screen.getByRole('button', { name: 'ارسال' }).props.accessibilityState).toMatchObject({ disabled: false }));
     press('ارسال');
@@ -150,7 +150,7 @@ describe('الدعم والمساعدة (contract §8.14; real API)', () => {
     const id = await insertOrder();
     await renderApp(routes(), { initialUrl: `/order/${id}` });
     fireEvent.press(await screen.findByRole('button', { name: 'تواصل مع الدعم الفني' }));
-    expect(await screen.findByText(`عن الطلب #${100000 + id}`)).toBeTruthy();
+    expect(await screen.findByText(`ما هو شكواك لطلب رقم ${100000 + id}#`)).toBeTruthy();
   });
 
   it('a suggestion: تقديم مقترح, then the form', async () => {

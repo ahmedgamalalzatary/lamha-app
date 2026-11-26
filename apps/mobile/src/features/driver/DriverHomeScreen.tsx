@@ -1,41 +1,69 @@
 import type { DriverShiftState } from '@tawsela/shared';
-import { Ban, Clock, ReceiptText } from 'lucide-react-native';
+import { Ban, Check, Clock } from 'lucide-react-native';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { toast } from '@/components/Toast';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useDriverOffers, useDriverShift, useShiftAction } from './api';
+import { LocationGate, useLocationOn } from './LocationGate';
+import { NoOrdersNow } from './NoOrdersNow';
 import { cairoTime, cardShadow, OfferCard, useNow } from './parts';
 
 /**
- * الرئيسية of the delivery man (contract §10). [Open] Tawsilty's driver home is not captured
- * (§15.1 #9): the status pill and the "نوبة عمل محجوزة" card follow the client's reference from
- * another app (client-driver-shift-reserved-start-reference-other-app.jpg); the offers use the
- * store's card look.
+ * الرئيسية of the delivery man (contract §10, captured 2026-11-26): with the location off only
+ * "يرجى تفعيل الموقع" (LocationGate); then "طلباتى" with the green "نشط" pill, and with no orders
+ * "لا يوجد طلبات حاليا" and "اعادة التحميل" (driver/driver-home-active-switch-no-orders-reload.jpg).
+ * [Derived] The pill shows his shift: Tawsilty's driver is "نشط" once the location is on, ours once
+ * the shift starts; off shift it is grey "غير نشط". The "نوبة عمل محجوزة" card follows the client's
+ * reference from another app (client-driver-shift-reserved-start-reference-other-app.jpg). [Open]
+ * Tawsilty's offer card is not captured: the offers use the store's card look.
  */
 export function DriverHomeScreen() {
   const t = useT();
+  const location = useLocationOn();
   const shift = useDriverShift();
   const offers = useDriverOffers();
   const on = shift.data?.status === 'on';
+  const reload = () => {
+    void shift.refetch();
+    void offers.refetch();
+  };
+
+  if (location.on === null) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.screen}>
+        <View style={styles.list}>
+          <Skeleton style={styles.skeleton} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+  if (!location.on) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.screen}>
+        <LocationGate check={location.check} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <View accessible accessibilityLabel={`${t('driver.status')}: ${t(on ? 'driver.working' : 'driver.notWorking')}`} style={styles.status}>
-          <View style={[styles.dot, { backgroundColor: on ? colors.success : colors.ink2 }]} />
-          <AppText size={fontSizes.caption} color={colors.ink2}>
-            {t('driver.status')}
+        <AppText accessibilityRole="header" weight="bold" size={fontSizes.screenTitle + 4} style={styles.grow}>
+          {t('driver.homeTitle')}
+        </AppText>
+        <View accessible accessibilityLabel={`${t('driver.status')}: ${t(on ? 'driver.working' : 'driver.notWorking')}`} style={[styles.status, on && styles.statusOn]}>
+          <AppText weight="bold" size={fontSizes.listTitle + 2} color={on ? colors.bg : colors.ink2}>
+            {t(on ? 'driver.working' : 'driver.notWorking')}
           </AppText>
-          <AppText weight="bold">{t(on ? 'driver.working' : 'driver.notWorking')}</AppText>
+          <View style={styles.knob}>{on ? <Check size={22} color={colors.success} strokeWidth={3} /> : null}</View>
         </View>
       </View>
       {shift.isPending ? (
@@ -52,15 +80,7 @@ export function DriverHomeScreen() {
           data={on && !shift.data.blockedUntil ? (offers.data ?? []) : []}
           keyExtractor={(o) => String(o.id)}
           contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={shift.isRefetching || offers.isRefetching}
-              onRefresh={() => {
-                void shift.refetch();
-                void offers.refetch();
-              }}
-            />
-          }
+          refreshControl={<RefreshControl refreshing={shift.isRefetching || offers.isRefetching} onRefresh={reload} />}
           ListHeaderComponent={
             <View style={styles.top}>
               <ShiftCard state={shift.data} />
@@ -72,12 +92,9 @@ export function DriverHomeScreen() {
                   </AppText>
                 </View>
               ) : null}
-              <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle}>
-                {t('driver.newOrders')}
-              </AppText>
             </View>
           }
-          ListEmptyComponent={<EmptyState icon={ReceiptText} title={t('driver.noOffers')} message={on ? undefined : t('driver.offShiftNote')} />}
+          ListEmptyComponent={<NoOrdersNow busy={shift.isRefetching || offers.isRefetching} onReload={reload} note={on ? undefined : t('driver.offShiftNote')} />}
           renderItem={({ item }) => <OfferCard offer={item} />}
         />
       )}
@@ -173,18 +190,20 @@ function ShiftCard({ state }: { state: DriverShiftState }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
-  header: { alignItems: 'center', paddingVertical: spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.bg },
+  // The pill of the photo: the word, then the white knob at its end with the ✓.
   status: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.bg,
+    gap: spacing.lg,
+    backgroundColor: colors.line,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    ...cardShadow,
+    paddingStart: spacing.xl,
+    paddingEnd: spacing.xs,
+    paddingVertical: spacing.xs,
   },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  statusOn: { backgroundColor: colors.success },
+  knob: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, gap: spacing.lg, flexGrow: 1 },
   top: { gap: spacing.lg },
   skeleton: { height: 180, borderRadius: radius.md },

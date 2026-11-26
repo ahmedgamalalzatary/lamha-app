@@ -8,6 +8,7 @@ import { session } from '@/core/auth/session';
 import { AccountScreen } from '@/features/account/screens/AccountScreen';
 import { DriverHistoryScreen } from '@/features/driver/DriverHistoryScreen';
 import { DriverMoneyScreen } from '@/features/driver/DriverMoneyScreen';
+import { DriverOrderScreen } from '@/features/driver/DriverOrderScreen';
 import { DriverPointsScreen } from '@/features/driver/DriverPointsScreen';
 import { TicketScreen } from '@/features/support/TicketScreen';
 import { insertCategory, insertMenuItem, insertStore } from '../utils/catalog';
@@ -30,6 +31,7 @@ const ROUTES = {
   'driver-money': DriverMoneyScreen,
   'driver-points': DriverPointsScreen,
   'driver-support/[type]': TicketScreen,
+  'driver-order/[id]': DriverOrderScreen,
 };
 
 const press = (name: string) => fireEvent.press(screen.getByRole('button', { name }));
@@ -94,6 +96,19 @@ describe("the delivery man's money (contract §10; real API)", () => {
     expect(screen.getByText(new RegExp(`الطلب #${code(delivered)}`))).toBeTruthy();
   });
 
+  it('تقديم شكوى asks "نوع الشكوى": عامة opens the form, طلب سابق opens طلباتى', async () => {
+    await renderApp(ROUTES, { initialUrl: '/driver/account' });
+    await fireEvent.press(await screen.findByRole('button', { name: 'تقديم شكوى' }));
+    expect(await screen.findByText('نوع الشكوى')).toBeTruthy();
+    await press('عامة');
+    expect(await screen.findByText('ما هو شكواك')).toBeTruthy();
+
+    await renderApp(ROUTES, { initialUrl: '/driver/account' });
+    await fireEvent.press(await screen.findByRole('button', { name: 'تقديم شكوى' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'طلب سابق' }));
+    expect(await screen.findByRole('button', { name: 'بحث' })).toBeTruthy();
+  });
+
   it('نقاطي shows the balance, its value, the levels and the orders that earned them', async () => {
     const delivered = await insertOrder('delivered', 4);
     await renderApp(ROUTES, { initialUrl: '/driver-points' });
@@ -119,24 +134,48 @@ describe("the delivery man's money (contract §10; real API)", () => {
     expect(screen.getByText('اجمالى الارباح :')).toBeTruthy();
     expect(screen.getByText('25.00 ج.م')).toBeTruthy();
 
-    // To the end of last year: the days swap round, and nothing this year after 1 January is in them.
+    // Last year, picked the wrong way round (to before from): the days swap round, and nothing this year is in them.
     const year = new Date().getFullYear() - 1;
-    await fireEvent.press(screen.getByRole('button', { name: new RegExp('^إلى ') }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp('^من ') }));
     await fireEvent(await screen.findByTestId('history-date'), 'onValueChange', {}, new Date(year, 11, 31));
     await press('تأكيد');
-    expect(screen.getByRole('button', { name: `إلى ${year}-12-31` })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp('^إلى ') }));
+    await fireEvent(await screen.findByTestId('history-date'), 'onValueChange', {}, new Date(year, 0, 1));
+    await press('تأكيد');
+    expect(screen.getByRole('button', { name: `من ${year}-12-31` })).toBeTruthy();
+    expect(screen.getByRole('button', { name: `إلى ${year}-01-01` })).toBeTruthy();
     // The list stays until بحث.
     expect(screen.getByText(`الطلب #${code(delivered)}`)).toBeTruthy();
     await press('بحث');
-    expect(await screen.findByText('لا توجد طلبات')).toBeTruthy();
+    expect(await screen.findByText('لا يوجد طلبات')).toBeTruthy();
     expect(screen.getByText('0.00 ج.م')).toBeTruthy();
+  });
+
+  it('starts on today, and says "لا يوجد طلبات" when the range has none', async () => {
+    await renderApp(ROUTES, { initialUrl: '/driver-history' });
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+    expect(await screen.findByRole('button', { name: `من ${today}` })).toBeTruthy();
+    expect(screen.getByRole('button', { name: `إلى ${today}` })).toBeTruthy();
+    expect(await screen.findByText('لا يوجد طلبات')).toBeTruthy();
+  });
+
+  it('a card opens the order without a step button; nothing to collect reads "مدفوعة مسبقاً"', async () => {
+    const delivered = await insertOrder('delivered');
+    await sql('UPDATE orders SET wallet_paid = total WHERE id = ?', [delivered]);
+    await renderApp(ROUTES, { initialUrl: '/driver-history' });
+    await fireEvent.press(await screen.findByRole('button', { name: `تفاصيل الطلب #${code(delivered)}` }));
+
+    expect(await screen.findByText('البائع')).toBeTruthy();
+    expect(screen.getByText('مدفوعة مسبقاً')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'تم التوصيل' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'خارج للتوصيل' })).toBeNull();
   });
 
   it('تقديم شكوى on a card sends a complaint about that order', async () => {
     const delivered = await insertOrder('delivered');
     await renderApp(ROUTES, { initialUrl: '/driver-history' });
     await fireEvent.press(await screen.findByRole('button', { name: `تقديم شكوى عن الطلب #${code(delivered)}` }));
-    expect(await screen.findByText(`عن الطلب #${code(delivered)}`)).toBeTruthy();
+    expect(await screen.findByText(`ما هو شكواك لطلب رقم ${code(delivered)}#`)).toBeTruthy();
     await fireEvent.changeText(screen.getByLabelText('الشكوي'), 'المحل اتأخر ساعة في التجهيز');
     await waitFor(() => expect(screen.getByRole('button', { name: 'ارسال' }).props.accessibilityState).toMatchObject({ disabled: false }));
     await press('ارسال');

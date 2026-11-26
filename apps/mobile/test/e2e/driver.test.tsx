@@ -18,6 +18,21 @@ import { insertUser, resetDb, signInAs, sql } from '../utils/db';
 import { API_URL } from '../utils/env';
 import { renderApp, testQueryClient } from '../utils/render';
 
+/** The phone's location: permission and the location service (Tawsilty asks for both first). */
+const mockLocation = { granted: true, services: true };
+const mockRequest = jest.fn(async () => {
+  mockLocation.granted = true;
+  return { granted: true, canAskAgain: true };
+});
+jest.mock('expo-location', () => ({
+  getForegroundPermissionsAsync: async () => ({ granted: mockLocation.granted, canAskAgain: true }),
+  requestForegroundPermissionsAsync: () => mockRequest(),
+  hasServicesEnabledAsync: async () => mockLocation.services,
+  enableNetworkProviderAsync: async () => {
+    mockLocation.services = true;
+  },
+}));
+
 let client: QueryClient;
 function Root() {
   return (
@@ -43,6 +58,16 @@ const pressFirst = (name: string) => fireEvent.press(screen.getAllByRole('button
 
 const CAIRO = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const clock = (minutes: number) => CAIRO.format(new Date(Date.now() + minutes * 60_000));
+
+const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', weekday: 'short' });
+const DAY_OF_MONTH = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', day: 'numeric' });
+/** A Cairo day from today: its index in the week (0 Sunday) and the chip's name, "الخميس 26". */
+function cairoDay(offset: number) {
+  const at = new Date(Date.now() + offset * 86_400_000);
+  const index = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(WEEKDAY.format(at));
+  return { index, label: `${DAY_NAMES[index]} ${DAY_OF_MONTH.format(at)}` };
+}
 
 /** The global week: every day a 4-hour shift starting this many minutes from now (negative: already started). */
 async function everyDay(from: number) {
@@ -81,6 +106,9 @@ async function insertOrder(status: string, driverId: number | null = null): Prom
 const code = (id: number) => String(100000 + id);
 
 beforeEach(async () => {
+  mockLocation.granted = true;
+  mockLocation.services = true;
+  mockRequest.mockClear();
   client = testQueryClient();
   await AsyncStorage.clear();
   await session.signOutLocally();
@@ -106,12 +134,14 @@ describe('the delivery man\'s app (contract §10; real API and live socket)', ()
   it('starts the shift from الرئيسية, extends it and ends it', async () => {
     await renderApp(ROUTES, { initialUrl: '/driver' });
     expect(await screen.findByText('نوبة عمل محجوزة')).toBeTruthy();
-    expect(screen.getByLabelText('الحالة: لا يعمل')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'طلباتى' })).toBeTruthy();
+    expect(screen.getByLabelText('الحالة: غير نشط')).toBeTruthy();
+    expect(screen.getByText('لا يوجد طلبات حاليا')).toBeTruthy();
     expect(screen.getByText('ابدأ نوبة العمل لتصلك الطلبات')).toBeTruthy();
 
     await press('بدء نوبة العمل');
     expect(await screen.findByText('نوبة العمل الحالية')).toBeTruthy();
-    expect(screen.getByLabelText('الحالة: يعمل')).toBeTruthy();
+    expect(screen.getByLabelText('الحالة: نشط')).toBeTruthy();
     expect(screen.getByText('متبقي 3 تمديد')).toBeTruthy();
     await press('تمديد 60 دقيقة');
     expect(await screen.findByText('متبقي 2 تمديد')).toBeTruthy();
@@ -125,6 +155,27 @@ describe('the delivery man\'s app (contract §10; real API and live socket)', ()
     });
   });
 
+  it('asks for the location first, as Tawsilty: تفعيل الموقع › تفعيل خدمة الموقع, then the home', async () => {
+    mockLocation.granted = false;
+    await renderApp(ROUTES, { initialUrl: '/driver' });
+    expect(await screen.findByText('يرجى تفعيل الموقع')).toBeTruthy();
+    expect(screen.queryByText('نوبة عمل محجوزة')).toBeNull();
+
+    await press('تفعيل الموقع');
+    await fireEvent.press(await screen.findByRole('button', { name: 'تفعيل خدمة الموقع' }));
+    expect(await screen.findByText('نوبة عمل محجوزة')).toBeTruthy();
+    expect(mockRequest).toHaveBeenCalled();
+  });
+
+  it('with the location service off, the home waits for it too', async () => {
+    mockLocation.services = false;
+    await renderApp(ROUTES, { initialUrl: '/driver' });
+    expect(await screen.findByText('يرجى تفعيل الموقع')).toBeTruthy();
+    await press('تفعيل الموقع');
+    await fireEvent.press(await screen.findByRole('button', { name: 'تفعيل خدمة الموقع' }));
+    expect(await screen.findByText('نوبة عمل محجوزة')).toBeTruthy();
+  });
+
   it('late: the start button stays locked and says to ask the admin', async () => {
     await everyDay(-30);
     await renderApp(ROUTES, { initialUrl: '/driver' });
@@ -136,7 +187,7 @@ describe('the delivery man\'s app (contract §10; real API and live socket)', ()
     const vibrate = jest.spyOn(Vibration, 'vibrate');
     await call('/driver/shift/start', driverToken);
     await renderApp(ROUTES, { initialUrl: '/driver' });
-    expect(await screen.findByText('لا توجد طلبات جديدة')).toBeTruthy();
+    expect(await screen.findByText('لا يوجد طلبات حاليا')).toBeTruthy();
     await waitFor(() => expect(useDriverConnected.getState()).toBe(true));
 
     const id = await insertOrder('pending_review');
@@ -186,7 +237,7 @@ describe('the delivery man\'s app (contract §10; real API and live socket)', ()
     await pressFirst(`تخطي #${code(ids[2]!)}`);
 
     expect((await screen.findAllByText(/^تم إيقافك عن استقبال الطلبات حتى/)).length).toBeGreaterThan(0);
-    expect(await screen.findByText('لا توجد طلبات جديدة')).toBeTruthy();
+    expect(await screen.findByText('لا يوجد طلبات حاليا')).toBeTruthy();
     const [me] = await sql<{ blocked_until: Date | null }[]>('SELECT blocked_until FROM drivers WHERE user_id = ?', [driver]);
     expect(me!.blocked_until).toEqual(expect.any(Date));
   });
@@ -218,14 +269,33 @@ describe('the delivery man\'s app (contract §10; real API and live socket)', ()
     await press('خارج للتوصيل');
     await fireEvent.press(await screen.findByRole('button', { name: 'تم التوصيل' }));
     await waitFor(async () => expect((await sql<{ status: string }[]>('SELECT status FROM orders WHERE id = ?', [id]))[0]!.status).toBe('delivered'));
-    expect(await screen.findByText('لا توجد طلبات حالية')).toBeTruthy();
+    expect(await screen.findByText('لا يوجد طلبات حاليا')).toBeTruthy();
   });
 
-  it('حسابي › نوبات عملي lists the week he follows', async () => {
+  it('الطلبات الحالية with none: "لا يوجد طلبات حاليا" and اعادة التحميل', async () => {
+    await renderApp(ROUTES, { initialUrl: '/driver/current' });
+    expect(await screen.findByText('لا يوجد طلبات حاليا')).toBeTruthy();
+    const id = await insertOrder('preparing', driver);
+    await press('اعادة التحميل');
+    expect(await screen.findByRole('button', { name: `تفاصيل الطلب #${code(id)}` })).toBeTruthy();
+  });
+
+  it('حسابي › نوبات عملي: the week\'s days with today chosen, and each day\'s shift', async () => {
+    const today = cairoDay(0);
+    // The strip runs Saturday to Friday: take a day of the same week.
+    const other = cairoDay(today.index === 6 ? 1 : -1);
+    const week: unknown[] = Array.from({ length: 7 }, () => null);
+    week[today.index] = { start: clock(-10), end: clock(230) };
+    await sql('UPDATE driver_settings SET schedule = ? WHERE id = 1', [JSON.stringify(week)]);
+
     await renderApp(ROUTES, { initialUrl: '/driver/account' });
     await fireEvent.press(await screen.findByRole('button', { name: 'نوبات عملي' }));
-    expect(await screen.findByText('الأحد')).toBeTruthy();
-    expect(screen.getByText('السبت')).toBeTruthy();
-    expect(screen.getAllByText(/^\d{1,2}:\d{2} (AM|PM) - \d{1,2}:\d{2} (AM|PM)$/)).toHaveLength(7);
+    expect(await screen.findByText('نوبات العمل المتوفرة')).toBeTruthy();
+    expect(screen.getByRole('button', { name: today.label }).props.accessibilityState).toMatchObject({ selected: true });
+    expect(screen.getAllByText(/^\d{1,2}:\d{2} (AM|PM) - \d{1,2}:\d{2} (AM|PM)$/)).toHaveLength(1);
+
+    await press(other.label);
+    expect(screen.getByText('لا توجد نوبات اليوم')).toBeTruthy();
+    expect(screen.queryAllByText(/^\d{1,2}:\d{2} (AM|PM) - /)).toHaveLength(0);
   });
 });

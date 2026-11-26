@@ -638,7 +638,7 @@ A partner manages their store from **two places with the same powers** [Client]:
 
 ## 10. Features: driver
 
-Tawsilty's driver app is not public. Three of its screens came in the client's WhatsApp (2026-11-22, `.impeccable/phone/driver/`); the rules come from the client [Client] and the demo [Demo].
+Tawsilty's driver side is the same customer app signed in with a delivery man's account. Three of its screens came in the client's WhatsApp (2026-11-22); on 2026-11-26 the owner lent a Fayoum delivery man's account and the rest was captured by adb outside a shift (`.impeccable/phone/driver/`). No shift was started, no offer was touched and nothing was sent or saved. The rules come from the client [Client] and the demo [Demo].
 
 **Screens seen [Tawsilty]:**
 
@@ -653,6 +653,22 @@ Tawsilty's driver app is not public. Three of its screens came in the client's W
   - Orange button **خارج للتوصيل**.
   - In the example, the captain pays the store 270, which is the full items total (2 products, 270). The partner photos (§9) show the store collecting 90% of the items total. [Owner, 2026-11-25] Both are right: the amount follows the store's payment option (§8.7, "Who pays whom").
 - **Order history** ("طلباتى", back arrow): two date pickers (from, to), an outlined blue "بحث" button; a card per order: "الطلب #500569", a status pill (ملغي red, تم التوصيل green), the store name, "الاجمالى <items count>", a red "تقديم شكوى" button, the date ("Wednesday, 18 November 2026") and the earning in green ("+ 25.0 ج.م"). A grey bottom panel: **اجمالى الارباح** and **عدد الطلبات المكتملة**.
+  - Both dates start on today; an empty range shows "لا يوجد طلبات" under بحث. The pickers are the stock Material date dialog (orange header "اختيار التاريخ", الإلغاء / حسنًا). A cancelled card shows no earning. Totals count delivered orders only.
+  - Tapping a card opens its details (the card above), without the step button. Once delivered, المبلغ shows **مدفوعة مسبقاً** instead of an amount when nothing was to be collected. The customer card here has no call icons, and the address cuts off with an orange "عرض المزيد".
+  - "تقديم شكوى" on a card opens the complaint form titled "ما هو شكواك لطلب رقم 413600#".
+
+**Captured 2026-11-26 [Tawsilty]:**
+
+- **الرئيسية, location off:** blank screen, centred title "يرجى تفعيل الموقع", grey text "لا يمكن عرض الطلبات أو قبولها والموقع متوقف. يرجى تفعيل الموقع لعرض الطلبات القريبة منك.", a full-width orange button "تفعيل الموقع" with a reload icon. The button opens a small white dialog (✕ top corner) with one orange outlined button "تفعيل خدمة الموقع" (crosshair icon), which opens the phone's location settings.
+- **الرئيسية, location on:** title **طلباتى** on the right; on the left a green pill switch **نشط** with a white ✓ circle (on duty). With no orders: "لا يوجد طلبات حاليا" and an orange "اعادة التحميل" button with a reload icon. The phone was outside Fayoum, so no offers came; the offer card stays [Open].
+- **الطلبات الحالية:** centred title "الطلبات الحالية"; empty: "لا يوجد طلبات حاليا" and the same "اعادة التحميل" button.
+- **حسابي:** as above, plus **إعدادات الإشعارات** (bell) under الحساب. فواتيري is a tile only: tapping it opens nothing. The bell opens **الإشعارات** (back arrow, "اليوم" group): white cards with a bell in a lilac circle, "طلب جديد", the date and time, a blue unread dot and a blue edge — one per offer sent to the area.
+- **نقاطي:** an orange card "رصيد النقاط" (star icon), "0 نقطة", a progress bar "باقي 240 نقطة للاستبدال", and a translucent box with **قيمة نقاطك** "0.00 ج.م" and **الحد الأدنى للاستبدال** "240 نقطة". Tabs **المكتسبة** / **المنفقة** (orange underline). Empty: a bag icon, "لا توجد نقاط مكتسبة", "اطلب من التطبيق واكسب نقاط مع كل طلب" (المنفقة: tag icon, "لا توجد نقاط منفقة", "استبدل نقاطك بخصومات على طلباتك"). These are the customer's points words; Tawsilty reuses the customer screen.
+- **نوبات عملي** → "نوبات العمل المتوفرة" (back arrow): a strip of 7 day chips (letter + date, the selected one orange), "لا توجد نوبات اليوم" when empty. With no shifts on this account, the shift card stays as the client's reference (above).
+- **تقديم مقترح:** an illustration, orange "ما هو اقتراحك", a "الاقتراح" field with an underline ("ادخل اقتراحك"), an orange pill "ارسال".
+- **تقديم شكوى:** first a small menu "نوع الشكوى": **طلب سابق** (list icon) or **عامة** (chat icon). عامة opens the same form as the suggestion: "ما هو شكواك", "الشكوي", "ادخل شكواك", ارسال. طلب سابق opened nothing on this account.
+- **إعدادات حسابي** (also from عرض الملف الشخصي): an orange curved header "اعدادات حسابي" with "حسابي ›", the avatar with a camera badge, then fields الاسم, رقم الهاتف (with "11/11"), البريد الالكترونى, كلمة المرور, then four uploads with a file icon and the Tawsilty logo beside each: **صورة اثبات هويه**, **صورة السجل الرخصة**, **صورة الحالة الجنائيه**, **صورة كتيب السيارة**; dropdowns **نوع المركبة** and **المنطقة** (الفيوم); an orange "حفظ".
+- **إعدادات الإشعارات:** "حسابي · اعدادات الخدمات والإشعارات", a big orange bell tile, switches **تفعيل الإشعار** ("إيقاف هذا الخيار يعطل وصول الإشعارات") and **ايقاف رسائل SMS من التطبيق**.
 
 **Rules:**
 
@@ -669,7 +685,7 @@ Tawsilty's driver app is not public. Three of its screens came in the client's W
 - **Fines and deductions** (الخصومات والغرامات): every deduction with its amount, reason, date and order, so the driver always knows why money was taken.
 - **Account**: profile, documents, logout.
 - [Owner, 2026-11-26] **فواتيري** is his net earnings: his delivery earnings plus his speed points cash, less his fines. The admin adds fines (amount, reason, maybe an order) and may delete one made by mistake; he is told at once. Speed points stay a balance until the admin marks them paid in cash ("تم الصرف"). His earning on an order is fixed when he takes it, by his own fee rule when he has one (§8.7).
-- Built in Phase 24. [Open] The screens behind فواتيري and نقاطي and the dashboard pages are not captured.
+- Built in Phase 24. فواتيري opens nothing in Tawsilty, and نقاطي is the customer's points screen (captured 2026-11-26). Ours keep their pages, since fines and speed points need a place [Derived]. [Open] The dashboard pages, the offer card and the in-shift screens are not captured.
 
 ---
 
@@ -797,7 +813,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 6 | ~~Production server and domain~~ | **Decided:** everything stays local until the first real mobile build; the owner then provides a VPS. | Deploy (Phase 2), moved to just before that build |
 | 7 | ~~Push provider~~ | **Decided:** Expo push service, called over its HTTP API with no SDK, as in the Maqar project. | — |
 | 8 | App identity | **Partly decided (owner, 2026-11-26):** the name **وصّل** / **Wassal**, the package and bundle ID `com.wassal.app`, the Arabic logo (`docs/brand/wassal-logo-ar.png`, tagline "من الأبلكيشن لحد بابك") and its colours: rust `#B44A0E`, amber `#EF940F`, cream `#FBF7EE`. **Still open:** the English logo and a vector (or large) logo file, which the owner will send (the icons are cut from a 1254 px PNG until then); the footer credit; who owns the Google Play and Apple developer accounts. | Store release (Phase 26) |
-| 9 | Screens not captured yet. The WhatsApp export (read 2026-11-23) brought the customer's delivered order details and rating screen (§8.8) and three driver screens (§10). Still missing: the partner products and account screens, the driver home and current-orders tabs, and admin pages beyond the orders list. Live tracking is out of scope (§15.2). | Partly cleared | Phases 12, 13, 25 |
+| 9 | Screens not captured yet. The WhatsApp export (read 2026-11-23) brought the customer's delivered order details and rating screen (§8.8) and three driver screens (§10); a delivery man's account (2026-11-26) brought the rest of the driver side outside a shift. Still missing: the partner products and account screens, the driver offer card and in-shift screens, and admin pages beyond the orders list. Live tracking is out of scope (§15.2). | Partly cleared | Phases 12, 13, 25 |
 | 10 | ~~Lucky wheel~~ | **Excluded for now.** Tawsilty has none; the client sent a reference from another app (`client-requests/client-lucky-wheel-reference-other-app.jpg`: "لفة الحظ", 8 prizes of points, discounts and free delivery, "لف العجلة", "متبقي 1 لفة اليوم"). | — |
 | 11 | ~~What the captain pays the store~~ | **Decided (2026-11-25):** three admin options, set globally or per store: the full items total; the items total minus the app's percentage; or nothing, with the app paying the store later (§8.7). | — |
 
@@ -869,6 +885,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | §8.12: an "اطلب دليفري" order goes straight to the delivery men, with the note on the offer (owner). |
 | 2026-11-26 | §10: فواتيري is his net earnings; the admin adds and deletes fines; speed points are paid out in cash by "تم الصرف" (owner). Phase 24 built, migration 0022. |
 | 2026-11-26 | §6, §15.1 #8: the app is وصّل / Wassal, `com.wassal.app`; the owner's logo and its rust replace Tawsilty's orange in the app and the dashboard. The English logo and a vector file are still to come (owner). |
+| 2026-11-26 | §10: captured Tawsilty's driver side from a Fayoum delivery man's account, off shift: home (location off, نشط, empty), current orders, account, notifications, نقاطي, shifts, history and details, complaint and suggestion forms, profile with documents, notification settings. The offer card and the in-shift screens stay [Open]. |
 
 ---
 

@@ -1,29 +1,31 @@
 import { type DriverOrder, formatMoney, orderStatusLabel } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { Bike, MapPin, Store } from 'lucide-react-native';
+import { MapPin, Store } from 'lucide-react-native';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { EmptyState } from '@/components/EmptyState';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useDriverOrders } from './api';
+import { NoOrdersNow } from './NoOrdersNow';
 import { cardShadow } from './parts';
 
 /**
- * الطلبات الحالية (contract §10): the orders he took and has not delivered, oldest first. [Open]
- * Tawsilty's tab is not captured (§15.1 #9): the cards follow the store's order cards.
+ * الطلبات الحالية (contract §10): the orders he took and has not delivered, oldest first, under the
+ * centred title; with none "لا يوجد طلبات حاليا" and "اعادة التحميل"
+ * (driver/driver-current-orders-empty-reload.jpg). [Open] Tawsilty's cards with orders are not
+ * captured: they follow the store's order cards.
  */
 export function DriverCurrentScreen() {
   const t = useT();
   const orders = useDriverOrders();
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
-      <AppText accessibilityRole="header" weight="bold" size={fontSizes.screenTitle} style={styles.title}>
+      <AppText accessibilityRole="header" weight="bold" size={fontSizes.screenTitle + 4} style={styles.title}>
         {t('tabs.currentOrders')}
       </AppText>
       {orders.isPending ? (
@@ -43,7 +45,7 @@ export function DriverCurrentScreen() {
           keyExtractor={(o) => String(o.id)}
           contentContainerStyle={[styles.list, orders.data.length === 0 && styles.grow]}
           refreshControl={<RefreshControl refreshing={orders.isRefetching} onRefresh={() => void orders.refetch()} />}
-          ListEmptyComponent={<EmptyState icon={Bike} title={t('driver.noCurrent')} message={t('driver.noCurrentBody')} />}
+          ListEmptyComponent={<NoOrdersNow busy={orders.isRefetching} onReload={() => void orders.refetch()} />}
           renderItem={({ item }) => <CurrentCard order={item} />}
         />
       )}
@@ -86,7 +88,7 @@ function CurrentCard({ order }: { order: DriverOrder }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
-  title: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
+  title: { textAlign: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   list: { padding: spacing.lg, gap: spacing.lg },
   grow: { flexGrow: 1 },
   skeleton: { height: 110, borderRadius: radius.md },

@@ -28,7 +28,8 @@ const whatsapp = (phone: string) => `https://wa.me/2${phone.replace(/\D/g, '')}`
  * lines with [Client] the product photo; ادفع نقداً للبائع in orange; المبلغ — تحصيل النقود; then the
  * orange step button. [Derived] The steps before خارج للتوصيل (وصلت للمتجر, waiting for the store)
  * and تم التوصيل after it use the same button. [Open] Stores have no written address yet: عنوان
- * البائع shows the store's zone.
+ * البائع shows the store's zone. A finished order opened from طلباتى shows the same cards without
+ * the button (driver-order-details-delivered-prepaid.jpg, driver-order-details-cancelled-cash.jpg).
  */
 export function DriverOrderScreen() {
   const t = useT();
@@ -192,8 +193,9 @@ function Details({ order: o, busy, onStep }: { order: DriverOrderDetails; busy: 
             <AppText color={colors.ink2} style={styles.grow}>
               {t('driver.collectCash')}
             </AppText>
+            {/* driver/driver-order-details-delivered-prepaid.jpg. [Derived] When the wallet and the points covered it all. */}
             <AppText weight="bold" size={fontSizes.listTitle + 2}>
-              {money(o.total)}
+              {o.total - o.walletPaid - o.pointsPaid <= 0 ? t('driver.prepaid') : money(o.total)}
             </AppText>
           </View>
           {/* [Derived] He collects that much less; the app owes it to him [Owner, 2026-11-26]. */}

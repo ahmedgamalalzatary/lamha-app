@@ -36,27 +36,38 @@ export function SupportRows() {
       <AccountRow icon={TriangleAlert} label={t('support.complain')} onPress={() => setMenu(true)} />
       <AccountRow icon={Headset} label={t('support.contact')} onPress={() => setContact(true)} />
 
-      {/* The menu floats over the rows, as in the photo [Derived: its exact place]. */}
-      <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} style={styles.menuBackdrop} onPress={() => setMenu(false)}>
-          <View style={styles.menu}>
-            <AppText size={fontSizes.caption} color={colors.ink2} style={styles.menuTitle}>
-              {t('support.complaintType')}
-            </AppText>
-            <MenuRow icon={List} label={t('support.pastOrder')} onPress={() => go(() => router.push('/support-orders'))} />
-            <MenuRow
-              icon={MessageSquare}
-              label={t('support.general')}
-              onPress={() => go(() => router.push({ pathname: '/support/[type]', params: { type: 'complaint' } }))}
-            />
-          </View>
-        </Pressable>
-      </Modal>
+      <ComplaintTypeMenu
+        visible={menu}
+        onClose={() => setMenu(false)}
+        onPastOrder={() => go(() => router.push('/support-orders'))}
+        onGeneral={() => go(() => router.push({ pathname: '/support/[type]', params: { type: 'complaint' } }))}
+      />
 
       <BottomSheet visible={contact} title={t('support.contactTitle')} onClose={() => setContact(false)}>
         <ContactList open={contact} />
       </BottomSheet>
     </>
+  );
+}
+
+/**
+ * "نوع الشكوى": طلب سابق or عامة, floating over the rows as in the photos (customer and
+ * driver/driver-complaint-type-picker-previous-general.jpg) [Derived: its exact place].
+ */
+export function ComplaintTypeMenu({ visible, onClose, onPastOrder, onGeneral }: { visible: boolean; onClose: () => void; onPastOrder: () => void; onGeneral: () => void }) {
+  const t = useT();
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} style={styles.menuBackdrop} onPress={onClose}>
+        <View style={styles.menu}>
+          <AppText size={fontSizes.caption} color={colors.ink2} style={styles.menuTitle}>
+            {t('support.complaintType')}
+          </AppText>
+          <MenuRow icon={List} label={t('support.pastOrder')} onPress={onPastOrder} />
+          <MenuRow icon={MessageSquare} label={t('support.general')} onPress={onGeneral} />
+        </View>
+      </Pressable>
+    </Modal>
   );
 }
 
