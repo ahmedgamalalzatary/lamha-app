@@ -201,4 +201,26 @@ describe('the partner app (contract §9; real API and live socket)', () => {
     await renderApp(ROUTES, { initialUrl: '/partner/account' });
     expect(await screen.findByLabelText('الطلبات اللي اتعملت: 2')).toBeTruthy();
   });
+
+  it('a pharmacy request shows its text, and قبول waits for the price, which fixes the bill (§8.11)', async () => {
+    const res = await sql<ResultSetHeader>(
+      `INSERT INTO orders (customer_id, store_id, request_id, status, mode, address_text, phone, note, items_total, delivery_fee, total,
+         payout_option, app_percent, app_share, store_gets, store_from_driver, request_kind, request_text)
+       VALUES (?, ?, UUID(), 'pending_review', 'delivery', 'شارع 2', '01554459196', '', 0, 30, 30, 'app_share', 10, 0, 0, 0, 'prescription', 'علبة بنادول')`,
+      [customer, store],
+    );
+    await renderApp(ROUTES, { initialUrl: '/partner' });
+    expect(await screen.findByText(`طلب رقم # ${100000 + res.insertId}`)).toBeTruthy();
+    expect(screen.getByText('روشتة طبية')).toBeTruthy();
+    expect(screen.getByText('علبة بنادول')).toBeTruthy();
+    expect(screen.queryByText('المنتجات 0')).toBeNull();
+    expect(screen.getByRole('button', { name: 'قبول' })).toBeDisabled();
+    await fireEvent.changeText(screen.getByLabelText('سعر الطلب'), 'abc');
+    expect(screen.getByRole('button', { name: 'قبول' })).toBeDisabled();
+    await fireEvent.changeText(screen.getByLabelText('سعر الطلب'), '١٢٠');
+    await press('قبول');
+    await waitFor(async () => expect(await statusOf(res.insertId)).toBe('preparing'));
+    const [row] = await sql<Record<string, string>[]>('SELECT items_total, total, store_from_driver FROM orders WHERE id = ?', [res.insertId]);
+    expect(row).toMatchObject({ items_total: '120.00', total: '150.00', store_from_driver: '108.00' });
+  });
 });

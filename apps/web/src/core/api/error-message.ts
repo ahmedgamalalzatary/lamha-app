@@ -26,6 +26,7 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   WALLET_BALANCE: 'الرصيد أقل من مبلغ الخصم',
   POINTS_BALANCE: 'النقاط أقل من عدد الخصم',
   COUPON_CODE_TAKEN: 'هذا الكود مستخدم في كوبون آخر',
+  ORDER_PRICE_REQUIRED: 'اكتب سعر الطلب قبل القبول',
 };
 
 export const GENERIC_ERROR = 'حدث خطأ، حاول مرة أخرى';

@@ -192,4 +192,27 @@ describe('/partner/products and /partner/store (contract §11.1; real API)', () 
     const row = (await screen.findByText('الطلبات اللي اتعملت')).parentElement!;
     expect(await within(row).findByText('2')).toBeInTheDocument();
   });
+
+  it('a pharmacy request shows its text; قبول waits for the price, which fixes the bill (§8.11)', async () => {
+    const res = await sql<ResultSetHeader>(
+      `INSERT INTO orders (customer_id, store_id, request_id, status, mode, address_text, phone, note, items_total, delivery_fee, total,
+         payout_option, app_percent, app_share, store_gets, store_from_driver, request_kind, request_text)
+       VALUES (?, ?, UUID(), 'pending_review', 'delivery', 'شارع 2', '01554459196', '', 0, 30, 30, 'app_share', 10, 0, 0, 0, 'product', 'علبة بنادول')`,
+      [customer, store],
+    );
+    renderWith(<PartnerOrdersPage />);
+    const popup = await screen.findByRole('dialog', { name: `طلب رقم # ${100000 + res.insertId}` });
+    expect(within(popup).getByText('صورة المنتج')).toBeInTheDocument();
+    expect(within(popup).getByText('علبة بنادول')).toBeInTheDocument();
+    expect(within(popup).queryByText('المنتجات 0')).toBeNull();
+    const accept = within(popup).getByRole('button', { name: 'قبول' });
+    expect(accept).toBeDisabled();
+    await userEvent.type(within(popup).getByLabelText(/سعر الطلب/), '55.5');
+    expect(accept).toBeEnabled();
+    await userEvent.click(accept);
+    await waitFor(async () => expect(await statusOf(res.insertId)).toBe('preparing'));
+    const [row] = await sql<Record<string, string>[]>('SELECT items_total, total FROM orders WHERE id = ?', [res.insertId]);
+    expect(row).toMatchObject({ items_total: '55.50', total: '85.50' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
 });

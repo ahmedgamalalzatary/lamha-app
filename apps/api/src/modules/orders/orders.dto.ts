@@ -1,14 +1,52 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { COUPON, ORDER_STATUSES, type OrderStatus } from '@tawsela/shared';
+import {
+  COUPON,
+  ORDER_STATUSES,
+  type OrderStatus,
+  PHARMACY_REQUEST_KINDS,
+  PHARMACY_REQUEST_TEXT_LIMIT,
+  type PharmacyRequestKind,
+  REQUEST_IMAGE_PATTERN,
+  REQUEST_PRICE_MAX,
+} from '@tawsela/shared';
 import { Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 import { LatLngDto } from '../addresses/dto/addresses.dto.js';
+
+/** A pharmacy request (contract §8.11): a photo from POST /v1/me/uploads, a text, or both. */
+export class PharmacyRequestDto {
+  @ApiProperty({ description: 'The pharmacy chosen in "اختر صيدلية"' })
+  @IsInt()
+  storeId: number;
+
+  @ApiProperty({ enum: PHARMACY_REQUEST_KINDS })
+  @IsIn(PHARMACY_REQUEST_KINDS)
+  kind: PharmacyRequestKind;
+
+  @ApiProperty({ type: String, nullable: true, example: '/uploads/requests/0f3c.jpg' })
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @Matches(REQUEST_IMAGE_PATTERN)
+  image: string | null;
+
+  @ApiProperty({ maxLength: PHARMACY_REQUEST_TEXT_LIMIT, description: '"اكتب طلبك"; may be empty with a photo' })
+  @IsString()
+  @MaxLength(PHARMACY_REQUEST_TEXT_LIMIT)
+  text: string;
+}
 
 /** POST /v1/me/checkout/quote */
 export class CheckoutQuoteDto {
-  @ApiProperty({ description: "The store's cart being paid for (one per store)" })
+  @ApiPropertyOptional({ description: "The store's cart being paid for (one per store); or a pharmacy request" })
+  @IsOptional()
   @IsInt()
-  cartId: number;
+  cartId?: number;
+
+  @ApiPropertyOptional({ type: PharmacyRequestDto, description: 'A pharmacy request instead of a cart: no code or points, priced on accept' })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PharmacyRequestDto)
+  request?: PharmacyRequestDto;
 
   @ApiPropertyOptional({ description: 'The saved address it goes to; required for a delivery' })
   @IsOptional()
@@ -66,4 +104,14 @@ export class AdminOrdersQuery {
   @IsOptional()
   @IsIn(ORDER_STATUSES)
   status?: OrderStatus;
+}
+
+/** POST /v1/partner/orders/:id/:action */
+export class PartnerStepDto {
+  @ApiPropertyOptional({ description: '"قبول" of a pharmacy request: the items price the pharmacy sets (§8.11)' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(REQUEST_PRICE_MAX)
+  price?: number;
 }

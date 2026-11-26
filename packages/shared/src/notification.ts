@@ -3,7 +3,7 @@
 // store's new order, a delivery man's new offer, his order ready, and the skip warning and block.
 import type { CartMode } from './cart.js';
 import type { OrderStatus } from './enums.js';
-import type { Locale } from './format.js';
+import { formatMoney, type Locale } from './format.js';
 
 export const NOTICE_KINDS = [
   'order_accepted',
@@ -68,6 +68,17 @@ export function customerStatusNotice(status: OrderStatus, mode: CartMode, code: 
   const n = notice(kind, locale, { code });
   // A pickup's "ready" speaks to the customer, not to a delivery man [Derived].
   return kind === 'order_ready' ? { ...n, title: locale === 'ar' ? 'طلبك جاهز للاستلام' : 'Your order is ready', body: locale === 'ar' ? `طلبك #${code} جاهز، تفضل باستلامه` : `Order #${code} is ready to pick up` } : n;
+}
+
+/**
+ * "تم قبول طلبك" for a pharmacy request (§8.11): it now carries the price the pharmacy set and the
+ * total with the delivery [Open: Tawsilty's wording is not captured].
+ */
+export function requestPricedNotice(code: string, price: number, total: number, locale: Locale): Notice {
+  const money = (n: number) => formatMoney(n, locale);
+  return locale === 'ar'
+    ? { kind: 'order_accepted', title: 'تم قبول طلبك', body: `سعر طلبك #${code} من الصيدلية ${money(price)}، والإجمالي مع التوصيل ${money(total)}` }
+    : { kind: 'order_accepted', title: 'Your order was accepted', body: `The pharmacy priced order #${code} at ${money(price)}; ${money(total)} with the delivery` };
 }
 
 export const isExpoPushToken = (token: string) => /^Expo(nent)?PushToken\[.+\]$/.test(token);

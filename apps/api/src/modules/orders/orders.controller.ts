@@ -17,7 +17,7 @@ import { type AuthUser, CurrentUser } from '../../common/decorators/current-user
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { StoreRow } from '../catalog/catalog.schema.js';
 import { CurrentStore, PartnerArea } from '../partners/partner-store.guard.js';
-import { AdminOrdersQuery, CheckoutQuoteDto, PlaceOrderDto } from './orders.dto.js';
+import { AdminOrdersQuery, CheckoutQuoteDto, PartnerStepDto, PlaceOrderDto } from './orders.dto.js';
 import { OrdersService } from './orders.service.js';
 
 /** "إتمام الدفع" and طلباتي (contract §8.7, §8.8). Customers only. */
@@ -87,15 +87,16 @@ export class PartnerOrdersController {
 
   @Post(':id/:action')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'accept, reject, ready, collected (a pickup the customer took), out and delivered (a store delivering itself); 409 ORDER_STATUS when it already moved on' })
+  @ApiOperation({ summary: 'accept (with { price } for a pharmacy request, 422 ORDER_PRICE_REQUIRED without), reject, ready, collected (a pickup the customer took), out and delivered (a store delivering itself); 409 ORDER_STATUS when it already moved on' })
   step(
     @CurrentUser() me: AuthUser,
     @CurrentStore() store: StoreRow,
     @Param('id', ParseIntPipe) id: number,
     @Param('action') action: string,
+    @Body() body: PartnerStepDto,
   ): Promise<PartnerOrderDetails> {
     if (!(PARTNER_ACTIONS as readonly string[]).includes(action)) throw new NotFoundException();
-    return this.orders.partnerStep(store, me.id, id, action as PartnerAction);
+    return this.orders.partnerStep(store, me.id, id, action as PartnerAction, body.price);
   }
 }
 

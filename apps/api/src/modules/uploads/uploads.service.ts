@@ -14,7 +14,7 @@ import { ApiException } from '../../common/api-exception.js';
 @Injectable()
 export class UploadsService {
   /** Turned upright, made at most 1600 px on the longest side and stored as JPEG (the camera's metadata is dropped). */
-  async saveImage(buffer: Buffer, folder: 'catalog' | 'avatars' = 'catalog'): Promise<UploadedImage> {
+  async saveImage(buffer: Buffer, folder: 'catalog' | 'avatars' | 'requests' = 'catalog'): Promise<UploadedImage> {
     const jpeg = await sharp(buffer)
       .rotate()
       .resize(CATALOG.imagePx, CATALOG.imagePx, { fit: 'inside', withoutEnlargement: true })

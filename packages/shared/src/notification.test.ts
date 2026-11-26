@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { customerStatusNotice, isExpoPushToken, notice } from './notification.js';
+import { customerStatusNotice, isExpoPushToken, notice, requestPricedNotice } from './notification.js';
 
 describe('notification texts (contract §8.14, §9, §10)', () => {
   it('tells the customer the steps they care about, in their language', () => {
@@ -28,5 +28,14 @@ describe('notification texts (contract §8.14, §9, §10)', () => {
     expect(isExpoPushToken('ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]')).toBe(true);
     expect(isExpoPushToken('ExpoPushToken[abc]')).toBe(true);
     expect(isExpoPushToken('fcm-token')).toBe(false);
+  });
+
+  it('tells the customer the price a pharmacy set on their request (§8.11)', () => {
+    expect(requestPricedNotice('100012', 120, 133, 'ar')).toEqual({
+      kind: 'order_accepted',
+      title: 'تم قبول طلبك',
+      body: 'سعر طلبك #100012 من الصيدلية 120.00 ج.م، والإجمالي مع التوصيل 133.00 ج.م',
+    });
+    expect(requestPricedNotice('100012', 120, 133, 'en').body).toBe('The pharmacy priced order #100012 at 120.00 EGP; 133.00 EGP with the delivery');
   });
 });

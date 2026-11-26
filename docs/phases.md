@@ -46,7 +46,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 19 | Invite friends | 🔍 in-verify | none (friends' rows and the share message marked [Open]) |
 | 20 | Offers, coupons and banners | 🔍 in-verify | none (dashboard pages and code error texts marked [Open]) |
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
-| 22 | Pharmacy: prescriptions and product photos | ⬜ | |
+| 22 | Pharmacy: prescriptions and product photos | 🔍 in-verify | none (the partner side and the notice wording marked [Open]) |
 | 23 | Send anything (اطلب دليفري) | ⬜ | |
 | 24 | Driver: history and fines | ⬜ | none (history captured; fines follow the client's rules) |
 | 25 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
@@ -632,7 +632,25 @@ Contract §8.2: one spin a day, prizes (points or coupons) from the dashboard.
 
 ## Phase 22: Pharmacy
 
-Contract §8.11: prescription and product-photo uploads, choose-a-pharmacy sheet, the pharmacy quotes and the customer confirms.
+Contract §8.11: prescription and product-photo requests, the "اختر صيدلية" sheet, and checkout before the price is known (the 2026-11-26 capture showed there is no step where the customer confirms a price).
+
+Owner's answers before the phase (2026-11-26):
+- The pharmacy types the medicine price when it taps "قبول" (app and `/partner`). That fixes the order's total, the app's share and what the delivery man pays the store, and the customer gets a notice with the price.
+- On a request the wallet may pay the delivery fee; the medicine is cash on delivery. Codes and points are not offered on requests.
+
+- **Migration 0021:** on `orders`, `request_kind` (prescription or product), `request_image`, `request_text` and `priced_at`.
+- **Shared (TDD):** `PharmacyRequest`, `OrderRequest` (with `priced`), `requestComplete` (a photo or a text), `REQUEST_IMAGE_PATTERN`, `parseRequestPrice` (Latin or Arabic digits, two decimals at most), `requestPricedNotice`. Customer, partner and admin orders carry `request`.
+- **API:**
+  - `POST /v1/me/uploads` (customers): the request's photo, kept at up to 1600 px under an unguessable name.
+  - The quote and the order take `request` (`storeId`, `kind`, `image`, `text`) instead of `cartId`: an open, active pharmacy; a delivery; items 0; no minimum order and no free delivery; a code is 400; points are 400 on placing. The order has no lines.
+  - `POST /v1/partner/orders/:id/accept` takes `{ price }`: required for an unpriced request (422 `ORDER_PRICE_REQUIRED`), refused on an order of products. It sets the items total, the total, the app's share, what the store is owed and the points earned, then sends "تم قبول طلبك" with the price and the total.
+  - Fixed on the way: the delivery and points settings reads looped forever when their row was missing and two requests added it at once (a read in a transaction kept its old snapshot). The reread is now a locking read.
+- **App (customer):** the pharmacies page's "سهلنا الطلب عليك" card (توصيل فوري, 30 - 60 دقيقة, روشتة طبية, صورة المنتج); "اختر صيدلية (<n>)" with "التالي" per pharmacy and "لا توجد صيدليات حالياً"; "الروشتة" with the camera box, "اختر الصورة" (التقط صورة · اختر من المعرض), "أو", "اكتب طلبك" and the red "يرجى رفع صورة او كتابة طلبك"; checkout with the red "سيتم إعلامك بسعر الطلب من قبل الصيدلية", the fees only, the wallet and no code or points; the order shows the request, and offers no "اطلب تاني".
+- **App (partner) and `/partner`:** the popup and the order details show the request (its kind, its photo full size on tap, its text) instead of products, and "سعر الطلب" before "قبول".
+- **[Open]**
+  - The partner side of a request, the price notice wording and the "صورة المنتج" screen title are not captured.
+  - The delivery man's screens show a request as an order with no lines.
+  - Tawsilty's limit for "اكتب طلبك" is not captured; 500 characters [Derived].
 
 ## Phase 23: Send anything
 

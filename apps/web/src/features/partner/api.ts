@@ -25,12 +25,12 @@ export const usePartnerOrder = (id: number | undefined) =>
 export const usePartnerOrderCounts = () =>
   useQuery({ queryKey: [...partnerOrdersKey, 'counts'], queryFn: () => api.request<PartnerOrderCounts>('/partner/orders/counts') });
 
-/** قبول, رفض, تم التجهيز, تم الاستلام. Either way the lists are read again: a 409 means it moved on elsewhere. */
+/** قبول (with the price of a pharmacy request, §8.11), رفض, تم التجهيز, تم الاستلام. Either way the lists are read again. */
 export function usePartnerStep() {
   const queries = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, action }: { id: number; action: PartnerAction }) =>
-      api.request<PartnerOrderDetails>(`/partner/orders/${id}/${action}`, { method: 'POST' }),
+    mutationFn: ({ id, action, price }: { id: number; action: PartnerAction; price?: number }) =>
+      api.request<PartnerOrderDetails>(`/partner/orders/${id}/${action}`, { method: 'POST', body: price === undefined ? undefined : { price } }),
     onSettled: () => queries.invalidateQueries({ queryKey: partnerOrdersKey }),
   });
 }

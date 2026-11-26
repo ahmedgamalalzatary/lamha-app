@@ -33,6 +33,10 @@ import {
   deliveryDiscount,
   productSaving,
   storeItemsBase,
+  type OrderRequest,
+  type PharmacyRequest,
+  requestComplete,
+  requestPricedNotice,
 } from '@tawsela/shared';
 import { and, asc, count as countRows, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
@@ -44,7 +48,7 @@ import { CartService } from '../cart/cart.service.js';
 import { carts } from '../cart/cart.schema.js';
 import type { Tx } from '../catalog/catalog.repository.js';
 import { type StoreRow, stores } from '../catalog/catalog.schema.js';
-import { cairoMinuteOfDay, locationOf } from '../catalog/store-view.js';
+import { cairoMinuteOfDay, locationOf, storeIsOpen } from '../catalog/store-view.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { ratings } from '../support/support.schema.js';
@@ -69,7 +73,9 @@ const codeOf = (id: number) => String(100000 + id);
 
 /** Everything the bill depends on, worked out in one place for the quote and the order. */
 interface Bill extends CheckoutQuote {
-  cart: CustomerCart;
+  /** The cart paid for; null for a pharmacy request. */
+  cart: CustomerCart | null;
+  request: PharmacyRequest | null;
   store: StoreRow;
   address: AddressRow | null;
   spot: LatLng | null;
@@ -97,7 +103,7 @@ export class OrdersService {
 
   quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
     return this.db.transaction(async (tx) => {
-      const { cart: _cart, store: _store, address: _address, spot: _spot, applied: _applied, ...quote } = await this.bill(tx, userId, input);
+      const { cart: _cart, request: _request, store: _store, address: _address, spot: _spot, applied: _applied, ...quote } = await this.bill(tx, userId, input);
       return quote;
     });
   }
@@ -130,10 +136,14 @@ export class OrdersService {
       }
 
       // The cart was emptied, or ordered from another phone, since the checkout screen loaded.
-      const [cart] = await tx.select({ id: carts.id }).from(carts).where(and(eq(carts.id, input.cartId), eq(carts.userId, userId)));
-      if (!cart) {
-        throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_CART_CHANGED', 'The cart changed since the checkout screen loaded');
+      if (input.cartId !== undefined) {
+        const [cart] = await tx.select({ id: carts.id }).from(carts).where(and(eq(carts.id, input.cartId), eq(carts.userId, userId)));
+        if (!cart) {
+          throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_CART_CHANGED', 'The cart changed since the checkout screen loaded');
+        }
       }
+      // A pharmacy request has no items price yet, so points are not offered on it [Owner, 2026-11-26].
+      if (input.request && (input.expectedPointsSpent ?? 0) > 0) throw new BadRequestException('Points do not pay a pharmacy request');
       const bill = await this.bill(tx, userId, input, true);
       if (bill.total !== input.expectedTotal) {
         throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_TOTAL_CHANGED', 'The bill changed; check it again');
@@ -165,7 +175,7 @@ export class OrdersService {
       const { address, spot, applied } = bill;
       // Who pays each discount [Owner, 2026-11-26: set per offer]: the store is paid on its full prices
       // less what it pays itself. A store bringing its own orders keeps no fee to waive.
-      const appProductSaving = bill.cart.lines.reduce((n, l) => (l.product.discountPaidBy === 'app' ? n + productSaving(l.product) * l.quantity : n), 0);
+      const appProductSaving = (bill.cart?.lines ?? []).reduce((n, l) => (l.product.discountPaidBy === 'app' ? n + productSaving(l.product) * l.quantity : n), 0);
       const waived = cents(bill.usualDeliveryFee - bill.deliveryFee);
       const delivery = waived > 0 ? { discount: waived, paidBy: bill.store.freeDeliveryPaidBy } : null;
       const coupon = applied ? { discount: applied.discount, paidBy: applied.row.paidBy } : null;
@@ -189,7 +199,10 @@ export class OrdersService {
           lng: spot?.lng ?? null,
           distanceKm: bill.distanceKm === null ? null : Math.round(bill.distanceKm * 1000) / 1000,
           scheduledFor,
-          note: bill.cart.note,
+          note: bill.cart?.note ?? '',
+          requestKind: bill.request?.kind ?? null,
+          requestImage: bill.request?.image ?? null,
+          requestText: bill.request ? bill.request.text.trim() : null,
           itemsTotal: bill.itemsTotal,
           deliveryFee: bill.deliveryFee,
           deliveryDiscount: waived,
@@ -215,7 +228,7 @@ export class OrdersService {
       await this.wallet.pay(tx, userId, orderId, plan);
       await this.points.spend(tx, userId, orderId, spent.points);
       if (applied) await this.offers.use(tx, applied.row.id, userId, orderId);
-      await tx.insert(orderLines).values(
+      if (bill.cart) await tx.insert(orderLines).values(
         bill.cart.lines.map((line) => {
           const options = line.product.optionGroups.flatMap((g) => g.options.filter((o) => line.optionIds.includes(o.id)).map((o) => o.name));
           const removed = line.product.ingredients.filter((i) => line.removedIngredientIds.includes(i.id)).map((i) => i.name);
@@ -234,7 +247,7 @@ export class OrdersService {
         }),
       );
       await tx.insert(orderEvents).values({ orderId, status: 'pending_review', byUserId: userId });
-      await this.carts.clear(tx, bill.cartId);
+      if (bill.cartId !== null) await this.carts.clear(tx, bill.cartId);
       newId = orderId;
       return { order: await this.customerOrder(tx, orderId) };
     });
@@ -317,12 +330,19 @@ export class OrdersService {
    * ORDER_STATUS and sees the order as it is now. Accepting a delivery the app's captains bring
    * offers it to every delivery man (§10); marking it ready tells its delivery man.
    */
-  async partnerStep(store: Pick<StoreRow, 'id' | 'deliveredBy'>, userId: number, id: number, action: PartnerAction): Promise<PartnerOrderDetails> {
+  async partnerStep(store: Pick<StoreRow, 'id' | 'deliveredBy'>, userId: number, id: number, action: PartnerAction, price?: number): Promise<PartnerOrderDetails> {
     const { status, row } = await this.db.transaction(async (tx) => {
-      const [row] = await tx.select().from(orders).where(and(eq(orders.id, id), eq(orders.storeId, store.id))).for('update');
-      if (!row) throw orderNotFound();
+      const [found] = await tx.select().from(orders).where(and(eq(orders.id, id), eq(orders.storeId, store.id))).for('update');
+      if (!found) throw orderNotFound();
+      let row = found;
       const next = nextStatus(row.status, action, row.mode, store.deliveredBy);
       if (!next) throw new ApiException(HttpStatus.CONFLICT, 'ORDER_STATUS', `The order is ${row.status}; it cannot be moved by "${action}"`);
+      const pricing = next === 'preparing' && row.requestKind !== null;
+      if (price !== undefined && !pricing) throw new BadRequestException('A price is set only when accepting a pharmacy request');
+      if (pricing) {
+        if (price === undefined) throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'ORDER_PRICE_REQUIRED', 'Accepting a pharmacy request needs its price');
+        row = { ...row, ...(await this.priced(tx, row, price)) };
+      }
       await tx.update(orders).set({ status: next }).where(eq(orders.id, id));
       await tx.insert(orderEvents).values({ orderId: id, status: next, byUserId: userId });
       // A rejected order's wallet money goes back at once [Owner, 2026-11-26].
@@ -337,7 +357,12 @@ export class OrdersService {
     });
     this.live.orderChanged(row, { id, status });
     const code = codeOf(id);
-    this.notices.tell([row.customerId], (locale) => customerStatusNotice(status, row.mode, code, locale), { path: `/order/${id}`, keep: true });
+    const pricedNow = status === 'preparing' && row.requestKind !== null;
+    this.notices.tell(
+      [row.customerId],
+      (locale) => (pricedNow ? requestPricedNotice(code, row.itemsTotal, row.total, locale) : customerStatusNotice(status, row.mode, code, locale)),
+      { path: `/order/${id}`, keep: true },
+    );
     if (status === 'preparing' && row.mode === 'delivery' && store.deliveredBy === 'platform') {
       this.live.toDrivers(DRIVER_SOCKET_EVENTS.offer, { id });
       const [named] = await this.db.select({ name: stores.name }).from(stores).where(eq(stores.id, store.id));
@@ -348,6 +373,27 @@ export class OrdersService {
       if (status === 'ready') this.notices.tell([row.driverId], (locale) => notice('order_ready', locale, { code }), { path: `/driver-order/${id}`, keep: true });
     }
     return this.partnerDetails(store.id, id);
+  }
+
+  /**
+   * A pharmacy request's items price, set by the pharmacy on "قبول" (§8.11): the total, who gets what
+   * and the points it earns follow from it, as for an order of products. The wallet keeps what it
+   * paid; the rest is cash.
+   */
+  private async priced(tx: Tx, row: OrderRow, price: number) {
+    const delivery = row.deliveryDiscount > 0 && row.deliveryPaidBy ? { discount: row.deliveryDiscount, paidBy: row.deliveryPaidBy } : null;
+    const [store] = await tx.select({ deliveredBy: stores.deliveredBy }).from(stores).where(eq(stores.id, row.storeId));
+    const base = storeItemsBase({ itemsTotal: price, appProductSaving: 0, coupon: null, delivery: store?.deliveredBy === 'platform' ? delivery : null });
+    const { earnEvery } = await this.points.settings(tx);
+    const values = {
+      itemsTotal: price,
+      total: cents(price + row.deliveryFee),
+      pointsEarned: pointsEarned(earnBase(price, 0), earnEvery),
+      pricedAt: new Date(),
+      ...payout(base, row.payoutOption, row.appPercent),
+    };
+    await tx.update(orders).set(values).where(eq(orders.id, row.id));
+    return values;
   }
 
   private async partnerCards(where: SQL | undefined): Promise<PartnerOrder[]> {
@@ -455,20 +501,24 @@ export class OrdersService {
    * Placing (`lock`) locks the code's row.
    */
   private async bill(tx: Tx, userId: number, input: CheckoutQuoteInput, lock = false): Promise<Bill> {
-    const cart = await this.carts.ready(tx, userId, input.cartId);
-    const [store] = await tx.select().from(stores).where(eq(stores.id, cart.store.id));
-    if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
+    if ((input.cartId === undefined) === (input.request === undefined)) throw new BadRequestException('Send either cartId or request');
+    const { cart, request, store } = input.request ? await this.requestSource(tx, input.request) : await this.cartSource(tx, userId, input.cartId!);
+    if (request && input.couponCode) throw new BadRequestException('A code does not apply to a pharmacy request');
+    const itemsTotal = cart?.total ?? 0;
+    const mode = cart?.mode ?? 'delivery';
     const slots = deliverySlots(cairoMinuteOfDay(new Date()), { opensAt: hhmm(store.opensAt), closesAt: hhmm(store.closesAt), closedNow: store.closedNow });
     // What the wallet can pay on this order: its regular money and the invite money this store may take.
     const walletBalance = (await this.wallet.plan(tx, userId, store.vertical)).paid;
     const pointsBalance = await this.points.balanceOf(tx, userId);
     const points = await this.points.settings(tx);
-    const applied = input.couponCode ? await this.offers.apply(tx, userId, store.id, cart.total, input.couponCode, lock) : null;
+    const applied = input.couponCode ? await this.offers.apply(tx, userId, store.id, itemsTotal, input.couponCode, lock) : null;
     const couponOff = applied?.discount ?? 0;
     const coupon = applied ? { code: applied.row.code, title: applied.row.title, discount: couponOff } : null;
-    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, walletBalance, pointsBalance, points, cart, store, applied, coupon };
-    if (cart.mode === 'pickup') {
-      return { ...base, deliveryFee: 0, usualDeliveryFee: 0, total: cents(cart.total - couponOff), distanceKm: null, address: null, spot: null };
+    const base = {
+      cartId: cart?.id ?? null, mode, count: cart?.count ?? 0, itemsTotal, slots, walletBalance, pointsBalance, points, cart, request, store, applied, coupon,
+    };
+    if (mode === 'pickup') {
+      return { ...base, deliveryFee: 0, usualDeliveryFee: 0, total: cents(itemsTotal - couponOff), distanceKm: null, address: null, spot: null };
     }
     if (input.addressId === undefined) throw new BadRequestException('addressId is required for a delivery');
     const address = await this.addresses.findOf(userId, input.addressId);
@@ -482,8 +532,30 @@ export class OrdersService {
     if (!from) throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_NO_STORE_LOCATION', 'The store has no location on the map');
     const km = distanceKm(from, spot);
     const usualDeliveryFee = deliveryFeeFor(km, await this.settings.delivery(tx));
-    const deliveryFee = cents(usualDeliveryFee - deliveryDiscount(store.freeDeliveryFrom, cart.total, usualDeliveryFee));
-    return { ...base, deliveryFee, usualDeliveryFee, total: cents(cart.total + deliveryFee - couponOff), distanceKm: km, address, spot };
+    // A request's items price is unknown, so a free delivery from an items amount never applies to it.
+    const deliveryFee = request ? usualDeliveryFee : cents(usualDeliveryFee - deliveryDiscount(store.freeDeliveryFrom, itemsTotal, usualDeliveryFee));
+    return { ...base, deliveryFee, usualDeliveryFee, total: cents(itemsTotal + deliveryFee - couponOff), distanceKm: km, address, spot };
+  }
+
+  /** The customer's ready cart and its store. */
+  private async cartSource(tx: Tx, userId: number, cartId: number) {
+    const cart = await this.carts.ready(tx, userId, cartId);
+    const [store] = await tx.select().from(stores).where(eq(stores.id, cart.store.id));
+    if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
+    return { cart, request: null, store };
+  }
+
+  /**
+   * A pharmacy request (§8.11): an open pharmacy, and a photo or a text. It has no minimum order,
+   * since its price comes later.
+   */
+  private async requestSource(tx: Tx, input: PharmacyRequest & { storeId: number }) {
+    if (!requestComplete(input)) throw new BadRequestException('Add a photo or write the request');
+    const [store] = await tx.select().from(stores).where(eq(stores.id, input.storeId));
+    if (!store?.active || store.vertical !== 'pharmacy') throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'No pharmacy has this id');
+    if (!storeIsOpen(store, new Date())) throw new ApiException(HttpStatus.CONFLICT, 'CART_STORE_CLOSED', 'The store is closed');
+    const request: PharmacyRequest = { kind: input.kind, image: input.image, text: input.text };
+    return { cart: null, request, store };
   }
 
   private async customerOrder(tx: Db | Tx, id: number): Promise<CustomerOrder> {
@@ -540,6 +612,7 @@ function toPartnerOrder(row: OrderRow, count: number): PartnerOrder {
     note: row.note,
     paymentMethod: 'cash',
     createdAt: row.createdAt.toISOString(),
+    request: requestOf(row),
   };
 }
 
@@ -562,5 +635,12 @@ function toCustomerOrder(row: OrderRow, store: CustomerOrder['store'], count: nu
     pointsSpent: row.pointsSpent,
     pointsPaid: row.pointsPaid,
     createdAt: row.createdAt.toISOString(),
+    request: requestOf(row),
   };
+}
+
+/** A pharmacy request's photo and text, and whether the pharmacy has priced it (§8.11). */
+function requestOf(row: OrderRow): OrderRequest | null {
+  if (row.requestKind === null) return null;
+  return { kind: row.requestKind, image: row.requestImage, text: row.requestText ?? '', priced: row.pricedAt !== null };
 }

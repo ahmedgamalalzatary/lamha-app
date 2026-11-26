@@ -1,7 +1,7 @@
-import { cashDue, formatMoney, orderStatusLabel, type PartnerAction, type PartnerOrderDetails } from '@tawsela/shared';
+import { cashDue, formatMoney, orderStatusLabel, type PartnerAction, type PartnerOrderDetails, parseRequestPrice } from '@tawsela/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { CalendarDays, Check, MapPin, NotebookText, Phone } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
@@ -14,6 +14,7 @@ import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { usePartnerOrder, usePartnerStep } from './api';
 import { LineChoices, orderDate, useWhen } from './parts';
+import { PriceField, RequestDetails } from './RequestParts';
 
 /**
  * The store's order details (contract §9, partner/partner-order-details-preparing-receive-from-driver.png
@@ -57,7 +58,7 @@ export function PartnerOrderScreen() {
           order={order.data}
           busy={step.isPending}
           error={step.error ? errorMessage(step.error) : undefined}
-          onStep={(action) => step.mutate({ id: order.data.id, action })}
+          onStep={(action, price) => step.mutate({ id: order.data.id, action, price })}
         />
       )}
     </SafeAreaView>
@@ -90,9 +91,12 @@ function Details({
   order: PartnerOrderDetails;
   busy: boolean;
   error?: string;
-  onStep: (action: PartnerAction) => void;
+  onStep: (action: PartnerAction, price?: number) => void;
 }) {
   const t = useT();
+  const [priceText, setPriceText] = useState('');
+  const needsPrice = o.status === 'pending_review' && o.request !== null && !o.request.priced;
+  const price = needsPrice ? parseRequestPrice(priceText) : null;
   const locale = useLocale();
   const when = useWhen();
   const money = (n: number) => formatMoney(n, locale);
@@ -177,23 +181,32 @@ function Details({
         </Section>
       ) : null}
 
-      <Section>
-        <View style={styles.row}>
-          <AppText weight="semibold" size={fontSizes.sectionTitle} style={styles.grow}>
-            {t('partner.products')}
-          </AppText>
-          <AppText color={colors.primary}>{t('orders.items', { count: o.lines.length })}</AppText>
-        </View>
-        {o.lines.map((line, i) => (
-          <View key={i} style={styles.row}>
-            <View style={styles.grow}>
-              <AppText size={fontSizes.listTitle + 1}>{t('partner.line', { quantity: line.quantity, name: line.name })}</AppText>
-              <LineChoices line={line} />
-            </View>
-            <AppText color={colors.ink2}>{money(line.unitPrice * line.quantity)}</AppText>
+      {o.request ? (
+        <Section>
+          <RequestDetails request={o.request} />
+          {o.request.priced ? null : <AppText color={colors.danger}>{t('pharmacy.priceLater')}</AppText>}
+        </Section>
+      ) : null}
+
+      {o.request ? null : (
+        <Section>
+          <View style={styles.row}>
+            <AppText weight="semibold" size={fontSizes.sectionTitle} style={styles.grow}>
+              {t('partner.products')}
+            </AppText>
+            <AppText color={colors.primary}>{t('orders.items', { count: o.lines.length })}</AppText>
           </View>
-        ))}
-      </Section>
+          {o.lines.map((line, i) => (
+            <View key={i} style={styles.row}>
+              <View style={styles.grow}>
+                <AppText size={fontSizes.listTitle + 1}>{t('partner.line', { quantity: line.quantity, name: line.name })}</AppText>
+                <LineChoices line={line} />
+              </View>
+              <AppText color={colors.ink2}>{money(line.unitPrice * line.quantity)}</AppText>
+            </View>
+          ))}
+        </Section>
+      )}
 
       <Section>
         <Money label={t('partner.itemsTotal')} value={money(o.itemsTotal)} />
@@ -234,9 +247,17 @@ function Details({
         </AppText>
       ) : null}
 
+      {needsPrice ? <PriceField value={priceText} onChange={setPriceText} /> : null}
+
       {o.status === 'pending_review' ? (
         <View style={styles.answer}>
-          <Button label={t('partner.accept')} loading={busy} onPress={() => onStep('accept')} style={[styles.grow, { backgroundColor: colors.success }]} />
+          <Button
+            label={t('partner.accept')}
+            loading={busy}
+            disabled={needsPrice && price === null}
+            onPress={() => onStep('accept', price ?? undefined)}
+            style={[styles.grow, needsPrice && price === null ? null : { backgroundColor: colors.success }]}
+          />
           <Button label={t('partner.reject')} variant="danger" disabled={busy} onPress={() => onStep('reject')} style={styles.grow} />
         </View>
       ) : o.status === 'preparing' ? (

@@ -38,11 +38,15 @@ export function usePartnerOrderCounts() {
   });
 }
 
-/** قبول, رفض, تم التجهيز, تم الاستلام. Either way the lists are read again: a 409 means it moved on elsewhere. */
+/**
+ * قبول, رفض, تم التجهيز, تم الاستلام; قبول of a pharmacy request carries its price (§8.11). Either way the
+ * lists are read again: a 409 means it moved on elsewhere.
+ */
 export function usePartnerStep() {
   const queries = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, action }: { id: number; action: PartnerAction }) => api<PartnerOrderDetails>(`/partner/orders/${id}/${action}`, { method: 'POST' }),
+    mutationFn: ({ id, action, price }: { id: number; action: PartnerAction; price?: number }) =>
+      api<PartnerOrderDetails>(`/partner/orders/${id}/${action}`, { method: 'POST', body: price === undefined ? undefined : { price } }),
     onSettled: () => queries.invalidateQueries({ queryKey: partnerOrdersKey }),
   });
 }

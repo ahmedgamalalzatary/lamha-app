@@ -3,6 +3,7 @@ import type { LatLng } from './address.js';
 import type { CartMode } from './cart.js';
 import { type DeliveredBy, isOpenAt, minuteOfDay, type StoreHours } from './catalog.js';
 import type { OrderStatus } from './enums.js';
+import type { OrderRequest, PharmacyRequest } from './pharmacy.js';
 import type { PointsSettings } from './points.js';
 
 const cents = (n: number) => Math.round(n * 100) / 100;
@@ -79,8 +80,13 @@ export function slotLabel(minute: number): string {
 
 /** POST /v1/me/checkout/quote: the bill for the cart at an address (a delivery), or a pickup. */
 export interface CheckoutQuoteInput {
-  /** The store's cart being paid for: a customer has one per store (§8.6). */
-  cartId: number;
+  /** The store's cart being paid for: a customer has one per store (§8.6). Either this or request. */
+  cartId?: number;
+  /**
+   * A pharmacy request instead of a cart (§8.11): delivered, with no items price until the pharmacy
+   * accepts it with one. The wallet may pay the fee; codes and points are not offered [Owner, 2026-11-26].
+   */
+  request?: PharmacyRequest & { storeId: number };
   addressId?: number;
   /** The spot confirmed on the map, when it differs from the saved address's. */
   location?: LatLng;
@@ -89,7 +95,8 @@ export interface CheckoutQuoteInput {
 }
 
 export interface CheckoutQuote {
-  cartId: number;
+  /** null for a pharmacy request. */
+  cartId: number | null;
   mode: CartMode;
   count: number;
   itemsTotal: number;
@@ -157,6 +164,8 @@ export interface CustomerOrder {
   pointsSpent: number;
   pointsPaid: number;
   createdAt: string;
+  /** A pharmacy request (§8.11): its photo and text; null for an order of products. */
+  request: OrderRequest | null;
 }
 
 export interface PlacedOrder {
@@ -187,6 +196,11 @@ export interface AdminOrder extends CustomerOrder {
  */
 export const PARTNER_ACTIONS = ['accept', 'reject', 'ready', 'collected', 'out', 'delivered'] as const;
 export type PartnerAction = (typeof PARTNER_ACTIONS)[number];
+
+/** POST /v1/partner/orders/:id/:action: "قبول" of a pharmacy request carries its items price (§8.11). */
+export interface PartnerStepInput {
+  price?: number;
+}
 
 /**
  * The status an action moves the order to, or null when it may not happen now. A delivery leaves
@@ -226,6 +240,8 @@ export interface PartnerOrder {
   /** طريقة الدفع (§9): cash only for now (§15.1 #2). */
   paymentMethod: 'cash';
   createdAt: string;
+  /** A pharmacy request (§8.11): accepting it asks for the items price. */
+  request: OrderRequest | null;
 }
 
 /** A product line as it was ordered. */

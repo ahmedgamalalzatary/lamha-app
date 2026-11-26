@@ -1,6 +1,15 @@
 'use client';
 
-import { cashDue, formatMoney, type OrderLine, type OrderStatus, orderStatusLabel, type PartnerAction, type PartnerOrderDetails } from '@tawsela/shared';
+import {
+  cashDue,
+  formatMoney,
+  type OrderLine,
+  type OrderStatus,
+  orderStatusLabel,
+  type PartnerAction,
+  type PartnerOrderDetails,
+  parseRequestPrice,
+} from '@tawsela/shared';
 import { CalendarDays, ClipboardList, MapPin, NotebookText, Phone, Printer } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { mediaUrl } from '@/core/api/client';
@@ -9,6 +18,7 @@ import { Button, Dialog, EmptyState, ErrorLine, LoadState, Pill, Table } from '@
 import { ORDER_TABS } from '../orders/OrdersPage';
 import { usePartnerOrder, usePartnerOrders, usePartnerStep } from './api';
 import { usePartnerLive } from './live';
+import { PriceInput, RequestBlock } from './RequestBlock';
 
 const CAIRO = 'Africa/Cairo';
 
@@ -100,9 +110,14 @@ function NewOrderPopup() {
   const next = pending.data?.findLast((o) => !dismissed.has(o.id));
   const order = usePartnerOrder(next?.id);
   const step = usePartnerStep();
+  const [typed, setTyped] = useState<{ id: number; text: string }>({ id: 0, text: '' });
   if (!next || !order.data) return null;
   const o = order.data;
-  const answer = (action: PartnerAction) => step.mutate({ id: o.id, action }, { onSuccess: () => step.reset() });
+  const priceText = typed.id === o.id ? typed.text : '';
+  const needsPrice = o.request !== null && !o.request.priced;
+  const price = needsPrice ? parseRequestPrice(priceText) : null;
+  const answer = (action: PartnerAction) =>
+    step.mutate({ id: o.id, action, price: action === 'accept' && price !== null ? price : undefined }, { onSuccess: () => step.reset() });
   return (
     <Dialog title={`طلب رقم # ${o.code}`} onClose={() => setDismissed((s) => new Set(s).add(o.id))}>
       <p className="font-medium">هل تريد قبول أو رفض الطلب ?</p>
@@ -112,7 +127,8 @@ function NewOrderPopup() {
           <p className="font-semibold text-tw-danger">{o.note}</p>
         </div>
       ) : null}
-      <p className="font-bold text-tw">المنتجات {o.lines.length}</p>
+      {o.request ? <RequestBlock request={o.request} /> : <p className="font-bold text-tw">المنتجات {o.lines.length}</p>}
+      {needsPrice ? <PriceInput value={priceText} onChange={(text) => setTyped({ id: o.id, text })} /> : null}
       <ul className="flex flex-col gap-3">
         {o.lines.map((line, i) => (
           <li key={i} className="flex items-center gap-3">
@@ -133,7 +149,7 @@ function NewOrderPopup() {
       </div>
       {step.error ? <ErrorLine>{errorMessage(step.error)}</ErrorLine> : null}
       <div className="grid grid-cols-2 gap-3">
-        <button type="button" disabled={step.isPending} onClick={() => answer('accept')} className="h-12 rounded-md bg-tw-ok font-semibold text-white disabled:opacity-50">
+        <button type="button" disabled={step.isPending || (needsPrice && price === null)} onClick={() => answer('accept')} className="h-12 rounded-md bg-tw-ok font-semibold text-white disabled:opacity-50">
           قبول
         </button>
         <button type="button" disabled={step.isPending} onClick={() => answer('reject')} className="h-12 rounded-md bg-tw-danger font-semibold text-white disabled:opacity-50">
@@ -166,7 +182,7 @@ function OrderDetailsDialog({ id, onClose }: { id: number; onClose: () => void }
       {order.isPending || order.isError ? (
         <LoadState error={order.isError ? errorMessage(order.error) : undefined} onRetry={() => void order.refetch()} />
       ) : (
-        <Details order={order.data} busy={step.isPending} onStep={(action) => step.mutate({ id, action })} error={step.error ? errorMessage(step.error) : undefined} />
+        <Details order={order.data} busy={step.isPending} onStep={(action, price) => step.mutate({ id, action, price })} error={step.error ? errorMessage(step.error) : undefined} />
       )}
     </Dialog>
   );
@@ -182,7 +198,10 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** The order details (partner/partner-order-details-preparing-receive-from-driver.png), and the store's next step. */
-function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails; busy: boolean; onStep: (a: PartnerAction) => void; error?: string }) {
+function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails; busy: boolean; onStep: (a: PartnerAction, price?: number) => void; error?: string }) {
+  const [priceText, setPriceText] = useState('');
+  const needsPrice = o.status === 'pending_review' && o.request !== null && !o.request.priced;
+  const price = needsPrice ? parseRequestPrice(priceText) : null;
   const collects = o.mode === 'delivery' && o.deliveredBy === 'platform' && o.payoutOption !== 'nothing';
   return (
     <div className="flex flex-col gap-4">
@@ -229,7 +248,12 @@ function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails
           <NotebookText className="size-5 shrink-0 text-tw" aria-hidden />
         </div>
       ) : null}
-      <div className="flex flex-col gap-2 border-t border-tw-line pt-3">
+      {o.request ? (
+        <div className="border-t border-tw-line pt-3">
+          <RequestBlock request={o.request} />
+        </div>
+      ) : null}
+      <div className={o.request ? 'hidden' : 'flex flex-col gap-2 border-t border-tw-line pt-3'}>
         <div className="flex items-center justify-between">
           <p className="font-bold">المنتجات</p>
           <span className="text-sm text-tw">{o.lines.length} منتج</span>
@@ -282,9 +306,15 @@ function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails
         </div>
       ) : null}
       {error ? <ErrorLine>{error}</ErrorLine> : null}
+      {needsPrice ? <PriceInput value={priceText} onChange={setPriceText} /> : null}
       {o.status === 'pending_review' ? (
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" disabled={busy} onClick={() => onStep('accept')} className="h-12 rounded-md bg-tw-ok font-semibold text-white disabled:opacity-50">
+          <button
+            type="button"
+            disabled={busy || (needsPrice && price === null)}
+            onClick={() => onStep('accept', price ?? undefined)}
+            className="h-12 rounded-md bg-tw-ok font-semibold text-white disabled:opacity-50"
+          >
             قبول
           </button>
           <button type="button" disabled={busy} onClick={() => onStep('reject')} className="h-12 rounded-md bg-tw-danger font-semibold text-white disabled:opacity-50">

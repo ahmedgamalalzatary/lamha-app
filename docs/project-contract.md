@@ -524,6 +524,8 @@ Built in Phase 20 (see the phase's owner answers, [Open] and [Derived] notes in 
 - [Tawsilty, capture 2026-11-26, `customer/pharmacy/pharmacy-store-page-categories.png`] A pharmacy's own page is a normal market store page (الأقسام, products, minimum order).
 - Below: the pharmacies list with the same filters as §8.3.
 - [Client] The pharmacy page follows this layout exactly.
+- [Owner, 2026-11-26] The pharmacy types the medicine price on "قبول"; it sets the order's total and the customer gets "تم قبول طلبك" with the price and the total. On a request the wallet may pay the delivery fee; the medicine is paid in cash on delivery; codes and points are not offered.
+- Built in Phase 22. [Derived] A request is a delivery only, has no minimum order, and its photo is kept like other uploads under an unguessable name. [Open] The partner's side of a request is not captured.
 
 ### 8.12 Send anything (اطلب دليفري) [Tawsilty]
 
@@ -859,6 +861,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | Phase 19 built (§8.17, §8.1, §8.2, §8.14, §11 A17), migration 0018: ادعُ أصدقاءك as in the photos; حسابي's invite card; Tawsilty's rules as admin settings [Owner] with the cap in ج.م [Owner] and an expiry switch [Owner]; the friend's welcome money at sign-up; the inviter's reward on the friend's first delivered order in time; invite money kept piece by piece in the wallet, first to pay, within its per-order limit, for restaurant and market orders only, back on a rejection, and taken out when it expires. The friends' rows are not captured [Open]. |
 | 2026-11-26 | Phase 20 built (§8.2, §8.3, §8.4, §8.7, §8.10, §11 A14–A15), migration 0019: one kind of code for قسائم and checkout coupons [Owner], made by the admin only [Owner], an amount or a percentage with a cap [Owner], uses per customer set by the admin [Owner], who pays set per offer [Owner]; product discounts as an old price [Owner]; free delivery per store; the code before the wallet and points [Owner]; banners opening a store or its products [Owner]; the offers screen, the row badges, the store page's cards and قسائمي, the market's "العروض", and "وفر على طلبك". The dashboard pages and the code error texts are not captured [Open]; the coloured store sections are not built. |
 | 2026-11-26 | Fourth phone capture (open items, pharmacy): several carts at once with "سلاتي" and no replace dialog, adding from a closed store, the count badge, the upsell row (§8.6, §8.4); the greyscale closed look with "يفتح الساعة" (§8.3, §8.4); the wrong-code toast (§8.10); the pharmacy request going straight to checkout with the price sent later (§8.11); the empty points tabs (§8.16). Guesses replaced; code rework listed in phases.md. Things no phase builds are in §18. |
+| 2026-11-26 | §8.11: the pharmacy sets a request's price on قبول; the wallet may pay a request's fee; no codes or points on requests (owner). |
 
 ---
 

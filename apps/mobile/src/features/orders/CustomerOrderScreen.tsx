@@ -18,6 +18,7 @@ import { useLocale, useT } from '@/core/i18n';
 import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { useCart } from '@/features/cart/api/cart';
 import { LineChoices, orderDate, useWhen } from '@/features/partner/parts';
+import { RequestDetails } from '@/features/partner/RequestParts';
 import { ordersApi, useMyOrder } from './api';
 
 /**
@@ -154,6 +155,8 @@ function Details({ order: o }: { order: CustomerOrderDetails }) {
         <AppText weight="bold" size={fontSizes.sectionTitle}>
           {t('orders.detailsTitle')}
         </AppText>
+        {o.request ? <RequestDetails request={o.request} /> : null}
+        {o.request && !o.request.priced ? <AppText color={colors.danger}>{t('pharmacy.priceLater')}</AppText> : null}
         {o.lines.map((line, i) => (
           <View key={i} style={styles.row}>
             <View style={styles.grow}>
@@ -195,7 +198,8 @@ function Details({ order: o }: { order: CustomerOrderDetails }) {
         <Button label={t('rating.rate')} variant="soft" onPress={() => router.push({ pathname: '/rate/[id]', params: { id: String(o.id) } })} />
       ) : null}
 
-      {canReorder(o.status) ? <Reorder order={o} /> : null}
+      {/* A pharmacy request has no products to put back in a cart. */}
+      {canReorder(o.status) && !o.request ? <Reorder order={o} /> : null}
 
       {/* [Client] A problem with an order opens a complaint about it; nothing is refunded from the app (§8.8). */}
       <PressableScale

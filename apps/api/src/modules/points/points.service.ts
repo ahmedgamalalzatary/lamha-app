@@ -27,7 +27,10 @@ export class PointsService {
     // The migration inserts the row; a database without it gets the defaults back.
     if (!row) {
       await tx.insert(pointsSettings).values({ id: ROW }).onDuplicateKeyUpdate({ set: { id: ROW } });
-      return this.settings(tx);
+      // A locking read sees the row another request may have just added; a plain read inside a
+      // transaction keeps its old snapshot, misses it and would loop for ever.
+      const [added] = await tx.select().from(pointsSettings).where(eq(pointsSettings.id, ROW)).for('share');
+      return toSettings(added!);
     }
     return toSettings(row);
   }

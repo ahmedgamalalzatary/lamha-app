@@ -11,6 +11,7 @@ import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
 import { useDeliveryScope } from '@/features/addresses/chosen-address';
+import { PharmacyRequestCard } from '@/features/pharmacy/components/RequestCard';
 import { useCuisines, useStores } from '../api/stores';
 import { CuisineCircles } from '../components/CuisineCircles';
 import { FilterChips } from '../components/FilterChips';
@@ -70,6 +71,7 @@ export function StoresScreen() {
         />
       </View>
       {cuisines.data?.length ? <CuisineCircles cuisines={cuisines.data} selected={cuisineId} onSelect={setCuisineId} /> : null}
+      {vertical === 'pharmacy' ? <PharmacyRequestCard /> : null}
       <AppText weight="bold" size={fontSizes.sectionTitle} style={styles.count}>
         {count ? t('stores.count', { count }) : t('stores.title')}
       </AppText>

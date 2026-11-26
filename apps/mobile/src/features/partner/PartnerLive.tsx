@@ -1,4 +1,4 @@
-import { formatMoney, type PartnerAction } from '@tawsela/shared';
+import { formatMoney, type PartnerAction, parseRequestPrice } from '@tawsela/shared';
 import { useState } from 'react';
 import { X } from 'lucide-react-native';
 import { Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
@@ -10,6 +10,7 @@ import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { usePartnerOrder, usePartnerOrders, usePartnerStep } from './api';
 import { usePartnerLive } from './live';
 import { LineChoices, LineImage } from './parts';
+import { PriceField, RequestDetails } from './RequestParts';
 
 /** Mounted once in the partner area: the live connection and the new-order popup over every tab. */
 export function PartnerLive() {
@@ -23,7 +24,8 @@ export function PartnerLive() {
  * its round photo, name, orange price and an outlined "1 عناصر" pill, then a green قبول and a red
  * رفض. [Client] It also shows how the customer pays. The print and mute icons wait for a printer
  * and the ring sound (Phase 16). It shows the oldest new order; the back button leaves it for later.
- * An iPhone has no back button, so there a ✕ does the same [Derived].
+ * An iPhone has no back button, so there a ✕ does the same [Derived]. A pharmacy request shows its
+ * photo and text instead of products, and قبول waits for its price (§8.11).
  */
 function NewOrderPopup() {
   const t = useT();
@@ -33,9 +35,14 @@ function NewOrderPopup() {
   const next = pending.data?.findLast((o) => !later.has(o.id));
   const order = usePartnerOrder(next?.id);
   const step = usePartnerStep();
+  const [typed, setTyped] = useState<{ id: number; text: string }>({ id: 0, text: '' });
   if (!next || !order.data || order.data.status !== 'pending_review') return null;
   const o = order.data;
-  const answer = (action: PartnerAction) => step.mutate({ id: o.id, action }, { onSuccess: () => step.reset() });
+  const priceText = typed.id === o.id ? typed.text : '';
+  const needsPrice = o.request !== null && !o.request.priced;
+  const price = needsPrice ? parseRequestPrice(priceText) : null;
+  const answer = (action: PartnerAction) =>
+    step.mutate({ id: o.id, action, price: action === 'accept' && price !== null ? price : undefined }, { onSuccess: () => step.reset() });
   const leave = () => setLater((s) => new Set(s).add(o.id));
 
   return (
@@ -62,9 +69,16 @@ function NewOrderPopup() {
                 </AppText>
               </View>
             ) : null}
-            <AppText weight="bold" size={fontSizes.sectionTitle} color={colors.primary}>
-              {t('partner.productsCount', { count: o.lines.length })}
-            </AppText>
+            {o.request ? (
+              <>
+                <RequestDetails request={o.request} />
+                {needsPrice ? <PriceField value={priceText} onChange={(text) => setTyped({ id: o.id, text })} /> : null}
+              </>
+            ) : (
+              <AppText weight="bold" size={fontSizes.sectionTitle} color={colors.primary}>
+                {t('partner.productsCount', { count: o.lines.length })}
+              </AppText>
+            )}
             {o.lines.map((line, i) => (
               <View key={i} style={styles.line}>
                 <LineImage line={line} />
@@ -99,9 +113,10 @@ function NewOrderPopup() {
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel={t('partner.accept')}
-              disabled={step.isPending}
+              accessibilityState={{ disabled: step.isPending || (needsPrice && price === null) }}
+              disabled={step.isPending || (needsPrice && price === null)}
               onPress={() => answer('accept')}
-              style={[styles.button, { backgroundColor: colors.success }]}
+              style={[styles.button, { backgroundColor: needsPrice && price === null ? colors.ink2 : colors.success }]}
             >
               <AppText weight="semibold" size={17} color={colors.bg}>
                 {t('partner.accept')}

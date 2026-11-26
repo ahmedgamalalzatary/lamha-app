@@ -18,3 +18,4 @@ export * from './wallet.js';
 export * from './points.js';
 export * from './invite.js';
 export * from './offers.js';
+export * from './pharmacy.js';

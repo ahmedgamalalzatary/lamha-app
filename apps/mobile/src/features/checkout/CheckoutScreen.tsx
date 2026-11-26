@@ -1,7 +1,21 @@
-import { cashDue, type CheckoutQuote, type CustomerCart, formatMoney, type LatLng, pointsPay, pointsToGo, pointsWorth, slotLabel, walletPays } from '@tawsela/shared';
+import {
+  cashDue,
+  type CheckoutQuote,
+  type CustomerCart,
+  formatMoney,
+  type LatLng,
+  PHARMACY_REQUEST_KINDS,
+  type PharmacyRequest,
+  type PharmacyRequestKind,
+  pointsPay,
+  pointsToGo,
+  pointsWorth,
+  slotLabel,
+  walletPays,
+} from '@tawsela/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Banknote, Lock, MapPin, ShoppingCart, Star, TicketPercent, Wallet } from 'lucide-react-native';
+import { Banknote, Info, Lock, MapPin, ShoppingCart, Star, TicketPercent, Wallet } from 'lucide-react-native';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,12 +52,16 @@ const couponError = (e: unknown) => e instanceof ApiRequestError && e.code?.star
  * Tawsilty's "إتمام الدفع" (contract §8.7, customer/checkout/*): the delivery address with "تغيير", now or
  * a later slot today, cash on delivery, the bill (products and the distance delivery fee, no service
  * fee) and "تنفيذ الطلب <total>". A delivery is confirmed on the map first [Client, §8.6]. "رصيدك"
- * pays from the wallet (Phase 17); the coupon box joins in Phase 20.
+ * pays from the wallet (Phase 17); the coupon box joins in Phase 20. A pharmacy request (§8.11) comes
+ * here straight from "الروشتة": a delivery with the fees only, under the red "سيتم إعلامك بسعر الطلب من
+ * قبل الصيدلية"; codes and points are not offered on it [Owner, 2026-11-26].
  */
 export function CheckoutScreen() {
   const t = useT();
-  const storeId = Number(useLocalSearchParams<{ storeId: string }>().storeId);
-  const { cart, query } = useCart(storeId);
+  const params = useLocalSearchParams<{ storeId?: string; pharmacy?: string; kind?: string; image?: string; text?: string }>();
+  const request = requestFrom(params);
+  const storeId = request?.storeId ?? Number(params.storeId);
+  const { cart, query } = useCart(request ? 0 : storeId);
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
@@ -52,7 +70,9 @@ export function CheckoutScreen() {
           {t('checkout.title')}
         </AppText>
       </View>
-      {cart ? (
+      {request ? (
+        <CheckoutBody request={request} />
+      ) : cart ? (
         <CheckoutBody key={cart.id} cart={cart} />
       ) : query.isPending ? (
         <View style={styles.section}>
@@ -69,14 +89,26 @@ export function CheckoutScreen() {
   );
 }
 
-function CheckoutBody({ cart }: { cart: CustomerCart }) {
+type Requested = PharmacyRequest & { storeId: number };
+
+/** The request "الروشتة" handed over in the route, or null for a store's cart. */
+function requestFrom(p: { pharmacy?: string; kind?: string; image?: string; text?: string }): Requested | null {
+  const storeId = Number(p.pharmacy);
+  if (!p.pharmacy || !Number.isInteger(storeId) || !PHARMACY_REQUEST_KINDS.includes(p.kind as PharmacyRequestKind)) return null;
+  return { storeId, kind: p.kind as PharmacyRequestKind, image: p.image || null, text: p.text ?? '' };
+}
+
+function CheckoutBody({ cart, request }: { cart: CustomerCart; request?: undefined } | { cart?: undefined; request: Requested }) {
   const t = useT();
   const locale = useLocale();
   const client = useQueryClient();
   const userId = useSession((s) => s.user?.id);
-  const delivery = cart.mode === 'delivery';
+  const delivery = cart ? cart.mode === 'delivery' : true;
+  const storeId = cart ? cart.store.id : request.storeId;
+  /** What the bill is for: the store's cart, or the pharmacy request. */
+  const paidFor = cart ? { cartId: cart.id } : { request };
   const { address } = useChosenAddress();
-  const page = useStorePage(cart.store.id);
+  const page = useStorePage(storeId);
   const addressId = delivery ? address?.id : undefined;
   /** The spot confirmed on the map, for the address it was confirmed for. */
   const [confirmed, setConfirmed] = useState<{ addressId: number; spot: LatLng } | null>(null);
@@ -98,14 +130,14 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
   /** Stops listening for the map's "تأكيد الموقع", while the map is open. */
   const awaitingMap = useRef<(() => void) | null>(null);
 
-  const quoteKey = ['checkout', userId, cart.id, cart.total, cart.mode, addressId ?? null, location?.lat ?? null, location?.lng ?? null, couponCode ?? null];
+  const quoteKey = ['checkout', userId, cart ? cart.id : JSON.stringify(request), cart?.total ?? 0, cart?.mode ?? 'delivery', addressId ?? null, location?.lat ?? null, location?.lng ?? null, couponCode ?? null];
   const quote = useQuery({
     queryKey: quoteKey,
     // A code that stopped working (the cart dropped below its minimum, it ran out) is taken off, and
     // the bill is asked again without it.
     queryFn: async () => {
       try {
-        return await checkoutApi.quote({ cartId: cart.id, addressId, location, couponCode });
+        return await checkoutApi.quote({ ...paidFor, addressId, location, couponCode });
       } catch (e) {
         if (couponCode && couponError(e)) {
           toast.show(errorMessage(e), 'hint');
@@ -127,7 +159,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
     }
     setApplying(true);
     try {
-      const priced = await checkoutApi.quote({ cartId: cart.id, addressId, location, couponCode: code });
+      const priced = await checkoutApi.quote({ ...paidFor, addressId, location, couponCode: code });
       client.setQueryData([...quoteKey.slice(0, 8), code], priced);
       setCouponCode(code);
     } catch (e) {
@@ -139,14 +171,14 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
   };
 
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: cartKeys.store(userId, cart.store.id) });
+    if (cart) void client.invalidateQueries({ queryKey: cartKeys.store(userId, cart.store.id) });
     void client.invalidateQueries({ queryKey: ['checkout', userId] });
   };
 
   /** `picked`: a spot just confirmed on the map, for this address; it is kept once the server prices it. */
   const submit = useSubmit(async (shown: CheckoutQuote, spot?: LatLng, picked?: number) => {
     // The map may have moved the spot: price it before placing, and stop if the bill changed.
-    const current = spot && picked !== undefined ? await checkoutApi.quote({ cartId: cart.id, addressId: picked, location: spot, couponCode }) : shown;
+    const current = spot && picked !== undefined ? await checkoutApi.quote({ ...paidFor, addressId: picked, location: spot, couponCode }) : shown;
     if (spot && picked !== undefined) {
       client.setQueryData([...quoteKey.slice(0, 5), picked, spot.lat, spot.lng, couponCode ?? null], current);
       setConfirmed({ addressId: picked, spot });
@@ -159,7 +191,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
     }
     try {
       await checkoutApi.place({
-        cartId: current.cartId,
+        ...(cart ? { cartId: current.cartId ?? cart.id } : { request }),
         addressId,
         location: spot,
         slot,
@@ -173,8 +205,10 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
       if (e instanceof ApiRequestError && e.status === 409) refresh();
       throw e;
     }
-    client.setQueryData(cartKeys.store(userId, cart.store.id), { cart: null });
-    cartChanged(client, userId);
+    if (cart) {
+      client.setQueryData(cartKeys.store(userId, cart.store.id), { cart: null });
+      cartChanged(client, userId);
+    }
     void client.invalidateQueries({ queryKey: ['orders', userId] });
     if (walletPaid > 0) void client.invalidateQueries({ queryKey: [...walletKey, userId] });
     if (points.points > 0) void client.invalidateQueries({ queryKey: [...pointsKey, userId] });
@@ -245,7 +279,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
                 <MapPin size={20} color={colors.primary} />
               </View>
               <AppText weight="semibold" style={styles.grow}>
-                {t('checkout.pickupFrom', { store: cart.store.name })}
+                {t('checkout.pickupFrom', { store: cart?.store.name ?? '' })}
               </AppText>
             </View>
           )}
@@ -302,6 +336,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
             />
           </View>
           {/* [Open] Tawsilty's checkout has no points row in the captures; it follows the wallet's. */}
+          {request ? null : (
           <View style={styles.walletCard}>
             <View style={styles.pin}>
               <Star size={20} color={colors.primary} />
@@ -331,6 +366,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
               onValueChange={setPayPoints}
             />
           </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -356,6 +392,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
           </View>
         </View>
 
+        {request ? null : (
         <View style={styles.section}>
           <AppText accessibilityRole="header" weight="bold" size={fontSizes.listTitle}>
             {t('checkout.saveOnOrder')}
@@ -393,11 +430,18 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
             </PressableScale>
           </View>
         </View>
+        )}
 
         <View style={styles.section}>
           <AppText accessibilityRole="header" weight="bold" size={fontSizes.listTitle}>
             {t('checkout.summary')}
           </AppText>
+          {request ? (
+            <View accessibilityRole="alert" style={styles.priceLater}>
+              <Info size={20} color={colors.danger} />
+              <AppText color={colors.danger} style={styles.grow}>{t('pharmacy.priceLater')}</AppText>
+            </View>
+          ) : null}
           {bill ? (
             <Summary bill={bill} walletPaid={walletPaid} pointsPaid={pointsUsed.value} toPay={toPay} locale={locale} />
           ) : quote.isError ? (
@@ -498,7 +542,7 @@ function Summary({ bill, walletPaid, pointsPaid, toPay, locale }: { bill: Checko
   );
   return (
     <View style={styles.summary}>
-      {row(t('checkout.subtotal'), formatMoney(bill.itemsTotal, locale))}
+      {bill.cartId === null ? null : row(t('checkout.subtotal'), formatMoney(bill.itemsTotal, locale))}
       {bill.mode === 'delivery' ? (
         bill.usualDeliveryFee > bill.deliveryFee ? (
           <View style={styles.summaryRow}>
@@ -551,6 +595,7 @@ const styles = StyleSheet.create({
   payment: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, borderRadius: radius.md, backgroundColor: colors.primary50, paddingHorizontal: spacing.md },
   secure: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   failed: { gap: spacing.md },
+  priceLater: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.md, backgroundColor: colors.danger50, padding: spacing.md },
   summary: { gap: spacing.md },
   coupon: {
     flexDirection: 'row',

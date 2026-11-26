@@ -105,6 +105,7 @@ export type ApiErrorCode =
   /** A store, category, product, cuisine or home tile that does not exist. */
   | 'NOT_FOUND'
   | 'CART_STORE_CLOSED'
+  | 'ORDER_PRICE_REQUIRED'
   | 'CART_ITEM_UNAVAILABLE'
   | 'CART_PICKUP_UNAVAILABLE'
   | 'CART_MINIMUM_ORDER'

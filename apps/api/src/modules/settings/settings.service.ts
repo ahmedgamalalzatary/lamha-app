@@ -25,7 +25,10 @@ export class SettingsService {
     // The migration inserts the row; a database without it gets the defaults back.
     if (!row) {
       await tx.insert(deliverySettings).values({ id: ROW }).onDuplicateKeyUpdate({ set: { id: ROW } });
-      return this.delivery(tx);
+      // A locking read sees the row another request may have just added; a plain read inside a
+      // transaction keeps its old snapshot, misses it and would loop for ever.
+      const [added] = await tx.select().from(deliverySettings).where(eq(deliverySettings.id, ROW)).for('share');
+      return toSettings(added!);
     }
     return toSettings(row);
   }

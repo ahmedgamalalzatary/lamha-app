@@ -1,4 +1,4 @@
-import { CART_MODES, CART_NOTE_LIMIT, COUPON, ORDER_STATUSES, PAID_BY, PAYOUT_OPTIONS } from '@tawsela/shared';
+import { CART_MODES, CART_NOTE_LIMIT, COUPON, ORDER_STATUSES, PAID_BY, PAYOUT_OPTIONS, PHARMACY_REQUEST_KINDS, PHARMACY_REQUEST_TEXT_LIMIT } from '@tawsela/shared';
 import { char, datetime, decimal, index, int, json, mysqlEnum, mysqlTable, timestamp, uniqueIndex, varchar } from 'drizzle-orm/mysql-core';
 import { addresses, degrees } from '../addresses/addresses.schema.js';
 import { products, stores } from '../catalog/catalog.schema.js';
@@ -32,6 +32,14 @@ export const orders = mysqlTable(
     /** A later delivery today (§8.7); null is "سيصل خلال 30 دقيقة". */
     scheduledFor: datetime('scheduled_for'),
     note: varchar('note', { length: CART_NOTE_LIMIT }).notNull().default(''),
+    /**
+     * A pharmacy request (§8.11) instead of products: its photo and text. The items price is 0 until
+     * the pharmacy accepts it with one (pricedAt).
+     */
+    requestKind: mysqlEnum('request_kind', PHARMACY_REQUEST_KINDS),
+    requestImage: varchar('request_image', { length: 255 }),
+    requestText: varchar('request_text', { length: PHARMACY_REQUEST_TEXT_LIMIT }),
+    pricedAt: datetime('priced_at'),
     itemsTotal: money('items_total').notNull(),
     deliveryFee: money('delivery_fee').notNull(),
     /** A free delivery's waived fee (§8.4) and who pays it; 0 and null without one. */
