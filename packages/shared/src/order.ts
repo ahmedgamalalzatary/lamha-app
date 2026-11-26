@@ -3,6 +3,7 @@ import type { LatLng } from './address.js';
 import type { CartMode } from './cart.js';
 import { type DeliveredBy, isOpenAt, minuteOfDay, type StoreHours } from './catalog.js';
 import type { OrderStatus } from './enums.js';
+import type { PointsSettings } from './points.js';
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 
@@ -97,6 +98,9 @@ export interface CheckoutQuote {
   slots: number[];
   /** رصيد المحفظة now (§8.15): "رصيدك" pays walletPays(walletBalance, total) when switched on. */
   walletBalance: number;
+  /** نقاطي now (§8.16): pointsPay(pointsBalance, what the wallet left, points) when switched on. */
+  pointsBalance: number;
+  points: PointsSettings;
 }
 
 /** POST /v1/me/orders */
@@ -111,6 +115,8 @@ export interface PlaceOrderInput extends CheckoutQuoteInput {
    * amount on the server (the balance moved) means the bill changed.
    */
   expectedWalletPaid?: number;
+  /** The points "نقاطي" spends, as the customer saw it; 0 or left out with it off. */
+  expectedPointsSpent?: number;
   /** One per tap of "تنفيذ الطلب": the same key twice places one order. */
   requestId: string;
 }
@@ -131,6 +137,9 @@ export interface CustomerOrder {
   total: number;
   /** Paid from the wallet (§8.15); the rest, cashDue, is paid in cash. */
   walletPaid: number;
+  /** Paid with points (§8.16): pointsSpent points worth pointsPaid ج.م. */
+  pointsSpent: number;
+  pointsPaid: number;
   createdAt: string;
 }
 
@@ -190,6 +199,8 @@ export interface PartnerOrder {
   total: number;
   /** Paid from the wallet: "المدفوع من المحفظة"; المجموع is what is left to collect (cashDue). */
   walletPaid: number;
+  /** Paid with points: "المدفوع بالنقاط". */
+  pointsPaid: number;
   /** ملاحظات العميل, shown in red. */
   note: string;
   /** طريقة الدفع (§9): cash only for now (§15.1 #2). */

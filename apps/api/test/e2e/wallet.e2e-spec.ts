@@ -81,7 +81,7 @@ describe('the wallet (e2e, contract §8.15, §11 A5)', () => {
     await http().get('/v1/me/wallet').set(admin).expect(403);
 
     const found: CustomerAccount[] = (await http().get('/v1/admin/customers?q=0155445').set(admin).expect(200)).body;
-    expect(found).toEqual([{ id: customerId, name: 'منى علي', phone: '01554459196', email: 'mona@example.com', walletBalance: 0, createdAt: expect.any(String) }]);
+    expect(found).toEqual([{ id: customerId, name: 'منى علي', phone: '01554459196', email: 'mona@example.com', walletBalance: 0, pointsBalance: 0, createdAt: expect.any(String) }]);
     expect((await http().get('/v1/admin/customers?q=منى').set(admin).expect(200)).body).toHaveLength(1);
     expect((await http().get('/v1/admin/customers?q=nobody').set(admin).expect(200)).body).toEqual([]);
 

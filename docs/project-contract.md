@@ -574,6 +574,12 @@ Orange card: balance, progress bar, "باقي <n> نقطة للاستبدال", 
 - **Minimum to spend:** an admin setting (default 100 points). It replaces Tawsilty's 240.
 - Points never expire.
 
+[Owner, 2026-11-26] Before Phase 18:
+- **Two settings, not one rate:** what earns a point (every X ج.م) and what one point pays (ج.م) are set apart, so the admin picks how much comes back (§11 A21).
+- **The wallet** counts as cash for earning.
+- **Both switched on:** the wallet pays first, then points, then cash.
+- The delivery man's speed points (§10) are built in Phase 24.
+
 ### 8.17 Invite friends (ادعُ أصدقاءك) [Tawsilty]
 
 Code with copy, WhatsApp and share buttons; ربحت / رصيدك المتاح; "كيف تعمل الدعوة؟" (share code → friend signs up → both rewarded); rules: you get 300 ج.م at most 30 ج.م per order, valid 30 days; friend gets 25 ج.م valid 30 days and must receive their first order within 30 days of signing up; invite credit is only for restaurant and store orders; "متبقٍ لك 1000 مكافآت هذا الشهر"; list of friends who joined.
@@ -830,3 +836,4 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-25 | Phase 15 built (§8.8, §8.14, §11), migration 0014: the rating screen as in the photo with the owner's split (1-3 bad, 4-5 good), opened once by itself after delivery and from the details; the store's average in the lists; complaints (عامة or a past order, and from the order's details) and suggestions; التواصل معنا from the admin's numbers; الشكاوى والاقتراحات (mark done, no in-app reply) and أرقام التواصل in the dashboard [Owner]. Good chips and star words 2-5 marked [Open]. |
 | 2026-11-25 | Phase 16 built (§8.14, §9, §10, §11, §15.1 #7), migration 0015: push through Expo's HTTP API with no SDK; tokens per phone; الإشعارات with the unread dot; إعدادات الإشعارات (تفعيل الإشعار only); the owner's push events; الإشعارات التفاعلية sent now to every customer or one zone [Owner]. Real pushes wait for the Expo project ID [Open]. |
 | 2026-11-26 | Phase 17 built (§8.15, §8.7, §9, §10, §11 A3, A5), migration 0016: حركة المحفظة as in the photos without top-up; محفظتي on حسابي; "رصيدك" at checkout paying as much as the wallet holds [Owner]; a rejected order's wallet money back at once [Owner]; the delivery man collects the cash part only, the app owes him the rest [Owner]; العملاء in the dashboard with add and deduct, never below 0 [Owner]. The movement rows and the العملاء page are not captured [Open]. |
+| 2026-11-26 | Phase 18 built (§8.16, §8.2, §8.7, §11 A5, A21), migration 0017: نقاطي as in the photo; نقاطي on حسابي and "استخدم ووفر" on الرئيسية; two point settings [Owner] in الإعدادات › النقاط; points earned on the items once delivered, the wallet counting as cash [Owner]; spent at checkout after the wallet [Owner], down to the minimum; a rejected order's points back; the admin adds or deducts points in العملاء. The delivery man's speed points moved to Phase 24 [Owner]. |

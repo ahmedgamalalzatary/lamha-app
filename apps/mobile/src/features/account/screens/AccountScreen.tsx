@@ -1,7 +1,7 @@
 import { formatMoney } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Trash2, User, Wallet } from 'lucide-react-native';
-import { useState } from 'react';
+import { Bell, BellRing, ChevronLeft, Clock, Heart, Languages, LogOut, MapPin, ReceiptText, Star, Trash2, User, Wallet } from 'lucide-react-native';
+import { type ReactNode, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DirectionalIcon } from '@/components/DirectionalIcon';
@@ -24,6 +24,7 @@ import { usePartnerOrderCounts } from '@/features/partner/api';
 import { SupportRows } from '@/features/support/SupportRows';
 import { useNotifications } from '@/features/notifications/api';
 import { useWallet } from '@/features/wallet/api';
+import { usePoints } from '@/features/points/api';
 
 /** The wallet icon's blue, as captured. */
 const WALLET_BLUE = '#2F6FED';
@@ -43,30 +44,39 @@ function OrdersMadeRow() {
 }
 
 /**
- * محفظتي (customer/account/account-top-wallet-points-invite.png): the wallet icon, the label and the
- * balance, opening حركة المحفظة. نقاطي joins beside it in Phase 18.
+ * محفظتي and نقاطي (customer/account/account-top-wallet-points-invite.png): two tiles, each with its
+ * icon, label and balance, opening حركة المحفظة and نقاطي.
  */
-function WalletTile() {
+function MoneyTiles() {
   const t = useT();
   const locale = useLocale();
   const wallet = useWallet();
-  const balance = wallet.data ? formatMoney(wallet.data.balance, locale) : '';
+  const points = usePoints();
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={`${t('wallet.tile')} ${balance}`.trim()}
-      onPress={() => router.push('/wallet')}
-      scaleTo={0.98}
-      style={styles.tile}
-    >
-      <View style={styles.tileTop}>
+    <View style={styles.tiles}>
+      <Tile label={t('wallet.tile')} value={wallet.data ? formatMoney(wallet.data.balance, locale) : ''} onPress={() => router.push('/wallet')}>
         <Wallet size={22} color={WALLET_BLUE} />
+      </Tile>
+      <Tile label={t('points.title')} value={points.data ? String(points.data.balance) : ''} onPress={() => router.push('/points')}>
+        <View style={styles.starCircle}>
+          <Star size={13} color={colors.bg} fill={colors.bg} />
+        </View>
+      </Tile>
+    </View>
+  );
+}
+
+function Tile({ label, value, onPress, children }: { label: string; value: string; onPress: () => void; children: ReactNode }) {
+  return (
+    <PressableScale accessibilityRole="button" accessibilityLabel={`${label} ${value}`.trim()} onPress={onPress} scaleTo={0.98} style={styles.tile}>
+      <View style={styles.tileTop}>
+        {children}
         <AppText weight="semibold" size={fontSizes.listTitle + 1}>
-          {t('wallet.tile')}
+          {label}
         </AppText>
       </View>
       <AppText weight="bold" size={fontSizes.listTitle + 3}>
-        {balance}
+        {value}
       </AppText>
     </PressableScale>
   );
@@ -141,7 +151,7 @@ export function AccountScreen() {
           <DirectionalIcon icon={ChevronLeft} size={22} color={colors.ink2} />
         </PressableScale>
 
-        {user.role === 'customer' ? <WalletTile /> : null}
+        {user.role === 'customer' ? <MoneyTiles /> : null}
 
         {user.role === 'customer' ? <SupportRows /> : null}
 
@@ -250,6 +260,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FDEDED',
   },
   sheet: { gap: spacing.lg, paddingTop: spacing.sm },
-  tile: { gap: spacing.md, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.lg, marginBottom: spacing.sm },
+  tiles: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
+  tile: { flex: 1, gap: spacing.md, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.lg },
+  starCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   tileTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

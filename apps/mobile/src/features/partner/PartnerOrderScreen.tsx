@@ -201,6 +201,7 @@ function Details({
         <Money label={t('partner.paymentFee')} value={money(0)} />
         {/* A discount shows in red (§9): here what the wallet paid; المجموع is what the customer still pays. */}
         {o.walletPaid > 0 ? <Money label={t('wallet.paid')} value={`-${money(o.walletPaid)}`} color={colors.danger} /> : null}
+        {o.pointsPaid > 0 ? <Money label={t('points.paid')} value={`-${money(o.pointsPaid)}`} color={colors.danger} /> : null}
       </Section>
 
       <Section last={!o.driver && !collects}>

@@ -29,6 +29,9 @@ import {
   type PlacedOrder,
   type PlaceOrderInput,
   walletPays,
+  pointsPay,
+  pointsEarned,
+  earnBase,
 } from '@tawsela/shared';
 import { and, asc, count as countRows, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
@@ -45,6 +48,7 @@ import { SettingsService } from '../settings/settings.service.js';
 import { ratings } from '../support/support.schema.js';
 import { users } from '../users/users.schema.js';
 import { WalletService } from '../wallet/wallet.service.js';
+import { PointsService } from '../points/points.service.js';
 import { nameOf } from '../audit/audit.service.js';
 import { OrdersGateway } from './orders.gateway.js';
 
@@ -80,6 +84,7 @@ export class OrdersService {
     private readonly live: OrdersGateway,
     private readonly notices: NotificationsService,
     private readonly wallet: WalletService,
+    private readonly points: PointsService,
   ) {}
 
   quote(userId: number, input: CheckoutQuoteInput): Promise<CheckoutQuote> {
@@ -133,6 +138,12 @@ export class OrdersService {
       if (walletPaid !== expectedWalletPaid) {
         throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_TOTAL_CHANGED', 'The wallet balance changed; check the bill again');
       }
+      // Then "نقاطي" on what the wallet left [Owner, 2026-11-26: wallet first], with the same check.
+      const expectedPointsSpent = input.expectedPointsSpent ?? 0;
+      const spent = expectedPointsSpent > 0 ? pointsPay(bill.pointsBalance, cents(bill.total - walletPaid), bill.points) : { points: 0, value: 0 };
+      if (spent.points !== expectedPointsSpent) {
+        throw new ApiException(HttpStatus.CONFLICT, 'CHECKOUT_TOTAL_CHANGED', 'The points or their rules changed; check the bill again');
+      }
 
       const now = new Date();
       now.setSeconds(0, 0);
@@ -160,6 +171,9 @@ export class OrdersService {
           deliveryFee: bill.deliveryFee,
           total: bill.total,
           walletPaid,
+          pointsSpent: spent.points,
+          pointsPaid: spent.value,
+          pointsEarned: pointsEarned(earnBase(bill.itemsTotal, spent.value), bill.points.earnEvery),
           payoutOption,
           appPercent,
           ...payout(bill.itemsTotal, payoutOption, appPercent),
@@ -167,6 +181,7 @@ export class OrdersService {
         .$returningId();
       const orderId = created!.id;
       await this.wallet.pay(tx, userId, orderId, walletPaid);
+      await this.points.spend(tx, userId, orderId, spent.points);
       await tx.insert(orderLines).values(
         bill.cart.lines.map((line) => {
           const options = line.product.optionGroups.flatMap((g) => g.options.filter((o) => line.optionIds.includes(o.id)).map((o) => o.name));
@@ -269,7 +284,12 @@ export class OrdersService {
       await tx.update(orders).set({ status: next }).where(eq(orders.id, id));
       await tx.insert(orderEvents).values({ orderId: id, status: next, byUserId: userId });
       // A rejected order's wallet money goes back at once [Owner, 2026-11-26].
-      if (next === 'rejected' || next === 'cancelled') await this.wallet.refund(tx, row.customerId, id, row.walletPaid);
+      if (next === 'rejected' || next === 'cancelled') {
+        await this.wallet.refund(tx, row.customerId, id, row.walletPaid);
+        await this.points.refund(tx, row.customerId, id, row.pointsSpent);
+      }
+      // Points come once the order is delivered (§8.16).
+      if (next === 'delivered') await this.points.earn(tx, row.customerId, id, row.pointsEarned);
       return { status: next, row };
     });
     this.live.orderChanged(row, { id, status });
@@ -393,7 +413,9 @@ export class OrdersService {
     if (!store) throw new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Cart or item not found');
     const slots = deliverySlots(cairoMinuteOfDay(new Date()), { opensAt: hhmm(store.opensAt), closesAt: hhmm(store.closesAt), closedNow: store.closedNow });
     const walletBalance = await this.wallet.balanceOf(tx, userId);
-    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, walletBalance, cart, store };
+    const pointsBalance = await this.points.balanceOf(tx, userId);
+    const points = await this.points.settings(tx);
+    const base = { cartId: cart.id, mode: cart.mode, count: cart.count, itemsTotal: cart.total, slots, walletBalance, pointsBalance, points, cart, store };
     if (cart.mode === 'pickup') {
       return { ...base, deliveryFee: 0, total: cart.total, distanceKm: null, address: null, spot: null };
     }
@@ -460,6 +482,7 @@ function toPartnerOrder(row: OrderRow, count: number): PartnerOrder {
     itemsTotal: row.itemsTotal,
     total: row.total,
     walletPaid: row.walletPaid,
+    pointsPaid: row.pointsPaid,
     note: row.note,
     paymentMethod: 'cash',
     createdAt: row.createdAt.toISOString(),
@@ -479,6 +502,8 @@ function toCustomerOrder(row: OrderRow, store: CustomerOrder['store'], count: nu
     deliveryFee: row.deliveryFee,
     total: row.total,
     walletPaid: row.walletPaid,
+    pointsSpent: row.pointsSpent,
+    pointsPaid: row.pointsPaid,
     createdAt: row.createdAt.toISOString(),
   };
 }

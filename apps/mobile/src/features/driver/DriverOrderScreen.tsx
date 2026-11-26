@@ -207,6 +207,16 @@ function Details({ order: o, busy, onStep }: { order: DriverOrderDetails; busy: 
               </AppText>
             </View>
           ) : null}
+          {o.pointsPaid > 0 ? (
+            <View style={styles.row}>
+              <AppText color={colors.ink2} style={styles.grow}>
+                {t('points.paid')}
+              </AppText>
+              <AppText weight="semibold" color={colors.ink2}>
+                {money(o.pointsPaid)}
+              </AppText>
+            </View>
+          ) : null}
         </Card>
       </ScrollView>
       <StepButton order={o} busy={busy} onStep={onStep} />

@@ -12,3 +12,4 @@ export * from '../../modules/drivers/drivers.schema.js';
 export * from '../../modules/support/support.schema.js';
 export * from '../../modules/notifications/notifications.schema.js';
 export * from '../../modules/wallet/wallet.schema.js';
+export * from '../../modules/points/points.schema.js';

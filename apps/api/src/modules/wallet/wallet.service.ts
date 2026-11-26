@@ -77,6 +77,7 @@ export class WalletService {
       phone: u.phone,
       email: u.email,
       walletBalance: u.walletBalance,
+      pointsBalance: u.pointsBalance,
       createdAt: u.createdAt.toISOString(),
     }));
   }

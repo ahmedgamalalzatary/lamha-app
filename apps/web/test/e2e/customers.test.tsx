@@ -74,4 +74,29 @@ describe('العملاء and their wallets (contract §11 A3, A5; real API)', ()
       { kind: 'deduct', amount: '40.00', note: 'خصم بالخطأ' },
     ]);
   });
+
+  it('shows each customer\'s points and adds or deducts them with a reason, never below 0', async () => {
+    await sql('UPDATE users SET points_balance = 30 WHERE id = ?', [mona]);
+    renderWith(<CustomersPage />);
+    const user = userEvent.setup();
+    const row = (await screen.findByText('منى علي')).closest('tr')!;
+    expect(within(row).getByText('30 نقطة')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'تعديل نقاط منى علي' }));
+    const dialog = screen.getByRole('dialog', { name: 'نقاط منى علي' });
+    await user.click(within(dialog).getByRole('radio', { name: 'خصم' }));
+    await user.type(within(dialog).getByLabelText('عدد النقاط'), '31');
+    await user.type(within(dialog).getByLabelText('السبب'), 'خصم بالخطأ');
+    await user.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+    expect(await within(dialog).findByText('النقاط أقل من عدد الخصم')).toBeInTheDocument();
+
+    await user.clear(within(dialog).getByLabelText('عدد النقاط'));
+    await user.type(within(dialog).getByLabelText('عدد النقاط'), '1.5');
+    expect(within(dialog).getByRole('button', { name: 'حفظ' })).toBeDisabled();
+    await user.clear(within(dialog).getByLabelText('عدد النقاط'));
+    await user.type(within(dialog).getByLabelText('عدد النقاط'), '10');
+    await user.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(await within(row).findByText('20 نقطة')).toBeInTheDocument();
+  });
 });

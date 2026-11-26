@@ -255,6 +255,8 @@ export interface DriverOrderDetails extends DriverOrder {
    * [Owner, 2026-11-26; settled outside the app for now].
    */
   walletPaid: number;
+  /** Paid with the customer's points: the same, he collects that much less (§8.7). */
+  pointsPaid: number;
 }
 
 /** المندوبين in the dashboard and the admin's app (§11, §11.2). */

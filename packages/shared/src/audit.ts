@@ -27,6 +27,8 @@ export const AUDIT_ACTIONS = [
   'settings.support',
   'campaign.send',
   'customer.wallet',
+  'customer.points',
+  'settings.points',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

@@ -24,6 +24,7 @@ const MESSAGES: Partial<Record<ErrorCode, string>> = {
   ORDER_STATUS: 'تغيرت حالة الطلب، راجعه مرة أخرى',
   SHIFT_NOT_OPEN: 'لا توجد نوبة عمل يمكن بدؤها الآن',
   WALLET_BALANCE: 'الرصيد أقل من مبلغ الخصم',
+  POINTS_BALANCE: 'النقاط أقل من عدد الخصم',
 };
 
 export const GENERIC_ERROR = 'حدث خطأ، حاول مرة أخرى';

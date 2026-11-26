@@ -8,11 +8,12 @@ import { useHome } from '../api/home';
 import { HomeHeader } from '../components/HomeHeader';
 import { HomeTiles, HomeTilesSkeleton } from '../components/HomeTiles';
 import { InviteCard } from '../components/InviteCard';
+import { UseAndSave } from '../components/UseAndSave';
 import { useInviteDismissed } from '../invite-dismissed';
 
 /**
  * The customer's الرئيسية (contract §8.2): header with the address and search, the tiles, and the
- * invite card. Offers, banners and coloured sections join it in Phase 20.
+ * invite card, then "استخدم ووفر" (Phase 18). Offers, banners and coloured sections join it in Phase 20.
  */
 export function HomeScreen() {
   const t = useT();
@@ -37,6 +38,7 @@ export function HomeScreen() {
           <>
             <HomeTiles tiles={home.data.tiles} />
             {inviteDismissed === false ? <InviteCard rewards={home.data.invite} onClose={dismissInvite} /> : null}
+            <UseAndSave />
           </>
         )}
       </ScrollView>

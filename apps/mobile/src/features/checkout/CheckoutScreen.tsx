@@ -1,7 +1,7 @@
-import { cashDue, type CheckoutQuote, type CustomerCart, formatMoney, type LatLng, slotLabel, walletPays } from '@tawsela/shared';
+import { cashDue, type CheckoutQuote, type CustomerCart, formatMoney, type LatLng, pointsPay, pointsToGo, pointsWorth, slotLabel, walletPays } from '@tawsela/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Banknote, Lock, MapPin, ShoppingCart, Wallet } from 'lucide-react-native';
+import { Banknote, Lock, MapPin, ShoppingCart, Star, Wallet } from 'lucide-react-native';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import { AddressesSheet } from '@/features/addresses/components/AddressesSheet';
 import { confirmOnMap, usePickedSpot } from '@/features/addresses/picked-spot';
 import { useCart } from '@/features/cart/api/cart';
 import { useStorePage } from '@/features/store/api/store';
+import { pointsKey } from '@/features/points/api';
 import { walletKey } from '@/features/wallet/api';
 import { checkoutApi, newRequestId } from './api';
 
@@ -82,6 +83,8 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
   const [addressesOpen, setAddressesOpen] = useState(false);
   /** "رصيد المحفظة": off until the customer switches it on [Derived]. */
   const [payWallet, setPayWallet] = useState(false);
+  /** "نقاطي": off until switched on [Derived]; it pays what the wallet left [Owner, 2026-11-26]. */
+  const [payPoints, setPayPoints] = useState(false);
   const requestId = useRef(newRequestId());
   /** Stops listening for the map's "تأكيد الموقع", while the map is open. */
   const awaitingMap = useRef<(() => void) | null>(null);
@@ -107,8 +110,10 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
       client.setQueryData([...quoteKey.slice(0, 5), picked, spot.lat, spot.lng], current);
       setConfirmed({ addressId: picked, spot });
     }
-    const walletPaid = payWallet ? walletPays(current.walletBalance, current.total) : 0;
-    if (current.total !== shown.total || walletPaid !== (payWallet ? walletPays(shown.walletBalance, shown.total) : 0)) {
+    const pay = (bill: CheckoutQuote) => paidFrom(bill, payWallet, payPoints);
+    const { walletPaid, points } = pay(current);
+    const before = pay(shown);
+    if (current.total !== shown.total || walletPaid !== before.walletPaid || points.points !== before.points.points) {
       throw new ApiRequestError(409, 'The bill changed', 'CHECKOUT_TOTAL_CHANGED');
     }
     try {
@@ -119,6 +124,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
         slot,
         expectedTotal: current.total,
         expectedWalletPaid: walletPaid,
+        expectedPointsSpent: points.points,
         requestId: requestId.current,
       });
     } catch (e) {
@@ -128,6 +134,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
     client.setQueryData(['cart', userId], { cart: null });
     void client.invalidateQueries({ queryKey: ['orders', userId] });
     if (walletPaid > 0) void client.invalidateQueries({ queryKey: [...walletKey, userId] });
+    if (points.points > 0) void client.invalidateQueries({ queryKey: [...pointsKey, userId] });
     toast.show(t('checkout.placed'), 'success');
     router.replace('/customer/orders');
   });
@@ -157,8 +164,9 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
 
   const minutes = page.data?.deliveryMinutes ?? DEFAULT_MINUTES;
   const slots = bill?.slots ?? [];
-  const walletPaid = bill && payWallet ? walletPays(bill.walletBalance, bill.total) : 0;
-  const toPay = bill ? cashDue({ total: bill.total, walletPaid }) : 0;
+  const { walletPaid, points: pointsUsed } = bill ? paidFrom(bill, payWallet, payPoints) : { walletPaid: 0, points: { points: 0, value: 0 } };
+  const toPay = bill ? cashDue({ total: bill.total, walletPaid, pointsPaid: pointsUsed.value }) : 0;
+  const canSpendPoints = !!bill && bill.points.pointValue > 0 && bill.pointsBalance >= bill.points.minimum && bill.pointsBalance > 0;
 
   return (
     <>
@@ -250,6 +258,36 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
               onValueChange={setPayWallet}
             />
           </View>
+          {/* [Open] Tawsilty's checkout has no points row in the captures; it follows the wallet's. */}
+          <View style={styles.walletCard}>
+            <View style={styles.pin}>
+              <Star size={20} color={colors.primary} />
+            </View>
+            <View style={styles.grow}>
+              <AppText weight="semibold">{t('points.title')}</AppText>
+              {bill ? (
+                canSpendPoints ? (
+                  <AppText color={colors.ink2} size={fontSizes.body}>
+                    {t('points.available', { count: bill.pointsBalance, amount: formatMoney(pointsWorth(bill.pointsBalance, bill.points.pointValue), locale) })}
+                  </AppText>
+                ) : (
+                  <AppText color={colors.danger} size={fontSizes.body}>
+                    {t('points.toGo', { count: pointsToGo(bill.pointsBalance, bill.points.minimum) })}
+                  </AppText>
+                )
+              ) : null}
+            </View>
+            <Switch
+              accessibilityRole="switch"
+              accessibilityLabel={t('points.title')}
+              accessibilityState={{ disabled: !canSpendPoints, checked: payPoints }}
+              value={payPoints && canSpendPoints}
+              disabled={!canSpendPoints}
+              trackColor={{ true: colors.primary100, false: colors.line }}
+              thumbColor={payPoints ? colors.primary : colors.bg}
+              onValueChange={setPayPoints}
+            />
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -280,7 +318,7 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
             {t('checkout.summary')}
           </AppText>
           {bill ? (
-            <Summary bill={bill} walletPaid={walletPaid} toPay={toPay} locale={locale} />
+            <Summary bill={bill} walletPaid={walletPaid} pointsPaid={pointsUsed.value} toPay={toPay} locale={locale} />
           ) : quote.isError ? (
             <View style={styles.failed}>
               <AppText color={colors.danger}>{errorMessage(quote.error)}</AppText>
@@ -348,6 +386,15 @@ function CheckoutBody({ cart }: { cart: CustomerCart }) {
   );
 }
 
+/** What the wallet pays, then what points pay of the rest [Owner, 2026-11-26: wallet first]. */
+function paidFrom(bill: CheckoutQuote, wallet: boolean, points: boolean) {
+  const walletPaid = wallet ? walletPays(bill.walletBalance, bill.total) : 0;
+  return {
+    walletPaid,
+    points: points ? pointsPay(bill.pointsBalance, cashDue({ total: bill.total, walletPaid }), bill.points) : { points: 0, value: 0 },
+  };
+}
+
 function Choice({ label, checked, onPress }: { label: string; checked: boolean; onPress: () => void }) {
   return (
     <PressableScale accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked }} onPress={onPress} style={[styles.choice, checked && styles.choiceOn]}>
@@ -360,7 +407,7 @@ function Choice({ label, checked, onPress }: { label: string; checked: boolean; 
 }
 
 /** The wallet's part shows in red under the fee, and الإجمالي is what is left to pay in cash [Derived]. */
-function Summary({ bill, walletPaid, toPay, locale }: { bill: CheckoutQuote; walletPaid: number; toPay: number; locale: 'ar' | 'en' }) {
+function Summary({ bill, walletPaid, pointsPaid, toPay, locale }: { bill: CheckoutQuote; walletPaid: number; pointsPaid: number; toPay: number; locale: 'ar' | 'en' }) {
   const t = useT();
   const row = (label: string, value: string, color?: string): ReactNode => (
     <View style={styles.summaryRow}>
@@ -373,6 +420,7 @@ function Summary({ bill, walletPaid, toPay, locale }: { bill: CheckoutQuote; wal
       {row(t('checkout.subtotal'), formatMoney(bill.itemsTotal, locale))}
       {bill.mode === 'delivery' ? row(t('checkout.deliveryFee'), formatMoney(bill.deliveryFee, locale)) : null}
       {walletPaid > 0 ? row(t('wallet.paid'), `-${formatMoney(walletPaid, locale)}`, colors.danger) : null}
+      {pointsPaid > 0 ? row(t('points.paid'), `-${formatMoney(pointsPaid, locale)}`, colors.danger) : null}
       <View style={[styles.summaryRow, styles.total]}>
         <AppText weight="bold" size={fontSizes.listTitle}>
           {t('checkout.total')}

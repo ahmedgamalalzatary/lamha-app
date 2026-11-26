@@ -42,6 +42,12 @@ export class PlaceOrderDto extends CheckoutQuoteDto {
   @Min(0)
   expectedWalletPaid?: number;
 
+  @ApiPropertyOptional({ description: 'The points "نقاطي" spends, as the customer saw it; 0 or left out: points are off' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  expectedPointsSpent?: number;
+
   @ApiProperty({ format: 'uuid', description: 'One per tap of "تنفيذ الطلب"' })
   @IsUUID()
   requestId: string;

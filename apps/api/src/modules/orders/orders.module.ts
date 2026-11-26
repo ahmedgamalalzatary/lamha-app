@@ -5,13 +5,14 @@ import { CatalogModule } from '../catalog/catalog.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { WalletModule } from '../wallet/wallet.module.js';
+import { PointsModule } from '../points/points.module.js';
 import { AdminOrdersController, OrdersController, PartnerOrdersController } from './orders.controller.js';
 import { OrdersGateway } from './orders.gateway.js';
 import { OrdersService } from './orders.service.js';
 
 @Module({
   // Users and Catalog for the partner store guard and the live socket's account check.
-  imports: [CartModule, AddressesModule, SettingsModule, UsersModule, CatalogModule, WalletModule],
+  imports: [CartModule, AddressesModule, SettingsModule, UsersModule, CatalogModule, WalletModule, PointsModule],
   controllers: [OrdersController, PartnerOrdersController, AdminOrdersController],
   providers: [OrdersService, OrdersGateway],
   exports: [OrdersService, OrdersGateway],

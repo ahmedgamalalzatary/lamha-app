@@ -26,6 +26,8 @@ export const users = mysqlTable('users', {
   notificationsEnabled: boolean('notifications_enabled').notNull().default(true),
   /** رصيد المحفظة (§8.15): the sum of wallet_transactions, never below 0. */
   walletBalance: decimal('wallet_balance', { precision: 10, scale: 2, mode: 'number' }).notNull().default(0),
+  /** رصيد النقاط (§8.16): the sum of points_transactions, never below 0. */
+  pointsBalance: int('points_balance', { unsigned: true }).notNull().default(0),
   inviteCode: varchar('invite_code', { length: 12 }).unique(),
   invitedById: int('invited_by_id', { unsigned: true }),
   /** Partners only: the store the account runs (contract §2). */

@@ -40,6 +40,11 @@ export const orders = mysqlTable(
      * app owes it to the delivery man [Owner, 2026-11-26].
      */
     walletPaid: money('wallet_paid').notNull().default(0),
+    /** Points spent on it (§8.16) and what they paid; the app owes that cash like the wallet's. */
+    pointsSpent: int('points_spent', { unsigned: true }).notNull().default(0),
+    pointsPaid: money('points_paid').notNull().default(0),
+    /** What it earns, fixed when placed and given once it is delivered. */
+    pointsEarned: int('points_earned', { unsigned: true }).notNull().default(0),
     payoutOption: mysqlEnum('payout_option', PAYOUT_OPTIONS).notNull(),
     appPercent: decimal('app_percent', { precision: 5, scale: 2, mode: 'number' }).notNull(),
     appShare: money('app_share').notNull(),

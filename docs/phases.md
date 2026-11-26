@@ -42,7 +42,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 15 | Ratings, complaints and support | 🔍 in-verify | none (good chips and star words marked [Open]) |
 | 16 | Notifications and push (Expo push) | 🔍 in-verify | none (Expo project made; real pushes need a workflow-built app and FCM) |
 | 17 | Wallet (top-up excluded for now) | 🔍 in-verify | none (movement rows and the العملاء page marked [Open]) |
-| 18 | Points | ⬜ | none (#4 decided) |
+| 18 | Points | 🔍 in-verify | none (movement rows and the checkout row marked [Open]) |
 | 19 | Invite friends | ⬜ | |
 | 20 | Offers, coupons and banners | ⬜ | |
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
@@ -512,6 +512,39 @@ Owner's answers before the phase (2026-11-26):
 
 Contract §8.16: earning per order, progress to 240, value, earned and spent tabs, redeeming.
 
+Owner's answers before the phase (2026-11-26):
+- Two settings, not one rate: what earns a point (كل X ج.م = نقطة) and what a point pays (ج.م). One rate both ways would give back 100% of what is spent.
+- The part paid from the wallet earns points like cash.
+- With both switched on, the wallet pays first, then points, then cash.
+- The delivery man's speed points move to Phase 24, with his history and money.
+
+- **Migration 0017:** `points_settings` (one row: earn every, point value, minimum), `points_transactions` (add or deduct; order, refund or admin); `users.points_balance`; `orders.points_spent`, `points_paid` and `points_earned`.
+- **Shared (TDD):** `pointsEarned`, `earnBase` (the items only; what points paid earns nothing), `pointsPay` (whole points, after the wallet, up to what is due, the fee included, none below the minimum), `pointsWorth`, `pointsToGo`, `pointsAdjustProblem`; `cashDue` takes the points too; the audit actions `customer.points` and `settings.points`.
+- **API:**
+  - `GET /v1/me/points`: the balance, its value, the rules and the movements.
+  - The quote gives `pointsBalance` and the rules; `POST /v1/me/orders` takes `expectedPointsSpent`, checked like the wallet's. What an order earns is fixed when it is placed and given when it is delivered (by the store, a pickup, or the delivery man); a rejected order gives its points back.
+  - Orders carry `pointsSpent` and `pointsPaid`; the delivery man's "تحصيل النقود" leaves out what points paid.
+  - `GET|PATCH /v1/admin/settings/points`; `POST /v1/admin/customers/:id/points` (422 POINTS_BALANCE over the balance); both recorded in سجل التغييرات.
+- **Dashboard:** الإعدادات › النقاط with the three fields and an example; العملاء shows each customer's points and adds or deducts them with a reason; the store's details and the admin's الطلبات show what points paid.
+- **App:**
+  - نقاطي as in the photo: the orange card with رصيد النقاط, the bar to the minimum, "باقي <n> نقطة للاستبدال", قيمة نقاطك and الحد الأدنى للاستبدال; المكتسبة / المنفقة with "لا توجد نقاط مكتسبة".
+  - حسابي: نقاطي beside محفظتي. الرئيسية: "استخدم ووفر" with نقاطي and المحفظة, as in the photo.
+  - إتمام الدفع: a نقاطي row under رصيد المحفظة with its switch, "<n> نقطة = <amount>", or "باقي <n> نقطة للاستبدال" in red with the switch off; switched on, "المدفوع بالنقاط" shows in the summary.
+  - The order details (customer, store, delivery man) show what points paid.
+- **[Open]**
+  - المنفقة's empty state, the movement rows and the checkout's points row are not captured.
+  - The dashboard's النقاط page (not captured).
+- **[Derived]**
+  - The defaults: 10 ج.م earn a point and a point pays 0.10 ج.م (1% back); 100 points to spend (owner's default).
+  - Points pay the items before the fee when working out what earns.
+  - What an order earns is fixed when placed; a rejected order gives its points back; the admin's deduction never goes below 0.
+  - "يمكنك استبدال نقاطك الآن" once the minimum is reached.
+- **Phone verification:**
+  - With no points, نقاطي shows 0, "باقي 100 نقطة للاستبدال", 0.00 ج.م and "لا توجد نقاط مكتسبة"; حسابي and الرئيسية open it.
+  - Order 170 ج.م of items for delivery and have it delivered: 17 points come in المكتسبة.
+  - The admin adds 1000 points: checkout shows "1000 نقطة = 100.00 ج.م"; switched on, the summary takes them, and the delivery man's "تحصيل النقود" is the rest.
+  - The store rejects such an order: the points come back.
+
 ## Phase 19: Invite friends
 
 Contract §8.17: codes, rewards with their limits and expiry, monthly cap, friends list, share sheet and WhatsApp.
@@ -537,6 +570,8 @@ Contract §8.12: no new screens. Seed an "اطلب دليفري" store with one 
 ## Phase 24: Driver: history and fines
 
 Contract §10: order history with a date range, totals and complaints; fines with reasons; dashboard fines.
+
+Moved here from Phase 18 [Owner, 2026-11-26]: the delivery man's speed points (minutes per km, levels set by the admin, paid in cash) and his نقاطي tile.
 
 ## Phase 25: Admin: overview and reports
 

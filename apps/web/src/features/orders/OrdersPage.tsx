@@ -91,6 +91,7 @@ function OrderRow({ order: o, onAssign }: { order: AdminOrder; onAssign: () => v
       <td className="px-4 py-3 whitespace-nowrap">
         <span className="block">{formatMoney(o.total)}</span>
         {o.walletPaid > 0 ? <span className="block text-xs text-tw-ink-2">منها {formatMoney(o.walletPaid)} من المحفظة</span> : null}
+        {o.pointsPaid > 0 ? <span className="block text-xs text-tw-ink-2">منها {formatMoney(o.pointsPaid)} بالنقاط</span> : null}
       </td>
       <td className="px-4 py-3 whitespace-nowrap">{cashDue(o) === 0 ? 'مدفوع بالكامل' : 'الدفع عند الاستلام'}</td>
       <td className="px-4 py-3">{o.mode === 'pickup' ? 'استلام من المحل' : o.deliveredBy === 'store' ? 'توصيل المتجر' : (o.driver?.name ?? '—')}</td>

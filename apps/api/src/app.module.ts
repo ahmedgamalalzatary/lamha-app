@@ -23,6 +23,7 @@ import { SupportModule } from './modules/support/support.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { WalletModule } from './modules/wallet/wallet.module.js';
+import { PointsModule } from './modules/points/points.module.js';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { WalletModule } from './modules/wallet/wallet.module.js';
     SettingsModule,
     SupportModule,
     WalletModule,
+    PointsModule,
     FavoritesModule,
     AddressesModule,
     PartnersModule,

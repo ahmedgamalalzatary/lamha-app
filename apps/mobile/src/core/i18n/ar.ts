@@ -523,6 +523,28 @@ export const ar = {
   'checkout.noBalance': 'لا يوجد رصيد متاح',
   'checkout.available': 'المتاح {amount}',
   'errors.WALLET_BALANCE': 'الرصيد أقل من مبلغ الخصم',
+  // Points (contract §8.16, customer/account/points-balance-progress.png).
+  'points.title': 'نقاطي',
+  'points.balance': 'رصيد النقاط',
+  'points.unit': 'نقطة',
+  'points.count': '{count} نقطة',
+  'points.toGo': 'باقي {count} نقطة للاستبدال',
+  'points.ready': 'يمكنك استبدال نقاطك الآن',
+  'points.worth': 'قيمة نقاطك',
+  'points.minimum': 'الحد الأدنى للاستبدال',
+  'points.earned': 'المكتسبة',
+  'points.spent': 'المنفقة',
+  'points.noEarned': 'لا توجد نقاط مكتسبة',
+  'points.noEarnedBody': 'اطلب من التطبيق واكسب نقاط مع كل طلب',
+  'points.noSpent': 'لا توجد نقاط منفقة',
+  'points.noSpentBody': 'استخدم نقاطك في إتمام الدفع',
+  'points.earnedOrder': 'نقاط الطلب #{code}',
+  'points.spentOrder': 'الدفع للطلب #{code}',
+  'points.refund': 'استرداد نقاط الطلب #{code}',
+  'points.paid': 'المدفوع بالنقاط',
+  'points.available': '{count} نقطة = {amount}',
+  'home.useAndSave': 'استخدم ووفر',
+  'home.wallet': 'المحفظة',
 } as const;
 
 export type TranslationKey = keyof typeof ar;

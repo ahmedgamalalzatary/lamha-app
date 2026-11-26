@@ -37,9 +37,9 @@ export function walletPays(balance: number, total: number): number {
   return cents(Math.max(0, Math.min(balance, total)));
 }
 
-/** The cash the customer still pays: what the delivery man (or the store) collects. */
-export function cashDue(order: { total: number; walletPaid: number }): number {
-  return cents(order.total - order.walletPaid);
+/** The cash the customer still pays after the wallet and the points: what the delivery man (or the store) collects. */
+export function cashDue(order: { total: number; walletPaid: number; pointsPaid?: number }): number {
+  return cents(order.total - order.walletPaid - (order.pointsPaid ?? 0));
 }
 
 /** The most the admin adds or deducts at once [Derived: Tawsilty's top-up allows up to 10,000 ج.م]. */
@@ -74,5 +74,6 @@ export interface CustomerAccount {
   phone: string;
   email: string | null;
   walletBalance: number;
+  pointsBalance: number;
   createdAt: string;
 }

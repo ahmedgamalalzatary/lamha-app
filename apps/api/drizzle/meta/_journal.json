@@ -120,6 +120,13 @@
       "when": 1795670123185,
       "tag": "0016_wallet",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1795671790336,
+      "tag": "0017_points",
+      "breakpoints": true
     }
   ]
 }

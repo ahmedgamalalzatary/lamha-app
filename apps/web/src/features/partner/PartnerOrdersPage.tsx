@@ -254,6 +254,11 @@ function Details({ order: o, busy, onStep, error }: { order: PartnerOrderDetails
             <span className="text-tw-danger">-{formatMoney(o.walletPaid)}</span>
           </Row>
         ) : null}
+        {o.pointsPaid > 0 ? (
+          <Row label="المدفوع بالنقاط">
+            <span className="text-tw-danger">-{formatMoney(o.pointsPaid)}</span>
+          </Row>
+        ) : null}
       </div>
       <div className="flex flex-col gap-1.5 border-t border-tw-line pt-3">
         <Row label="المجموع">{formatMoney(cashDue(o))}</Row>
