@@ -216,6 +216,7 @@ export class DriversService {
       total: cashDue(order),
       deliveryFee: order.deliveryFee,
       distanceKm: order.distanceKm,
+      note: order.note,
       offeredAt: (accepted.get(order.id) ?? order.createdAt).toISOString(),
     }));
   }

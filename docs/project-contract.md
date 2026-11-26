@@ -531,6 +531,8 @@ Built in Phase 20 (see the phase's owner answers, [Open] and [Derived] notes in 
 
 Not a special form: it is an ordinary store ("اطلب دليفري", delivered by the platform) with one category "موتوسيكل" and one product "اطلب دليفري" priced **1 ج.م**, whose description holds the service terms. The customer adds it, writes what they need in the cart note, and pays the delivery fee at checkout. Tawsela builds it the same way: no extra screens, just a store the admin sets up.
 
+- [Owner, 2026-11-26] Its order has nothing to prepare, so it skips قبول and تم التجهيز: once placed it is offered to every working delivery man, whose offer and order show the note. Built in Phase 23.
+
 ### 8.13 Search [Tawsilty]
 
 Tabs الكل · مطاعم · متاجر أخرى. Empty "ابحث عن الأكلات والأماكن المفضلة 🍔 — اكتب اسم الأكلة أو البائع للعثور على ما تريده بسرعة". While typing: "ابحث عن «…»" row plus suggestions (product name with "في المطاعم" and an ↖ arrow to fill the box). Results: each matching store (logo, name, rating, fee, voucher) followed by its matching products (image, name, price).
@@ -862,6 +864,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | Phase 20 built (§8.2, §8.3, §8.4, §8.7, §8.10, §11 A14–A15), migration 0019: one kind of code for قسائم and checkout coupons [Owner], made by the admin only [Owner], an amount or a percentage with a cap [Owner], uses per customer set by the admin [Owner], who pays set per offer [Owner]; product discounts as an old price [Owner]; free delivery per store; the code before the wallet and points [Owner]; banners opening a store or its products [Owner]; the offers screen, the row badges, the store page's cards and قسائمي, the market's "العروض", and "وفر على طلبك". The dashboard pages and the code error texts are not captured [Open]; the coloured store sections are not built. |
 | 2026-11-26 | Fourth phone capture (open items, pharmacy): several carts at once with "سلاتي" and no replace dialog, adding from a closed store, the count badge, the upsell row (§8.6, §8.4); the greyscale closed look with "يفتح الساعة" (§8.3, §8.4); the wrong-code toast (§8.10); the pharmacy request going straight to checkout with the price sent later (§8.11); the empty points tabs (§8.16). Guesses replaced; code rework listed in phases.md. Things no phase builds are in §18. |
 | 2026-11-26 | §8.11: the pharmacy sets a request's price on قبول; the wallet may pay a request's fee; no codes or points on requests (owner). |
+| 2026-11-26 | §8.12: an "اطلب دليفري" order goes straight to the delivery men, with the note on the offer (owner). |
 
 ---
 

@@ -185,10 +185,13 @@ export class OrdersService {
         coupon,
         delivery: bill.store.deliveredBy === 'platform' ? delivery : null,
       });
+      // "اطلب دليفري" has nothing to prepare: its order goes straight to the delivery men [Owner, 2026-11-26].
+      const status: OrderStatus = bill.store.vertical === 'courier' && bill.mode === 'delivery' ? 'ready' : 'pending_review';
       const [created] = await tx
         .insert(orders)
         .values({
           customerId: userId,
+          status,
           storeId: bill.store.id,
           requestId: input.requestId,
           mode: bill.mode,
@@ -246,7 +249,7 @@ export class OrdersService {
           };
         }),
       );
-      await tx.insert(orderEvents).values({ orderId, status: 'pending_review', byUserId: userId });
+      await tx.insert(orderEvents).values({ orderId, status, byUserId: userId });
       if (bill.cartId !== null) await this.carts.clear(tx, bill.cartId);
       newId = orderId;
       return { order: await this.customerOrder(tx, orderId) };
@@ -256,7 +259,8 @@ export class OrdersService {
     // lists still show it).
     if (newId !== undefined) {
       const id = newId;
-      await this.announce(placed.order, id).catch((err: unknown) => this.log.warn(`New order ${id} not announced: ${String(err)}`));
+      const told = placed.order.status === 'ready' ? this.offerToDrivers(id, placed.order.store.id) : this.announce(placed.order, id);
+      await told.catch((err: unknown) => this.log.warn(`New order ${id} not announced: ${String(err)}`));
     }
     return placed;
   }
@@ -268,6 +272,14 @@ export class OrdersService {
   async delivered(tx: Tx, row: Pick<OrderRow, 'id' | 'customerId' | 'pointsEarned'>): Promise<void> {
     await this.points.earn(tx, row.customerId, row.id, row.pointsEarned);
     await this.invites.onDelivered(tx, row.customerId);
+  }
+
+  /** Every working delivery man is offered the order at once (§10). */
+  private async offerToDrivers(id: number, storeId: number): Promise<void> {
+    this.live.toDrivers(DRIVER_SOCKET_EVENTS.offer, { id });
+    const [named] = await this.db.select({ name: stores.name }).from(stores).where(eq(stores.id, storeId));
+    const code = codeOf(id);
+    this.notices.tell(await this.notices.workingDrivers(), (locale) => notice('offer', locale, { code, store: named?.name ?? '' }), { path: '/driver', keep: false });
   }
 
   private async announce(order: CustomerOrder, id: number): Promise<void> {
@@ -363,11 +375,7 @@ export class OrdersService {
       (locale) => (pricedNow ? requestPricedNotice(code, row.itemsTotal, row.total, locale) : customerStatusNotice(status, row.mode, code, locale)),
       { path: `/order/${id}`, keep: true },
     );
-    if (status === 'preparing' && row.mode === 'delivery' && store.deliveredBy === 'platform') {
-      this.live.toDrivers(DRIVER_SOCKET_EVENTS.offer, { id });
-      const [named] = await this.db.select({ name: stores.name }).from(stores).where(eq(stores.id, store.id));
-      this.notices.tell(await this.notices.workingDrivers(), (locale) => notice('offer', locale, { code, store: named?.name ?? '' }), { path: '/driver', keep: false });
-    }
+    if (status === 'preparing' && row.mode === 'delivery' && store.deliveredBy === 'platform') await this.offerToDrivers(id, store.id);
     if (row.driverId !== null) {
       this.live.toDriver(row.driverId, DRIVER_SOCKET_EVENTS.order, { id });
       if (status === 'ready') this.notices.tell([row.driverId], (locale) => notice('order_ready', locale, { code }), { path: `/driver-order/${id}`, keep: true });

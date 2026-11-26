@@ -214,6 +214,8 @@ export interface DriverOffer {
   total: number;
   deliveryFee: number;
   distanceKm: number | null;
+  /** ملاحظات العميل: for "اطلب دليفري" it says what to pick up and where (§8.12). */
+  note: string;
   /** When the store accepted it: the countdown restarts every offerSeconds from here. */
   offeredAt: string;
 }

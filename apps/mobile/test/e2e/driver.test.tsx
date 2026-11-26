@@ -152,6 +152,26 @@ describe('the delivery man\'s app (contract §10; real API and live socket)', ()
     expect(row!.driver_id).toBe(driver);
   });
 
+  it('"اطلب دليفري": the offer and his order show what to pick up and where (§8.12)', async () => {
+    const courier = await insertStore('اطلب دليفري', 'courier');
+    const service = await insertMenuItem(courier, await insertCategory(courier, 'موتوسيكل'), 'اطلب دليفري', 1);
+    const note = 'استلم شنطة من محل الخياطة في شارع الحرية';
+    const res = await sql<ResultSetHeader>(
+      `INSERT INTO orders (customer_id, store_id, request_id, status, mode, address_text, phone, lat, lng, note, items_total, delivery_fee, total, payout_option, app_percent, app_share, store_gets, store_from_driver)
+       VALUES (?, ?, UUID(), 'ready', 'delivery', 'شارع 2، مبنى 2', '01554459196', 29.32, 30.83, ?, 1, 30, 31, 'app_share', 10, 0.1, 0.9, 0.9)`,
+      [customer, courier, note],
+    );
+    await sql("INSERT INTO order_lines (order_id, product_id, name, options, removed_ingredients, unit_price, quantity) VALUES (?, ?, 'اطلب دليفري', '[]', '[]', 1, 1)", [res.insertId, service]);
+    await call('/driver/shift/start', driverToken);
+    await renderApp(ROUTES, { initialUrl: '/driver' });
+    expect(await screen.findByText(`طلب جديد #${code(res.insertId)}`, {}, { timeout: 5000 })).toBeTruthy();
+    expect(screen.getAllByText(note).length).toBeGreaterThan(0);
+
+    await pressFirst(`قبول #${code(res.insertId)}`);
+    expect(await screen.findByText(`تفاصيل الطلب #${code(res.insertId)}`)).toBeTruthy();
+    expect(screen.getAllByText(note).length).toBeGreaterThan(0);
+  });
+
   it('تخطي: a warning after 2 in a row, a block after 3', async () => {
     await call('/driver/shift/start', driverToken);
     const ids = [await insertOrder('preparing'), await insertOrder('preparing'), await insertOrder('preparing')];

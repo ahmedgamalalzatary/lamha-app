@@ -54,7 +54,7 @@ export function useAnswerOffer() {
   };
 }
 
-/** The money and places of an offer: the store, where it goes, what he pays the store and collects. */
+/** The money and places of an offer: the store, where it goes, what he pays the store and collects, and the customer's note. */
 export function OfferFacts({ offer }: { offer: DriverOffer }) {
   const t = useT();
   const locale = useLocale();
@@ -97,6 +97,13 @@ export function OfferFacts({ offer }: { offer: DriverOffer }) {
         </AppText>
         <AppText color={colors.ink2}>{formatMoney(offer.deliveryFee, locale)}</AppText>
       </View>
+      {/* For "اطلب دليفري" the note is the job: what to pick up and where (§8.12). */}
+      {offer.note.trim() ? (
+        <View>
+          <AppText weight="semibold">{t('partner.customerNote')}</AppText>
+          <AppText color={colors.danger}>{offer.note}</AppText>
+        </View>
+      ) : null}
     </View>
   );
 }

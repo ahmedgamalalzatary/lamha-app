@@ -47,7 +47,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 20 | Offers, coupons and banners | 🔍 in-verify | none (dashboard pages and code error texts marked [Open]) |
 | 21 | Lucky wheel | ⛔ excluded for now | 10 |
 | 22 | Pharmacy: prescriptions and product photos | 🔍 in-verify | none (the partner side and the notice wording marked [Open]) |
-| 23 | Send anything (اطلب دليفري) | ⬜ | |
+| 23 | Send anything (اطلب دليفري) | 🔍 in-verify | none (the customer's first status marked [Derived]) |
 | 24 | Driver: history and fines | ⬜ | none (history captured; fines follow the client's rules) |
 | 25 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
 | 26 | Release | ⬜ | 8 |
@@ -655,6 +655,13 @@ Owner's answers before the phase (2026-11-26):
 ## Phase 23: Send anything
 
 Contract §8.12: no new screens. Seed an "اطلب دليفري" store with one 1 ج.م product; make sure the cart note reaches the driver and the store's orders.
+
+Owner's answer before the phase (2026-11-26): an "اطلب دليفري" order has nothing to prepare and no store staff, so it goes straight to the delivery men.
+
+- **Already there:** the seed's "اطلب دليفري" store (courier, no minimum, open all day, "موتوسيكل" with the 1 ج.م "اطلب دليفري" and its terms), given the zone and a spot like every seeded store; the cart note on the store's orders, the dashboard's الطلبات and the delivery man's order.
+- **API:** a delivery from a courier store is placed as "تم التجهيز" and offered to every working delivery man at once (socket and push), skipping قبول and تم التجهيز; any other store still waits for the store. Offers carry the customer's note.
+- **App:** the delivery man's offer shows "ملاحظات العميل" with the note in red.
+- **[Derived]** The customer's order starts at "تم التجهيز", with the review and preparing steps already done.
 
 ## Phase 24: Driver: history and fines
 
