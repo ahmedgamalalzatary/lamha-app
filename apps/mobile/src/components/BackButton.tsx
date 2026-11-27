@@ -1,52 +1,36 @@
 import { router } from 'expo-router';
-import { ArrowRight, ChevronRight } from 'lucide-react-native';
+import { ArrowRight } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 import { useT } from '@/core/i18n';
-import { colors, radius, sizes } from '@/core/theme';
+import { colors, sizes } from '@/core/theme';
 import { DirectionalIcon } from './DirectionalIcon';
 import { PressableScale } from './PressableScale';
 
 /**
- * Tawsilty's back buttons: a grey circle with an arrow ("رمز التحقق") or a white outlined square
- * with a chevron ("التفاصيل الشخصية"), a grey square with a chevron (the phone step), or the arrow
- * alone ("تفاصيل الطلب"). The arrow points right: back, in Arabic.
+ * The one back button: the arrow, pointing right (back, in Arabic), on the start side of the header.
+ * `round` puts it in a white circle, where it sits among round buttons (the store's bar) or on a photo
+ * or the orange header. It used to come in five looks (arrow, chevron, grey circle, squares) and some
+ * screens put it on the far side (2026-11-27).
  */
-export function BackButton({ variant = 'circle', onPress }: { variant?: 'circle' | 'square' | 'grey' | 'plain'; onPress?: () => void }) {
+export function BackButton({ variant = 'plain', onPress }: { variant?: 'plain' | 'round'; onPress?: () => void }) {
   const t = useT();
   const back = onPress ?? (() => router.back());
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={t('common.back')}
-      onPress={back}
-      scaleTo={0.9}
-      style={styles[variant]}
-    >
-      {variant === 'circle' || variant === 'plain' ? <DirectionalIcon icon={ArrowRight} size={24} color={colors.ink} /> : <DirectionalIcon icon={ChevronRight} size={24} color={colors.ink} />}
+    <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={back} hitSlop={8} scaleTo={0.9} style={styles[variant]}>
+      <DirectionalIcon icon={ArrowRight} size={24} color={colors.ink} />
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  circle: { width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, backgroundColor: colors.iconCircle, alignItems: 'center', justifyContent: 'center' },
-  square: {
+  plain: { width: sizes.touch, height: sizes.touch, alignItems: 'center', justifyContent: 'center' },
+  round: {
     width: sizes.touch,
     height: sizes.touch,
-    borderRadius: radius.md + 2,
+    borderRadius: sizes.touch / 2,
     borderWidth: 1,
-    borderColor: colors.boxBorder,
+    borderColor: colors.line,
     backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /** The phone step and "أهلاً بعودتك": a grey filled square with the chevron. */
-  /** "تفاصيل الطلب": the arrow alone. */
-  plain: { width: sizes.touch, height: sizes.touch, alignItems: 'center', justifyContent: 'center' },
-  grey: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.md + 2,
-    backgroundColor: colors.iconCircle,
     alignItems: 'center',
     justifyContent: 'center',
   },

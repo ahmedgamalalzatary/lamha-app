@@ -1,18 +1,18 @@
 import { OFFER_KINDS, type OfferKind, SEARCH_SCOPES, type SearchScope } from '@tawsela/shared';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Bike, ChevronRight, type LucideIcon, SearchX, Tag, Ticket } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { Bike, type LucideIcon, SearchX, Tag, Ticket } from 'lucide-react-native';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { EmptyState } from '@/components/EmptyState';
 import { PressableScale } from '@/components/PressableScale';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, sizes, spacing } from '@/core/theme';
+import { colors, fontSizes, radius, spacing } from '@/core/theme';
 import { StoreRow, StoreRowSkeleton } from '@/features/stores/components/StoreRow';
 import { useOfferStores } from '../api/offers';
 
@@ -37,16 +37,16 @@ export function OffersScreen() {
     <View style={styles.screen}>
       <LinearGradient colors={[colors.headerFrom, colors.headerTo]} style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <Icon size={120} color={colors.glass} style={styles.art} />
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} scaleTo={0.9} style={styles.back}>
-          <DirectionalIcon icon={ChevronRight} size={24} color={colors.ink} />
-        </PressableScale>
+        <View style={styles.back}>
+          <BackButton variant="round" />
+        </View>
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.screenTitle + 4} color={colors.bg}>
           {t(`offers.title.${kind}`)}
         </AppText>
         <AppText color={colors.bg}>{t(`offers.subtitle.${kind}`)}</AppText>
       </LinearGradient>
 
-      <View accessibilityRole="tablist" style={styles.pills}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" style={styles.pillsBar} contentContainerStyle={styles.pills}>
         {OFFER_KINDS.map((k) => {
           const on = k === kind;
           const PillIcon = ICONS[k];
@@ -60,13 +60,13 @@ export function OffersScreen() {
               style={[styles.pill, on && styles.pillOn]}
             >
               <PillIcon size={16} color={on ? colors.bg : colors.primary} />
-              <AppText weight="bold" size={fontSizes.body} color={on ? colors.bg : colors.ink}>
+              <AppText weight="bold" size={fontSizes.body} color={on ? colors.bg : colors.ink} numberOfLines={1}>
                 {t(`offers.tab.${k}`)}
               </AppText>
             </PressableScale>
           );
         })}
-      </View>
+      </ScrollView>
 
       <View accessibilityRole="tablist" style={styles.tabs}>
         {SEARCH_SCOPES.map((s) => {
@@ -110,10 +110,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs, overflow: 'hidden' },
   art: { position: 'absolute', start: -spacing.lg, bottom: -spacing.lg, transform: [{ rotate: '-20deg' }] },
-  back: { alignSelf: 'flex-end', width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
+  back: { alignSelf: 'flex-start', marginBottom: spacing.md },
+  // Each pill as wide as its words, the row scrolling if they don't fit: three equal pills squeezed
+  // "عروض التوصيل" out of its box (2026-11-27).
+  pillsBar: { flexGrow: 0 },
   pills: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   pill: {
-    flex: 1,
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

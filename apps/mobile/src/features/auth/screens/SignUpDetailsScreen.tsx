@@ -50,7 +50,7 @@ export function SignUpDetailsScreen() {
 
   return (
     <AuthLayout
-      back="square"
+     
       title={t('auth.details.title')}
       subtitle={t('auth.details.subtitle')}
       footer={<Button label={t('common.continue')} loading={busy} onPress={submit} />}

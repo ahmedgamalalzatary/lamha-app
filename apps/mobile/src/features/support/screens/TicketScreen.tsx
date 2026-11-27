@@ -48,7 +48,7 @@ export function TicketScreen() {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
       <View style={styles.header}>
-        <BackButton variant="plain" />
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.screenTitle}>
           {t(type === 'complaint' ? 'support.complaintTitle' : 'support.suggestionTitle')}
         </AppText>

@@ -129,11 +129,11 @@ function Tile({ label, value, valueColor, onPress, children }: { label: string; 
     <PressableScale accessibilityRole="button" accessibilityLabel={`${label} ${value}`.trim()} onPress={onPress} scaleTo={0.98} style={styles.tile}>
       <View style={styles.tileTop}>
         {children}
-        <AppText weight="semibold" size={fontSizes.listTitle + 1}>
+        <AppText weight="semibold" size={fontSizes.listTitle + 1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.tileLabel}>
           {label}
         </AppText>
       </View>
-      <AppText weight="bold" size={fontSizes.listTitle + 3} color={valueColor}>
+      <AppText weight="bold" size={fontSizes.listTitle + 3} color={valueColor} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
         {value}
       </AppText>
     </PressableScale>
@@ -327,4 +327,5 @@ const styles = StyleSheet.create({
   tile: { flex: 1, gap: spacing.md, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.lg },
   starCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   tileTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  tileLabel: { flexShrink: 1 },
 });

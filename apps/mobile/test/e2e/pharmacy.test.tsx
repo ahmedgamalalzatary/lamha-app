@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
+import { fireEvent, screen, waitFor } from 'expo-router/testing-library';
 import type { ResultSetHeader } from 'mysql2/promise';
 import { ToastHost, toast } from '@/components/Toast';
 import { session } from '@/core/auth/session';

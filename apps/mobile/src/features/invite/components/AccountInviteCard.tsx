@@ -41,7 +41,7 @@ export function AccountInviteCard() {
           <AppText size={13} color={colors.bg}>
             {t('invite.yourCode')}
           </AppText>
-          <AppText weight="bold" size={fontSizes.listTitle + 2} color={colors.bg} style={styles.code}>
+          <AppText weight="bold" size={fontSizes.listTitle + 2} color={colors.bg} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.code}>
             {code}
           </AppText>
           <Copy size={18} color={colors.bg} />
@@ -69,6 +69,6 @@ const styles = StyleSheet.create({
   gift: { width: 52, height: 52, borderRadius: radius.lg, backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center' },
   bottom: { flexDirection: 'row', gap: spacing.md },
   codeBox: { flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.glass, backgroundColor: colors.glass, paddingHorizontal: spacing.md, minHeight: 52 },
-  code: { flex: 1, textAlign: 'center', letterSpacing: 3 },
+  code: { flex: 1, textAlign: 'center', letterSpacing: 2 },
   share: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, borderRadius: radius.lg, backgroundColor: colors.bg, minHeight: 52 },
 });

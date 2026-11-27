@@ -19,7 +19,7 @@ import { colors, fonts, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { pharmacyApi, requestCheckout } from '../api/pharmacy';
 
 /** Sharp enough to read a prescription; the API keeps it at 1600 px at most. */
-const PICK: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8 };
+const PICK: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8, base64: true };
 
 /**
  * "الروشتة" (contract §8.11, prescription-request-photo-or-text): "أضف صورة الروشتة أو المنتج الذي
@@ -33,7 +33,7 @@ export function RequestScreen() {
   const params = useLocalSearchParams<{ pharmacy: string; kind: string }>();
   const pharmacy = Number(params.pharmacy);
   const kind: PharmacyRequestKind = PHARMACY_REQUEST_KINDS.includes(params.kind as PharmacyRequestKind) ? (params.kind as PharmacyRequestKind) : 'prescription';
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{ uri: string; base64: string } | null>(null);
   const [text, setText] = useState('');
   const [choosing, setChoosing] = useState(false);
 
@@ -46,16 +46,16 @@ export function RequestScreen() {
     const result = from === 'camera' ? await ImagePicker.launchCameraAsync(PICK) : await ImagePicker.launchImageLibraryAsync(PICK);
     const asset = result.canceled ? undefined : result.assets[0];
     setChoosing(false);
-    if (asset) setPhoto(asset.uri);
+    if (asset?.base64) setPhoto({ uri: asset.uri, base64: asset.base64 });
   });
 
   const next = useSubmit(async () => {
-    if (!requestComplete({ image: photo, text })) {
+    if (!requestComplete({ image: photo?.uri ?? null, text })) {
       toast.show(t('pharmacy.missing'), 'error');
       return;
     }
     try {
-      const image = photo ? (await pharmacyApi.upload(photo)).url : null;
+      const image = photo ? (await pharmacyApi.upload(photo.base64)).url : null;
       router.push(requestCheckout({ pharmacy, kind, image, text }));
     } catch (e) {
       toast.show(errorMessage(e), 'error');
@@ -78,7 +78,7 @@ export function RequestScreen() {
           </View>
           {photo ? (
             <View style={styles.photoWrap}>
-              <Image source={{ uri: photo }} contentFit="cover" style={styles.photo} accessibilityIgnoresInvertColors />
+              <Image source={{ uri: photo.uri }} contentFit="cover" style={styles.photo} accessibilityIgnoresInvertColors />
               <PressableScale accessibilityRole="button" accessibilityLabel={t('pharmacy.removePhoto')} onPress={() => setPhoto(null)} style={styles.remove}>
                 <X size={16} color={colors.bg} />
               </PressableScale>

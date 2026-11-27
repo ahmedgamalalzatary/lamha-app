@@ -30,7 +30,7 @@ export function PhoneScreen() {
 
   return (
     <AuthLayout
-      back="grey"
+     
       title={t('auth.phone')}
       subtitle={t('auth.phoneStep.note')}
       footer={<Button label={t('common.continue')} disabled={!phone} loading={busy} onPress={submit} />}

@@ -26,7 +26,7 @@ export function SignInScreen() {
   });
 
   return (
-    <AuthLayout back="grey" icon={Lock} title={t('auth.signIn.title')} subtitle={t('auth.signIn.subtitle')}>
+    <AuthLayout icon={Lock} title={t('auth.signIn.title')} subtitle={t('auth.signIn.subtitle')}>
       <LockedPhone phone={phone} />
       <TextField
         label={t('auth.password')}

@@ -1,12 +1,13 @@
 import { formatMoney, type Product, SEARCH_MAX_LENGTH, SEARCH_SCOPES, type SearchResult, type SearchScope } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { type Href, router } from 'expo-router';
-import { ArrowRight, ArrowUpLeft, ChevronLeft, Search, ShoppingBasket, Store, UtensilsCrossed, X } from 'lucide-react-native';
+import { ArrowUpLeft, ChevronLeft, Search, ShoppingBasket, Store, UtensilsCrossed, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { PressableScale } from '@/components/PressableScale';
@@ -192,6 +193,7 @@ export function SearchScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.top}>
+        <BackButton />
         <View style={styles.box}>
           <Search size={22} color={colors.ink2} />
           <TextInput
@@ -212,9 +214,6 @@ export function SearchScreen() {
             </PressableScale>
           ) : null}
         </View>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} hitSlop={8} scaleTo={0.9}>
-          <DirectionalIcon icon={ArrowRight} size={26} color={colors.ink} />
-        </PressableScale>
       </View>
       <Tabs scope={scope} onChange={setScope} />
       {!text.trim() ? (

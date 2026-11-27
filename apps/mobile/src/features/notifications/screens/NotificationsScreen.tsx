@@ -1,13 +1,13 @@
 import type { AppNotification } from '@tawsela/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Bell, ChevronRight } from 'lucide-react-native';
+import { Bell } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
@@ -42,13 +42,11 @@ export function NotificationsScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <View style={styles.side} />
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 1}>
           {t('notifications.title')}
         </AppText>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} style={styles.side}>
-          <DirectionalIcon icon={ChevronRight} size={26} color={colors.ink2} />
-        </PressableScale>
+        <View style={styles.side} />
       </View>
       {list.isPending ? (
         <View style={styles.list}>
@@ -121,7 +119,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  side: { width: sizes.iconLg, height: sizes.iconLg, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.touch, height: sizes.touch, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, gap: spacing.md },
   skeleton: { height: 84, borderRadius: radius.md },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },

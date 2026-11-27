@@ -36,7 +36,7 @@ export function ResetPasswordScreen() {
 
   return (
     <AuthLayout
-      back="square"
+     
       title={t('auth.reset.title')}
       subtitle={t('auth.reset.subtitle')}
       footer={<Button label={t('common.save')} disabled={!password || !confirm} loading={busy} onPress={submit} style={styles.save} />}

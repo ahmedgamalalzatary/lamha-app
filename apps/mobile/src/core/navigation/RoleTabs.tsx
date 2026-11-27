@@ -4,8 +4,8 @@ import { useT } from '../i18n';
 import { colors, fonts } from '../theme';
 import { tabsForRole } from './tabs';
 
-/** A role's tab bar (contract §6.3): active tab orange, others grey. */
-export function RoleTabs({ role }: { role: Role }) {
+/** A role's tab bar (contract §6.3): active tab orange, others grey; `badges` puts a number on a tab. */
+export function RoleTabs({ role, badges }: { role: Role; badges?: Partial<Record<string, number>> }) {
   const t = useT();
   return (
     <Tabs
@@ -20,7 +20,12 @@ export function RoleTabs({ role }: { role: Role }) {
         <Tabs.Screen
           key={name}
           name={name}
-          options={{ title: t(label), tabBarIcon: ({ color, size }) => <Icon color={color} size={size} /> }}
+          options={{
+            title: t(label),
+            tabBarIcon: ({ color, size }) => <Icon color={color} size={size} />,
+            tabBarBadge: badges?.[name],
+            tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.bg, fontFamily: fonts.medium, fontSize: 11 },
+          }}
         />
       ))}
     </Tabs>

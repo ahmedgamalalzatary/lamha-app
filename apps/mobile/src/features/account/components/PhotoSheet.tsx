@@ -12,7 +12,7 @@ import { colors, spacing } from '@/core/theme';
 import { meApi } from '../api/me';
 
 /** A square crop, made small enough to send quickly; the API stores it as JPEG. */
-const PICK: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 };
+const PICK: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7, base64: true };
 
 /** Tawsilty's "اختر صورة" sheet (profile-avatar-choose-photo-sheet): "التقاط صورة" or "من المعرض". */
 export function PhotoSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
@@ -27,9 +27,9 @@ export function PhotoSheet({ visible, onClose }: { visible: boolean; onClose: ()
     }
     const result = from === 'camera' ? await ImagePicker.launchCameraAsync(PICK) : await ImagePicker.launchImageLibraryAsync(PICK);
     const asset = result.canceled ? undefined : result.assets[0];
-    if (!asset) return;
+    if (!asset?.base64) return;
     onClose();
-    session.setUser(await meApi.setAvatar(asset.uri));
+    session.setUser(await meApi.setAvatar(asset.base64));
     toast.show(t('profile.photoSaved'), 'success');
   });
 

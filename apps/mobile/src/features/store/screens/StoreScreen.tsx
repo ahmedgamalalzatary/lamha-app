@@ -226,7 +226,7 @@ function Deals({ store, actions }: { store: StorePage; actions: ProductActions }
     <View testID="store-deals" style={styles.deals}>
       <View style={styles.dealsHead}>
         <SectionTitle title={t('offers.deals')} bar={false} />
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('offers.seeAll')} onPress={() => router.push(`/store/${store.id}/products?offers=1` as Href)} hitSlop={8}>
+        <PressableScale accessibilityRole="button" accessibilityLabel={t('offers.seeAll')} onPress={() => router.push(`/store/${store.id}/products?offers=1` as Href)} hitSlop={8} style={styles.seeAll}>
           <AppText weight="semibold" style={styles.underline}>
             {t('offers.seeAll')}
           </AppText>
@@ -308,4 +308,6 @@ const styles = StyleSheet.create({
   dealsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingEnd: spacing.lg },
   dealsRow: { gap: spacing.md, paddingHorizontal: spacing.lg },
   underline: { textDecorationLine: 'underline' },
+  // The same padding as SectionTitle's row, so the link sits level with "العروض" (it sat higher).
+  seeAll: { paddingTop: spacing.xl, paddingBottom: spacing.sm },
 });

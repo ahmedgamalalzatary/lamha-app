@@ -1,14 +1,14 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { type DriverHistoryOrder, formatMoney, orderStatusLabel } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { ArrowRight, CalendarDays, Search } from 'lucide-react-native';
+import { CalendarDays, Search } from 'lucide-react-native';
 import { useState } from 'react';
 import { FlatList, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
@@ -55,9 +55,7 @@ export function DriverHistoryScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} style={styles.side}>
-          <DirectionalIcon icon={ArrowRight} size={26} color={colors.ink} />
-        </PressableScale>
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.screenTitle + 4}>
           {t('driver.historyTitle')}
         </AppText>

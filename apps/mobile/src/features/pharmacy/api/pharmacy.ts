@@ -1,15 +1,11 @@
 import type { PharmacyRequestKind, UploadedImage } from '@tawsela/shared';
 import type { Href } from 'expo-router';
 import { api } from '@/core/api/client';
+import { photoForm } from '@/core/api/photo-form';
 
 export const pharmacyApi = {
   /** The request's photo, sent before checkout (POST /v1/me/uploads). */
-  upload: (uri: string) => {
-    const form = new FormData();
-    // React Native's FormData sends a file from its uri.
-    form.append('image', { uri, name: 'request.jpg', type: 'image/jpeg' } as unknown as Blob);
-    return api<UploadedImage>('/me/uploads', { method: 'POST', body: form });
-  },
+  upload: (base64: string) => api<UploadedImage>('/me/uploads', { method: 'POST', body: photoForm(base64, 'request.jpg') }),
 };
 
 /** What "الروشتة" hands to checkout: the pharmacy, the card it came from, the photo and the text. */

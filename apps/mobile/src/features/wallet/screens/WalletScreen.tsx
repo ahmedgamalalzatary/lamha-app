@@ -1,12 +1,11 @@
 import { formatMoney, type WalletEntry, type WalletKind } from '@tawsela/shared';
-import { router } from 'expo-router';
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, type LucideIcon } from 'lucide-react-native';
+import { ArrowDownLeft, ArrowUpRight, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
@@ -33,13 +32,11 @@ export function WalletScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <View style={styles.side} />
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 1}>
           {t('wallet.title')}
         </AppText>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} style={styles.side}>
-          <DirectionalIcon icon={ChevronRight} size={26} color={colors.ink} />
-        </PressableScale>
+        <View style={styles.side} />
       </View>
 
       <View style={styles.card}>
@@ -162,7 +159,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  side: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.touch, height: sizes.touch, alignItems: 'center', justifyContent: 'center' },
   card: {
     margin: spacing.lg,
     borderRadius: radius.xl,

@@ -1,13 +1,12 @@
 import { productSaving } from '@tawsela/shared';
-import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, SearchX } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { SearchX } from 'lucide-react-native';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { EmptyState } from '@/components/EmptyState';
-import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useT } from '@/core/i18n';
@@ -36,9 +35,7 @@ export function StoreProductsScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.bar}>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} scaleTo={0.9} style={styles.round}>
-          <DirectionalIcon icon={ChevronRight} size={24} color={colors.ink} />
-        </PressableScale>
+        <BackButton variant="round" />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle} numberOfLines={1} style={styles.title}>
           {params.offers === '1' ? t('offers.deals') : (store?.name ?? '')}
         </AppText>

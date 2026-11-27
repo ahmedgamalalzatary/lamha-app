@@ -33,7 +33,7 @@ export function SignUpScreen() {
 
   return (
     <AuthLayout
-      back="grey"
+     
       title={t('auth.signUp.title')}
       subtitle={t('auth.signUp.subtitle')}
       footer={<Button label={t('common.continue')} disabled={!email} loading={busy} onPress={submit} />}

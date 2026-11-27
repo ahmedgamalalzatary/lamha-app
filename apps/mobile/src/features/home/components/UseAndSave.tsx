@@ -32,7 +32,7 @@ function Shortcut({ icon: Icon, label, onPress }: { icon: LucideIcon; label: str
       <View style={styles.icon}>
         <Icon size={20} color={colors.primary} />
       </View>
-      <AppText weight="semibold" size={fontSizes.listTitle + 1} style={styles.grow}>
+      <AppText weight="semibold" size={fontSizes.listTitle + 1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.grow}>
         {label}
       </AppText>
       <View style={styles.chevron}>

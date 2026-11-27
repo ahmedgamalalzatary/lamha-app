@@ -34,7 +34,7 @@ export function ForgotPasswordScreen() {
 
   return (
     <AuthLayout
-      back="grey"
+     
       title={t('auth.forgot.title')}
       subtitle={t('auth.forgot.subtitle')}
       footer={

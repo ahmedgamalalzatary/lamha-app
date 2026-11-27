@@ -30,7 +30,7 @@ export function PartnerOrderScreen() {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
       <View style={styles.header}>
-        <BackButton variant="grey" />
+        <BackButton />
         <View style={styles.headerText}>
           <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 2}>
             {order.data ? t('partner.orderTitle', { code: order.data.code }) : ''}

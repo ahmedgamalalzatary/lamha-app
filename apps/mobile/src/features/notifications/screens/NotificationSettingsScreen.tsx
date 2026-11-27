@@ -37,7 +37,7 @@ export function NotificationSettingsScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.back}>
-        <BackButton variant="plain" />
+        <BackButton />
       </View>
       <View style={styles.crumbs}>
         <AppText weight="semibold" size={fontSizes.listTitle + 1}>

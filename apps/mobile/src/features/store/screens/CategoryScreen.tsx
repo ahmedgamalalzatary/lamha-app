@@ -1,11 +1,11 @@
 import type { Category, Product } from '@tawsela/shared';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, LayoutGrid, Search, SearchX } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { LayoutGrid, Search, SearchX } from 'lucide-react-native';
 import { type ComponentRef, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
+import { BackButton } from '@/components/BackButton';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -61,9 +61,7 @@ export function CategoryScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.bar}>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} scaleTo={0.9} style={styles.round}>
-          <DirectionalIcon icon={ChevronRight} size={24} color={colors.ink} />
-        </PressableScale>
+        <BackButton variant="round" />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle} numberOfLines={1} style={styles.title}>
           {title}
         </AppText>

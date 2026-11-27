@@ -65,7 +65,7 @@ export function CheckoutScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <BackButton variant="square" onPress={() => (router.canGoBack() ? router.back() : router.navigate(`/cart/${storeId}`))} />
+        <BackButton onPress={() => (router.canGoBack() ? router.back() : router.navigate(`/cart/${storeId}`))} />
         <AppText accessibilityRole="header" size={fontSizes.sectionTitle} weight="bold">
           {t('checkout.title')}
         </AppText>

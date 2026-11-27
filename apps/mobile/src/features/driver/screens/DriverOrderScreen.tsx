@@ -39,7 +39,7 @@ export function DriverOrderScreen() {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
       <View style={styles.header}>
-        <BackButton variant="grey" />
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 2} style={styles.headerTitle}>
           {order.data ? t('driver.orderTitle', { code: order.data.code }) : ''}
         </AppText>

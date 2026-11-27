@@ -1,9 +1,10 @@
 import { formatAmount, type InvitedFriend, type InviteOverview } from '@tawsela/shared';
 import { router } from 'expo-router';
-import { ChevronLeft, ChevronRight, Copy, Gift, MessageSquareText, Share2, UserPlus } from 'lucide-react-native';
+import { ChevronLeft, Copy, Gift, MessageSquareText, Share2, UserPlus } from 'lucide-react-native';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
 import { DirectionalIcon } from '@/components/DirectionalIcon';
 import { PressableScale } from '@/components/PressableScale';
@@ -26,13 +27,11 @@ export function InviteScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <View style={styles.side} />
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 1}>
           {t('invite.title')}
         </AppText>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} style={styles.side}>
-          <DirectionalIcon icon={ChevronRight} size={26} color={colors.ink} />
-        </PressableScale>
+        <View style={styles.side} />
       </View>
       {invite.data ? (
         <ScrollView
@@ -80,7 +79,7 @@ function Body({ data }: { data: InviteOverview }) {
           {t('invite.codeLabel')}
         </AppText>
         <View style={styles.codeBox}>
-          <AppText weight="bold" size={22} style={styles.code}>
+          <AppText weight="bold" size={22} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.code}>
             {data.code}
           </AppText>
           <PressableScale accessibilityRole="button" accessibilityLabel={t('invite.copy')} onPress={() => void inviteActions.copy(t, data.code)} hitSlop={8} style={styles.copy}>
@@ -235,7 +234,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   centred: { textAlign: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  side: { width: sizes.icon, height: sizes.icon, alignItems: 'center', justifyContent: 'center' },
+  side: { width: sizes.touch, height: sizes.touch, alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.lg, gap: spacing.lg },
   cardSkeleton: { height: 320, borderRadius: radius.xl },
   rowSkeleton: { height: 100, borderRadius: radius.lg },

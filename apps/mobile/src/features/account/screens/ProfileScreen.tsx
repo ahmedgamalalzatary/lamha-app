@@ -1,10 +1,9 @@
 import { type Gender, isValidEmail, normalizeEmail } from '@tawsela/shared';
-import { router } from 'expo-router';
-import { Camera, ChevronRight, Lock, type LucideIcon, Mail, MapPin, Phone, User, Users } from 'lucide-react-native';
+import { Camera, Lock, type LucideIcon, Mail, MapPin, Phone, User, Users } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
+import { BackButton } from '@/components/BackButton';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
@@ -56,9 +55,7 @@ export function ProfileScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={12} onPress={() => router.back()}>
-          <DirectionalIcon icon={ChevronRight} size={28} color={colors.primary} />
-        </Pressable>
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={19} style={styles.headerTitle}>
           {t('profile.title')}
         </AppText>

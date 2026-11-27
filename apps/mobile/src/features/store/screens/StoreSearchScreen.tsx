@@ -1,13 +1,12 @@
 import { SEARCH_MAX_LENGTH } from '@tawsela/shared';
-import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowRight, Search } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { Search } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
+import { BackButton } from '@/components/BackButton';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { PressableScale } from '@/components/PressableScale';
 import { errorMessage } from '@/core/api/error-message';
 import { useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
@@ -37,9 +36,7 @@ export function StoreSearchScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.bar}>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} scaleTo={0.9} hitSlop={8}>
-          <DirectionalIcon icon={ArrowRight} size={26} color={colors.ink} />
-        </PressableScale>
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={22} color={colors.primary} style={styles.title}>
           {t('store.searchTitle')}
         </AppText>

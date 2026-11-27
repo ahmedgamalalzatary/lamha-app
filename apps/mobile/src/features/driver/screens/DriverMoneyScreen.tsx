@@ -1,12 +1,10 @@
 import { type DriverFine, formatMoney } from '@tawsela/shared';
-import { router } from 'expo-router';
-import { ArrowRight, BadgeMinus, Wallet } from 'lucide-react-native';
+import { BadgeMinus, Wallet } from 'lucide-react-native';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
-import { DirectionalIcon } from '@/components/DirectionalIcon';
-import { PressableScale } from '@/components/PressableScale';
 import { Skeleton } from '@/components/Skeleton';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT } from '@/core/i18n';
@@ -26,9 +24,7 @@ export function DriverMoneyScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} style={styles.side}>
-          <DirectionalIcon icon={ArrowRight} size={24} color={colors.ink} />
-        </PressableScale>
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 1}>
           {t('driver.money')}
         </AppText>

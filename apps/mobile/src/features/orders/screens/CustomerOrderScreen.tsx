@@ -35,7 +35,7 @@ export function CustomerOrderScreen() {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
       <View style={styles.header}>
-        <BackButton variant="plain" />
+        <BackButton />
         <AppText accessibilityRole="header" weight="bold" size={fontSizes.sectionTitle + 2} style={styles.title}>
           {t('orders.detailsTitle')}
         </AppText>
