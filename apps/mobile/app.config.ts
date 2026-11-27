@@ -120,6 +120,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Push (contract §15.1 #7): the small icon tint on Android.
     ['expo-notifications', { color: IDENTITY.brandColor }],
     './plugins/with-release-signing.js',
+    './plugins/with-proguard-keeps.js',
   ],
   experiments: {
     typedRoutes: true,
