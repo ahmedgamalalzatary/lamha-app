@@ -1,0 +1,67 @@
+# Wassal in production. Everything here is its own: project name, network, volume, and host ports
+# on loopback only (nginx is the way in). Memory is capped so a runaway container cannot take the
+# whole server down. Images are built by deploy/server-deploy.sh and tagged with the commit.
+name: tawsela
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: tawsela-mysql
+    restart: unless-stopped
+    env_file: /root/tawsela/.env.production
+    command:
+      - --innodb-buffer-pool-size=1073741824
+      - --performance-schema=OFF
+      - --disable-log-bin
+    volumes:
+      - mysql-data:/var/lib/mysql
+    mem_limit: 2g
+    healthcheck:
+      test: ['CMD-SHELL', 'MYSQL_PWD="$$MYSQL_PASSWORD" mysqladmin ping -h 127.0.0.1 -u "$$MYSQL_USER" --silent']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  api:
+    image: tawsela-api:${TAWSELA_API_TAG:-latest}
+    container_name: tawsela-api
+    restart: unless-stopped
+    env_file: /root/tawsela/.env.production
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # nginx is the one proxy in front: rate limits count each client, not nginx.
+      TRUST_PROXY: 1
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:4010:4000'
+    volumes:
+      # On the host too, because nginx serves the photos.
+      - /srv/tawsela/uploads:/app/apps/api/uploads
+    mem_limit: 1g
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:4000/v1/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  web:
+    image: tawsela-web:${TAWSELA_WEB_TAG:-latest}
+    container_name: tawsela-web
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3010:3000'
+    mem_limit: 768m
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/sign-in').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+volumes:
+  mysql-data:

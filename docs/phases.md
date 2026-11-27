@@ -26,7 +26,7 @@ The order in which the real product is built. Each phase points at the contract 
 |---|---|---|---|
 | 0 | Foundation | 🔍 in-verify | none |
 | 1 | Accounts: phone, email code and password | 🔍 in-verify | none (#1 decided: email) |
-| 2 | Production server and deploys (moved to just before the first real mobile build) | ⬜ | owner provides the VPS (#6) |
+| 2 | Production server and deploys (moved to just before the first real mobile build) | 🟨 in progress | a domain (server set up, deploy kit ready) |
 | 3 | Dashboard shell and sign-in (admin and partner areas) | ✅ | |
 | 4 | Catalog: verticals, stores, categories, products | 🔍 in-verify | |
 | 5 | Customer home | 🔍 in-verify | |
@@ -88,6 +88,19 @@ Docker Compose (API + MySQL), nginx, Let's Encrypt, the dashboard build, backups
 - nginx forwards the live socket: `/socket.io/` to the API with `proxy_http_version 1.1` and the `Upgrade` and `Connection` headers. The apps and `/partner` connect over WebSocket only; without them live orders, offers and status stop (CodeRabbit review, 2026-11-25).
 - If push security is on, `EXPO_ACCESS_TOKEN` (Phase 16). The Expo project ID is in `app.config.ts`.
 - Migrations are not transactional in MySQL: take the database backup before each deploy, and restore it if a migration stops halfway.
+
+**Server (2026-11-27):** the owner gave the VPS (#6). It is set up like the realestate (MQR) server: Docker with Compose and buildx, nginx, certbot, git, Docker log limits, nightly image clean-up; UTC (the app keeps UTC in MySQL and computes Cairo times itself). Nothing is deployed yet: there is no domain, and the API needs a mail server in production.
+
+**Deploy kit (copied from realestate, adapted):**
+- `Dockerfile.api`: the built API, its migrations and production packages.
+- `Dockerfile.web`: the dashboard as a small Next.js server (`output: "standalone"`), not a static export, because `/stores/[id]` takes any store and the pages use cache components. The API's address is set at build time.
+- `docker-compose.yml`: project `tawsela` with `mysql`, `api` (127.0.0.1:4010) and `web` (127.0.0.1:3010), memory capped, photos in `/srv/tawsela/uploads`.
+- `deploy/nginx-tawsela.conf`: `api.<domain>` (`/v1`, `/socket.io/` as a WebSocket, `/uploads/` from disk, 10 MB for photo uploads) and `admin.<domain>` (the dashboard), one Let's Encrypt certificate for both.
+- `deploy/setup-server.sh`: the folders, `.env.production` with generated secrets (never printed), the build helper, the certificate and the site.
+- `deploy/server-deploy.sh`: refuses to start without `SMTP_HOST`, `SMTP_USER` and `SMTP_PASS`; builds both images first; backs up the database; migrates; starts the API, then the dashboard, each health-checked and rolled back to its previous image if unhealthy.
+- `deploy/deploy.sh` (run on the PC): only a clean commit that is on `origin/main`; the server, key and domain come from the git-ignored `.env.deploy`, so none of them is in the repo. The live check goes through nginx; the backup is deleted only when everything is green.
+
+**Before the first `sh deploy/deploy.sh --setup`:** a domain with `api.` and `admin.` pointing at the server, `DEPLOY_DOMAIN` in `.env.deploy`, then the SMTP values in `/root/tawsela/.env.production` on the server. Release builds then use `EXPO_PUBLIC_API_URL=https://api.<domain>/v1`.
 
 ## Phase 3: Dashboard shell and sign-in
 

@@ -1,0 +1,32 @@
+# The dashboard image (apps/web), built from the repo root:
+#   docker build -f Dockerfile.web --build-arg NEXT_PUBLIC_API_URL=https://api.example.com/v1 .
+# A small Next.js server (output "standalone"), not a static export: /stores/[id] takes any store
+# and the pages use Next's cache components, which a static export cannot serve.
+FROM node:22-slim AS build
+RUN corepack enable
+WORKDIR /repo
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/tsconfig packages/tsconfig
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY apps/mobile/package.json apps/mobile/
+COPY apps/demo/package.json apps/demo/
+RUN pnpm install --frozen-lockfile --filter "@tawsela/web..."
+COPY packages/shared packages/shared
+COPY apps/web apps/web
+# The browser code gets the API's address at build time (Next inlines NEXT_PUBLIC_*).
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN test -n "$NEXT_PUBLIC_API_URL" || { echo "NEXT_PUBLIC_API_URL is required" >&2; exit 1; }
+RUN pnpm --filter @tawsela/shared build && pnpm --filter @tawsela/web build
+
+FROM node:22-slim
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+WORKDIR /app
+COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
+COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /repo/apps/web/public ./apps/web/public
+USER node
+CMD ["node", "apps/web/server.js"]

@@ -1,0 +1,30 @@
+**/node_modules
+**/dist
+**/.turbo
+**/.next
+**/.expo
+**/*.tsbuildinfo
+# Uploaded photos from local runs.
+/uploads
+apps/*/uploads
+.git
+.github
+.env
+.env.*
+keys
+apk-out
+whatsapp-export
+.impeccable
+.playwright-mcp
+.dev-logs
+docs
+deploy
+# Only the API and the dashboard are built here; the other apps give just their manifests.
+apps/mobile/*
+!apps/mobile/package.json
+apps/demo/*
+!apps/demo/package.json
+# The seed photos and the tests never go into an image.
+apps/api/seed
+apps/api/test
+apps/web/test
