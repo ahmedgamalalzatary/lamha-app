@@ -7,6 +7,8 @@ export const cartApi = {
   /** "سلاتي": one cart per store (contract §8.6). */
   list: () => api<CartsResponse>('/me/carts'),
   clearAll: () => api<CartsResponse>('/me/carts', { method: 'DELETE' }),
+  /** سلاتي's delete on one store's card: the carts left. */
+  clearStore: (storeId: number) => api<CartsResponse>(`/me/carts/${storeId}`, { method: 'DELETE' }),
   get: (storeId: number) => api<CartResponse>(`/me/carts/${storeId}`),
   /** Goes to the cart of the product's store. */
   add: (body: AddCartLine) => api<CartResponse>('/me/cart/lines', { method: 'POST', body }),

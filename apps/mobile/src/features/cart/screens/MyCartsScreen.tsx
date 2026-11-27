@@ -32,12 +32,21 @@ export function MyCartsScreen() {
   const client = useQueryClient();
   const userId = useSession((s) => s.user?.id);
   const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState<CartSummary | null>(null);
   const carts = query.data?.carts ?? [];
   const clearAll = useSubmit(async () => {
     setConfirming(false);
     try {
       client.setQueryData(cartKeys.list(userId), await cartApi.clearAll());
       client.removeQueries({ queryKey: ['cart', userId] });
+    } catch (e) {
+      toast.show(errorMessage(e), 'error');
+    }
+  });
+  const clearStore = useSubmit(async (storeId: number) => {
+    try {
+      client.setQueryData(cartKeys.list(userId), await cartApi.clearStore(storeId));
+      client.removeQueries({ queryKey: cartKeys.store(userId, storeId) });
     } catch (e) {
       toast.show(errorMessage(e), 'error');
     }
@@ -64,7 +73,7 @@ export function MyCartsScreen() {
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />}
         >
-          {carts.map((cart) => <CartCard key={cart.id} cart={cart} />)}
+          {carts.map((cart) => <CartCard key={cart.id} cart={cart} busy={clearStore.busy} onDelete={() => setDeleting(cart)} />)}
         </ScrollView>
       ) : query.isPending ? (
         <View style={styles.list}>
@@ -90,11 +99,25 @@ export function MyCartsScreen() {
         onConfirm={() => void clearAll.run()}
         onCancel={() => setConfirming(false)}
       />
+      <ConfirmDialog
+        visible={deleting !== null}
+        title={deleting ? t('cart.deleteStoreTitle', { store: deleting.store.name }) : ''}
+        message={t('cart.deleteStoreMessage')}
+        confirmLabel={t('cart.delete')}
+        onConfirm={() => {
+          // Not `deleting!.store`: the React Compiler reads such a property while rendering, where it is null.
+          if (!deleting) return;
+          const storeId = deleting.store.id;
+          setDeleting(null);
+          void clearStore.run(storeId);
+        }}
+        onCancel={() => setDeleting(null)}
+      />
     </SafeAreaView>
   );
 }
 
-function CartCard({ cart }: { cart: CartSummary }) {
+function CartCard({ cart, busy, onDelete }: { cart: CartSummary; busy: boolean; onDelete: () => void }) {
   const t = useT();
   const logo = mediaUrl(cart.store.logo);
   return (
@@ -115,6 +138,17 @@ function CartCard({ cart }: { cart: CartSummary }) {
           <AppText color={colors.ink2}>{t('cart.items', { count: cart.items })}</AppText>
         </View>
       </View>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={t('cart.deleteStore', { store: cart.store.name })}
+        disabled={busy}
+        onPress={onDelete}
+        hitSlop={8}
+        scaleTo={0.9}
+        style={styles.remove}
+      >
+        <Trash2 size={20} color={colors.danger} />
+      </PressableScale>
       <View style={styles.open}>
         <DirectionalIcon icon={ChevronLeft} size={20} color={colors.primary} />
       </View>
@@ -136,5 +170,6 @@ const styles = StyleSheet.create({
   logo: { width: 80, height: 80, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.primary50,
     alignItems: 'center', justifyContent: 'center' },
   items: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  remove: { width: sizes.iconLg, height: sizes.iconLg, borderRadius: radius.md, backgroundColor: colors.danger50, alignItems: 'center', justifyContent: 'center' },
   open: { width: sizes.iconLg, height: sizes.iconLg, borderRadius: radius.md, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
 });

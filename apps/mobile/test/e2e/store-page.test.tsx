@@ -111,6 +111,25 @@ describe('store page and product sheet (contract §8.4, §8.5; real API)', () =>
     expect((await cartApi.list()).carts).toEqual([]);
   });
 
+  it('"سلاتي" deletes one store\'s cart after asking, and keeps the others (owner, 2026-11-27)', async () => {
+    const first = await insertStore('ماكي');
+    const second = await insertStore('الساقية');
+    await cartApi.add({ productId: await insertMenuItem(first, await insertCategory(first, 'الوجبات'), 'برجر', 85), quantity: 1, optionIds: [], removedIngredientIds: [] });
+    await cartApi.add({ productId: await insertMenuItem(second, await insertCategory(second, 'السندوتشات'), 'شاورما', 100), quantity: 1, optionIds: [], removedIngredientIds: [] });
+    await renderApp(ROUTES, { initialUrl: '/customer/cart' });
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'حذف سلة ماكي' }));
+    expect(screen.getByText('حذف سلة ماكي؟')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'إلغاء' }));
+    expect(screen.getAllByRole('button', { name: /أصناف$/ })).toHaveLength(2);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'حذف سلة ماكي' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'حذف' }));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /أصناف$/ }).map((c) => c.props.accessibilityLabel)).toEqual(['الساقية, 1 أصناف']));
+    expect((await cartApi.list()).carts.map((c) => c.store.id)).toEqual([second]);
+    expect((await cartApi.get(first)).cart).toBeNull();
+  });
+
   it('opens the persisted cart, edits quantities and the note, and handles a store closing', async () => {
     const store = await insertStore('ماكي', 'restaurant', { pickupAllowed: true });
     const category = await insertCategory(store, 'الوجبات');

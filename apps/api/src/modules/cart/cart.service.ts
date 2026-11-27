@@ -70,6 +70,12 @@ export class CartService {
     return { carts: [] };
   }
 
+  /** One store's cart (سلاتي's delete on its row); the others stay. */
+  async removeStore(userId: number, storeId: number): Promise<CartsResponse> {
+    await this.db.delete(carts).where(and(eq(carts.userId, userId), eq(carts.storeId, storeId)));
+    return this.list(userId);
+  }
+
   get(userId: number, storeId: number): Promise<CartResponse> {
     return this.db.transaction(async (tx) => ({ cart: await this.snapshot(tx, await this.find(tx, userId, storeId)) }));
   }

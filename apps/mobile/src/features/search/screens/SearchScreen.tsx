@@ -193,7 +193,6 @@ export function SearchScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.top}>
-        <BackButton />
         <View style={styles.box}>
           <Search size={22} color={colors.ink2} />
           <TextInput
@@ -214,6 +213,8 @@ export function SearchScreen() {
             </PressableScale>
           ) : null}
         </View>
+        {/* Search keeps Tawsilty's place for it: after the box, on the far side (owner, 2026-11-27). */}
+        <BackButton />
       </View>
       <Tabs scope={scope} onChange={setScope} />
       {!text.trim() ? (

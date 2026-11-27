@@ -76,6 +76,27 @@ describe('customer cart (contract §8.6)', () => {
     expect((await get(customer, secondStore).expect(200)).body.cart).toBeNull();
   });
 
+  it("deletes one store's cart and keeps the others; another customer's stays (owner, 2026-11-27)", async () => {
+    const secondStore = await insertStore();
+    const second = await insertProduct(secondStore, await insertCategory(secondStore));
+    await add(item(product)).expect(201);
+    const other = (await add(item(second)).expect(201)).body.cart;
+    await http().post(`${path}/lines`).auth(otherCustomer, { type: 'bearer' }).send(item(product)).expect(201);
+
+    await http().delete(`/v1/me/carts/${store}`).expect(401);
+    await http().delete(`/v1/me/carts/${store}`).auth(admin, { type: 'bearer' }).expect(403);
+    await http()
+      .delete(`/v1/me/carts/${store}`)
+      .auth(customer, { type: 'bearer' })
+      .expect(200)
+      .expect(({ body }) => expect(body.carts).toEqual([{ id: other.id, store: { id: secondStore, name: expect.any(String), logo: null }, items: 1 }]));
+    expect((await get().expect(200)).body.cart).toBeNull();
+    expect((await get(customer, secondStore).expect(200)).body.cart).toMatchObject({ count: 1 });
+    expect((await get(otherCustomer).expect(200)).body.cart).toMatchObject({ count: 1 });
+    // No cart there any more: still 200, the list unchanged.
+    await http().delete(`/v1/me/carts/${store}`).auth(customer, { type: 'bearer' }).expect(200).expect(({ body }) => expect(body.carts).toHaveLength(1));
+  });
+
   it('takes items from a closed store and stops it at checkout', async () => {
     await sql('UPDATE stores SET closed_now = true WHERE id = ?', [store]);
     const { cart } = (await add(item(product)).expect(201)).body;

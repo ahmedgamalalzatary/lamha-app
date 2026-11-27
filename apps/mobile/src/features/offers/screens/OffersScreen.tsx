@@ -113,7 +113,8 @@ const styles = StyleSheet.create({
   back: { alignSelf: 'flex-start', marginBottom: spacing.md },
   // Each pill as wide as its words, the row scrolling if they don't fit: three equal pills squeezed
   // "عروض التوصيل" out of its box (2026-11-27).
-  pillsBar: { flexGrow: 0 },
+  // Never shrinks: a long list below squeezed the row and cut the pills off (the discounts tab).
+  pillsBar: { flexGrow: 0, flexShrink: 0 },
   pills: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   pill: {
     paddingHorizontal: spacing.lg,

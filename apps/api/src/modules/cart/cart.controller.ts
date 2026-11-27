@@ -25,6 +25,12 @@ export class CartController {
     return this.carts.clearAll(me.id);
   }
 
+  @Delete('carts/:storeId')
+  @ApiOperation({ summary: "سلاتي's delete on one store: empties that store's cart and returns the carts left" })
+  removeStore(@CurrentUser() me: AuthUser, @Param('storeId', ParseIntPipe) storeId: number) {
+    return this.carts.removeStore(me.id, storeId);
+  }
+
   @Get('carts/:storeId')
   @ApiOperation({ summary: "A store's cart and its totals at current catalog prices (null when empty)" })
   get(@CurrentUser() me: AuthUser, @Param('storeId', ParseIntPipe) storeId: number) {
