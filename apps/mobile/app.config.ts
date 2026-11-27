@@ -95,7 +95,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...(GOOGLE_MAPS_API_KEY ? { config: { googleMaps: { apiKey: GOOGLE_MAPS_API_KEY } } } : {}),
   },
   web: {
-    output: 'server',
+    // 'single', not 'server': the app has no API routes and ships no web version, and with 'server'
+    // the Android release build renders every route in Node for a server manifest, where
+    // react-native-maps (native only) crashes the build.
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
   plugins: [
