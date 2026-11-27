@@ -119,7 +119,11 @@ export function AddressesSheet({ visible, onClose }: { visible: boolean; onClose
         tone="primary"
         onCancel={() => setDeleting(null)}
         onConfirm={() => {
-          const id = deleting!.id;
+          // Not `deleting!.id`: the React Compiler takes a property read it believes non-null as a
+          // memo dependency and reads it while rendering, where `deleting` is null (build 75 crashed
+          // on every customer's home screen).
+          if (!deleting) return;
+          const { id } = deleting;
           setDeleting(null);
           return remove.run(id);
         }}
