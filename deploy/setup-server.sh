@@ -39,11 +39,6 @@ EOF
   echo "Created $ENV_FILE: fill SMTP_HOST, SMTP_USER and SMTP_PASS in it before the first deploy"
 fi
 
-# Builds run on half the CPUs with a memory cap, so a live API keeps answering during a build.
-half="$(( $(nproc) * 50000 ))"
-docker buildx inspect tawsela-builder >/dev/null 2>&1 || docker buildx create --name tawsela-builder \
-  --driver docker-container --driver-opt "cpu-period=100000,cpu-quota=$half,memory=6g,memory-swap=6g" >/dev/null
-
 # Installs a site file; a config nginx refuses is taken out again, so nginx stays up.
 install_site() {
   ln -sf "$1" /etc/nginx/sites-enabled/zz-tawsela

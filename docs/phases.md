@@ -89,11 +89,10 @@ Docker Compose (API + MySQL), nginx, Let's Encrypt, the dashboard build, backups
 - If push security is on, `EXPO_ACCESS_TOKEN` (Phase 16). The Expo project ID is in `app.config.ts`.
 - Migrations are not transactional in MySQL: take the database backup before each deploy, and restore it if a migration stops halfway.
 
-**Server (2026-11-27):** the owner gave the VPS (#6). It is set up like the realestate (MQR) server: Docker with Compose and buildx, nginx, certbot, git, Docker log limits, nightly image clean-up; UTC (the app keeps UTC in MySQL and computes Cairo times itself). Nothing is deployed yet: there is no domain, and the API needs a mail server in production.
+**Server (2026-11-27):** the owner gave the VPS (#6). It is set up like the realestate (MQR) server: Docker with Compose and buildx, nginx, certbot, git, Docker log limits, nightly image clean-up; UTC (the app keeps UTC in MySQL and computes Cairo times itself). Deployed 2026-11-27 on a temporary sslip.io address (no domain yet), with Gmail for the code emails; one admin made by hand (the seed never runs in production). The server is slower per core and on synced disk writes than the owner's Hostinger servers (measured 2026-11-27), so builds keep a package cache.
 
 **Deploy kit (copied from realestate, adapted):**
-- `Dockerfile.api`: the built API, its migrations and production packages.
-- `Dockerfile.web`: the dashboard as a small Next.js server (`output: "standalone"`), not a static export, because `/stores/[id]` takes any store and the pages use cache components. The API's address is set at build time.
+- `Dockerfile`, two targets sharing one install: `api` (the built API, its migrations and production packages) and `web` (the dashboard as a small Next.js server, `output: "standalone"`, not a static export, because `/stores/[id]` takes any store and the pages use cache components; the API's address is set at build time). Packages and Next.js's build cache are kept between builds; Docker's own builder is used, so images need no export and import.
 - `docker-compose.yml`: project `tawsela` with `mysql`, `api` (127.0.0.1:4010) and `web` (127.0.0.1:3010), memory capped, photos in `/srv/tawsela/uploads`.
 - `deploy/nginx-tawsela.conf`: `api.<domain>` (`/v1`, `/socket.io/` as a WebSocket, `/uploads/` from disk, 10 MB for photo uploads) and `admin.<domain>` (the dashboard), one Let's Encrypt certificate for both.
 - `deploy/setup-server.sh`: the folders, `.env.production` with generated secrets (never printed), the build helper, the certificate and the site.

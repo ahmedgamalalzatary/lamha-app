@@ -7,7 +7,7 @@ import type { NextConfig } from "next";
 config({ path: path.resolve(process.cwd(), "../../.env"), quiet: true });
 
 const nextConfig: NextConfig = {
-  // Production runs `node apps/web/server.js` from .next/standalone (Dockerfile.web). The trace
+  // Production runs `node apps/web/server.js` from .next/standalone (the Dockerfile's web target). The trace
   // starts at the repo root, so the workspace's @tawsela/shared comes along.
   output: "standalone",
   outputFileTracingRoot: path.resolve(process.cwd(), "../.."),

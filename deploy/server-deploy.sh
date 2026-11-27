@@ -55,11 +55,13 @@ for key in SMTP_HOST SMTP_USER SMTP_PASS; do
 done
 
 STEP=build
+# Docker's own builder: the images land in Docker directly (no export and import), and the package
+# and Next.js caches stay between deploys. The dashboard reuses the API build's install.
 echo "== Building tawsela-api:$TAG and tawsela-web:$TAG"
-docker buildx build --builder tawsela-builder --load -t "tawsela-api:$TAG" -f "$SRC/Dockerfile.api" "$SRC"
-docker buildx build --builder tawsela-builder --load -t "tawsela-web:$TAG" -f "$SRC/Dockerfile.web" \
-  --build-arg "NEXT_PUBLIC_API_URL=https://api.$DOMAIN/v1" "$SRC"
-docker stop "$(docker ps -q --filter name=buildx_buildkit_tawsela-builder)" >/dev/null 2>&1 || true
+started=$(date +%s)
+docker build --target api -t "tawsela-api:$TAG" "$SRC"
+docker build --target web -t "tawsela-web:$TAG" --build-arg "NEXT_PUBLIC_API_URL=https://api.$DOMAIN/v1" "$SRC"
+echo "Built both images in $(( $(date +%s) - started ))s"
 
 export TAWSELA_API_TAG="$TAG" TAWSELA_WEB_TAG="$TAG"
 STEP=database
