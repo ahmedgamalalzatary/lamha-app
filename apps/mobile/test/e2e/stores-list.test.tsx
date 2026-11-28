@@ -55,7 +55,7 @@ describe('a store list (contract §8.3; real API)', () => {
 
   it("lists the type's stores with their count, time, fee and the closed look; a row opens the store", async () => {
     await open();
-    expect(await screen.findByText('3 المتاجر')).toBeTruthy();
+    expect(await screen.findByText('3 محل')).toBeTruthy();
     expect(rows()).toEqual(['شاورما الساقية', 'كبدة الحاج', 'أسماك الزعيم']);
     expect(screen.getByPlaceholderText('ابحث عن المطاعم')).toBeTruthy();
 
@@ -72,7 +72,7 @@ describe('a store list (contract §8.3; real API)', () => {
 
   it('filters by cuisine, name, chips and the rating sheet, sorts, and shows the empty state', async () => {
     await open();
-    await screen.findByText('3 المتاجر');
+    await screen.findByText('3 محل');
 
     await fireEvent.press(screen.getByRole('button', { name: 'كبده' }));
     await waitFor(() => expect(rows()).toEqual(['كبدة الحاج']));
@@ -96,7 +96,9 @@ describe('a store list (contract §8.3; real API)', () => {
     // New stores have no rating yet, so a rating floor leaves none.
     await fireEvent.press(screen.getByRole('button', { name: 'التقييم' }));
     await fireEvent.press(await screen.findByRole('radio', { name: '4.0 فأعلى' }));
-    expect(await screen.findByText('لا توجد متاجر متاحة')).toBeTruthy();
-    expect(screen.getByText('المتاجر')).toBeTruthy();
+    expect(await screen.findByText('مفيش نتايج بالفلاتر دي')).toBeTruthy();
+    // "امسح الفلاتر" brings every store back.
+    await fireEvent.press(screen.getByRole('button', { name: 'امسح الفلاتر' }));
+    expect(await screen.findByText('3 محل')).toBeTruthy();
   });
 });

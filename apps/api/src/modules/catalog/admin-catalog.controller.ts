@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, Product } from '@tawsela/shared';
+import type { AdminHomeSection, AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, Product } from '@tawsela/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -9,11 +9,13 @@ import {
   CategoryDto,
   CreateProductDto,
   CreateStoreDto,
+  HomeSectionDto,
   HomeTileDto,
   NamedImageDto,
   OrderDto,
   StoreListQuery,
   UpdateCategoryDto,
+  UpdateHomeSectionDto,
   UpdateHomeTileDto,
   UpdateNamedImageDto,
   UpdateProductDto,
@@ -162,5 +164,31 @@ export class AdminCatalogController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteHomeTile(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.admin.deleteHomeTile(id);
+  }
+
+  @Get('home-sections')
+  listHomeSections(): Promise<AdminHomeSection[]> {
+    return this.admin.listHomeSections();
+  }
+
+  @Post('home-sections')
+  createHomeSection(@Body() body: HomeSectionDto): Promise<AdminHomeSection> {
+    return this.admin.createHomeSection(body);
+  }
+
+  @Put('home-sections/order')
+  orderHomeSections(@Body() body: OrderDto): Promise<AdminHomeSection[]> {
+    return this.admin.orderHomeSections(body.ids);
+  }
+
+  @Patch('home-sections/:id')
+  updateHomeSection(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateHomeSectionDto): Promise<AdminHomeSection> {
+    return this.admin.updateHomeSection(id, body);
+  }
+
+  @Delete('home-sections/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteHomeSection(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.admin.deleteHomeSection(id);
   }
 }

@@ -7,7 +7,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
 import { colors, fontSizes, spacing } from '@/core/theme';
 
-const SIZE = 100;
+const SIZE = 64;
 
 /** Cuisine circles (contract §8.3, restaurants only). The chosen one has an orange ring; tap it again to clear. */
 export function CuisineCircles({ cuisines, selected, onSelect }: { cuisines: Cuisine[]; selected?: number; onSelect: (id?: number) => void }) {
@@ -26,9 +26,9 @@ export function CuisineCircles({ cuisines, selected, onSelect }: { cuisines: Cui
             style={styles.item}
           >
             <View style={[styles.circle, on && styles.circleOn]}>
-              {uri ? <Image source={{ uri }} contentFit="cover" style={styles.image} /> : <UtensilsCrossed size={32} color={colors.primary} />}
+              {uri ? <Image source={{ uri }} contentFit="cover" style={styles.image} /> : <UtensilsCrossed size={24} color={colors.primary} />}
             </View>
-            <AppText weight={on ? 'bold' : 'medium'} color={on ? colors.primary : colors.ink} size={fontSizes.listTitle} numberOfLines={1}>
+            <AppText weight={on ? 'semibold' : 'regular'} color={on ? colors.primary : colors.ink} size={fontSizes.caption} numberOfLines={1}>
               {c.name}
             </AppText>
           </PressableScale>
@@ -39,14 +39,15 @@ export function CuisineCircles({ cuisines, selected, onSelect }: { cuisines: Cui
 }
 
 const styles = StyleSheet.create({
-  row: { gap: spacing.lg, paddingHorizontal: spacing.lg },
-  item: { alignItems: 'center', gap: spacing.md, width: SIZE + 8 },
+  row: { gap: spacing.md, paddingHorizontal: spacing.lg },
+  item: { alignItems: 'center', gap: 6, width: SIZE + 8 },
   circle: {
     width: SIZE + 8,
     height: SIZE + 8,
     borderRadius: (SIZE + 8) / 2,
     borderWidth: 3,
     borderColor: 'transparent',
+    backgroundColor: colors.primary50,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

@@ -430,3 +430,36 @@ export class HomeTileDto {
 }
 
 export class UpdateHomeTileDto extends PartialType(HomeTileDto, { skipNullProperties: false }) {}
+
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+
+/** POST /v1/admin/home-sections and PATCH (every field optional there): a coloured store section (L1 #2). */
+export class HomeSectionDto {
+  @ApiProperty({ maxLength: CATALOG.nameMaxLength, example: 'الأكثر طلباً 🔥' })
+  @Transform(trim)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(CATALOG.nameMaxLength)
+  title: string;
+
+  @Image()
+  image?: string | null;
+
+  @ApiProperty({ example: '#E8A33D', description: "The band's colour" })
+  @Matches(HEX, { message: 'background must be #RRGGBB' })
+  background: string;
+
+  @ApiProperty({ example: '#3A1E00', description: "The title's colour on the band" })
+  @Matches(HEX, { message: 'ink must be #RRGGBB' })
+  ink: string;
+
+  @ApiProperty({ type: [Number], description: 'The stores, in the order they show' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(CATALOG.sectionMaxStores)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  storeIds: number[];
+}
+
+export class UpdateHomeSectionDto extends PartialType(HomeSectionDto, { skipNullProperties: false }) {}

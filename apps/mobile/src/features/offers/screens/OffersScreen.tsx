@@ -98,7 +98,7 @@ export function OffersScreen() {
           data={stores.data}
           keyExtractor={(s) => String(s.id)}
           renderItem={({ item }) => <StoreRow store={item} />}
-          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+          contentContainerStyle={{ gap: spacing.md, paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
           ListEmptyComponent={<EmptyState icon={SearchX} title={t('stores.emptyTitle')} message={t('stores.emptyText')} />}
         />
       )}

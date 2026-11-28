@@ -57,3 +57,6 @@ export function useSuggestions(q: string, scope: SearchScope) {
       previousQuery?.queryKey[2] === scope && previousQuery.queryKey[3] === addressId ? previous : undefined,
   });
 }
+
+/** "الفيوم بتطلب إيه النهارده" (L1 #4): the week's most searched words. */
+export const useTrending = () => useQuery({ queryKey: ['trending'], queryFn: () => api<string[]>('/catalog/search/trending'), staleTime: 10 * 60_000 });

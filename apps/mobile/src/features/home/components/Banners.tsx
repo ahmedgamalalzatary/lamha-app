@@ -7,7 +7,7 @@ import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { mediaUrl } from '@/core/api/client';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, spacing } from '@/core/theme';
 import { ProductCard } from '@/features/store/components/ProductItems';
 import { ProductSheet } from '@/features/store/components/ProductSheet';
 import { useProductTaps } from '@/features/store/hooks/useProductTaps';
@@ -29,7 +29,7 @@ function BannerImage({ banner, height }: { banner: HomeBanner; height: number })
 }
 
 /**
- * "العروض اللي تستاهل تجربها دلوووقتي ⚡" (customer/home/home-points-wallet-shortcuts-offers-carousel-new-section):
+ * "العروض اللي تستاهل تجربها دلوقتي…" (lamha):
  * the admin's banners sliding by themselves, with dots; each opens its store (§8.2).
  */
 export function BannerCarousel({ banners }: { banners: HomeBanner[] }) {
@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
   section: { gap: spacing.md },
   title: { paddingHorizontal: spacing.lg },
   row: { gap: spacing.md, paddingHorizontal: spacing.lg },
-  image: { width: '100%', borderRadius: radius.lg, backgroundColor: colors.surface, overflow: 'hidden' },
+  image: { width: '100%', borderRadius: 20, backgroundColor: colors.primary50, overflow: 'hidden' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xs },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.line },
-  dotOn: { width: 22, backgroundColor: colors.primary },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.leader },
+  dotOn: { width: 18, backgroundColor: colors.primary },
 });

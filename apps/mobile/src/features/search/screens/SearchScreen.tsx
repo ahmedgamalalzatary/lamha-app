@@ -1,7 +1,7 @@
 import { formatMoney, type Product, SEARCH_MAX_LENGTH, SEARCH_SCOPES, type SearchResult, type SearchScope } from '@tawsela/shared';
 import { Image } from 'expo-image';
 import { type Href, router } from 'expo-router';
-import { ArrowUpLeft, ChevronLeft, Search, ShoppingBasket, Store, UtensilsCrossed, X } from 'lucide-react-native';
+import { ArrowUpLeft, ChevronLeft, History, Search, ShoppingBasket, Store, TrendingUp, UtensilsCrossed, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +17,8 @@ import { errorMessage } from '@/core/api/error-message';
 import { type TranslationKey, useLocale, useT, useTextStart } from '@/core/i18n';
 import { colors, fonts, fontSizes, radius, sizes, spacing } from '@/core/theme';
 import { useDeliveryScope } from '@/features/addresses/hooks/chosen-address';
-import { useSearch, useSuggestions } from '@/features/stores/api/stores';
+import { useSearch, useSuggestions, useTrending } from '@/features/stores/api/stores';
+import { useRecentSearches } from '../hooks/recent-searches';
 import { StoreMeta } from '@/features/stores/components/StoreMeta';
 
 const TAB_LABEL: Record<SearchScope, TranslationKey> = { all: 'search.all', restaurants: 'search.restaurants', others: 'search.others' };
@@ -137,6 +138,53 @@ function Result({ result }: { result: SearchResult }) {
   );
 }
 
+/** Before typing (L1 #4, lamha's): "بحثت قبل كده" with the last searches, then "الفيوم بتطلب إيه النهارده" as chips. */
+function Start({ recent, onSearch, onClear }: { recent: string[]; onSearch: (q: string) => void; onClear: () => void }) {
+  const t = useT();
+  const trending = useTrending();
+  const words = trending.data ?? [];
+  if (!recent.length && !words.length) return <EmptyState icon={Search} title={t('search.emptyTitle')} message={t('search.emptyText')} />;
+  return (
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.start}>
+      {recent.length ? (
+        <View>
+          <View style={styles.startHead}>
+            <AppText weight="semibold" size={fontSizes.body} color={colors.ink2} accessibilityRole="header">
+              {t('search.recent')}
+            </AppText>
+            <PressableScale accessibilityRole="button" accessibilityLabel={t('search.clearRecent')} onPress={onClear} hitSlop={8}>
+              <AppText size={fontSizes.caption} color={colors.primary}>
+                {t('search.clear')}
+              </AppText>
+            </PressableScale>
+          </View>
+          {recent.map((w) => (
+            <PressableScale key={w} accessibilityRole="button" accessibilityLabel={w} onPress={() => onSearch(w)} style={styles.recent}>
+              <History size={18} color={colors.ink3} />
+              <AppText size={15}>{w}</AppText>
+            </PressableScale>
+          ))}
+        </View>
+      ) : null}
+      {words.length ? (
+        <View style={styles.trending}>
+          <AppText weight="semibold" size={fontSizes.body} color={colors.ink2} accessibilityRole="header">
+            {t('search.trending')}
+          </AppText>
+          <View style={styles.chips}>
+            {words.map((w) => (
+              <PressableScale key={w} accessibilityRole="button" accessibilityLabel={w} onPress={() => onSearch(w)} style={styles.chip}>
+                <TrendingUp size={16} color={colors.success} />
+                <AppText size={14}>{w}</AppText>
+              </PressableScale>
+            ))}
+          </View>
+        </View>
+      ) : null}
+    </ScrollView>
+  );
+}
+
 function Results({ q, scope }: { q: string; scope: SearchScope }) {
   const t = useT();
   const results = useSearch(q, scope);
@@ -146,7 +194,7 @@ function Results({ q, scope }: { q: string; scope: SearchScope }) {
     return (
       <View style={styles.result}>
         <AppText color={colors.danger}>{t('address.loadFailed')}</AppText>
-        <Button label={t('common.retry')} variant="soft" onPress={delivery.retry} />
+        <Button label={t('common.retry')} variant="secondary" onPress={delivery.retry} />
       </View>
     );
   if (results.isPending)
@@ -160,10 +208,18 @@ function Results({ q, scope }: { q: string; scope: SearchScope }) {
     return (
       <View style={styles.result}>
         <AppText color={colors.danger}>{errorMessage(results.error)}</AppText>
-        <Button label={t('common.retry')} variant="soft" onPress={() => void results.refetch()} />
+        <Button label={t('common.retry')} variant="secondary" onPress={() => void results.refetch()} />
       </View>
     );
-  if (!results.data.length) return <EmptyState icon={Search} title={t('search.none')} message={t('search.noneText')} />;
+  if (!results.data.length)
+    return (
+      <EmptyState
+        icon={Search}
+        title={t('search.none', { q })}
+        message={t('search.noneText')}
+        action={{ label: t('search.sendRider'), onPress: () => router.push('/stores/courier' as Href) }}
+      />
+    );
   return (
     <FlatList
       data={results.data}
@@ -184,9 +240,11 @@ export function SearchScreen() {
   const [text, setText] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [scope, setScope] = useState<SearchScope>('all');
+  const recent = useRecentSearches();
   const search = (q: string) => {
     setText(q);
     setSubmitted(q.trim());
+    if (q.trim()) recent.add(q);
   };
   const showingResults = submitted !== '' && submitted === text.trim();
 
@@ -194,7 +252,7 @@ export function SearchScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.top}>
         <View style={styles.box}>
-          <Search size={22} color={colors.ink2} />
+          <Search size={20} color={colors.primary} />
           <TextInput
             accessibilityLabel={t('search.label')}
             value={text}
@@ -202,7 +260,7 @@ export function SearchScreen() {
             onSubmitEditing={() => search(text)}
             placeholder={t('search.placeholder')}
             maxLength={SEARCH_MAX_LENGTH}
-            placeholderTextColor={colors.ink2}
+            placeholderTextColor={colors.ink3}
             returnKeyType="search"
             autoFocus
             style={[styles.input, { textAlign }]}
@@ -218,15 +276,7 @@ export function SearchScreen() {
       </View>
       <Tabs scope={scope} onChange={setScope} />
       {!text.trim() ? (
-        <View style={styles.prompt}>
-          <Search size={88} color={colors.line} strokeWidth={2.5} />
-          <AppText weight="bold" size={fontSizes.listTitle}>
-            {t('search.emptyTitle')}
-          </AppText>
-          <AppText color={colors.ink2} size={fontSizes.body}>
-            {t('search.emptyText')}
-          </AppText>
-        </View>
+        <Start recent={recent.list} onSearch={search} onClear={recent.clear} />
       ) : showingResults ? (
         <Results q={submitted} scope={scope} />
       ) : (
@@ -237,7 +287,7 @@ export function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
+  screen: { flex: 1, backgroundColor: colors.paper },
   flex: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   box: {
@@ -245,17 +295,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    height: 58,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
-    backgroundColor: colors.input,
+    height: 52,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.sheet,
   },
-  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink },
+  input: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.ink },
+  start: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.xl },
+  startHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
+  recent: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  trending: { gap: spacing.md },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.sheet, borderWidth: 1, borderColor: colors.line },
   tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.line },
   tab: { flex: 1, alignItems: 'center', paddingTop: spacing.md, gap: spacing.md },
   tabLine: { height: 3, width: 64, borderRadius: 2, backgroundColor: 'transparent' },
   tabLineOn: { backgroundColor: colors.primary },
-  prompt: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
   line: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   suggestion: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   lineIcon: { width: sizes.touch, height: sizes.touch, borderRadius: sizes.touch / 2, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
@@ -263,7 +320,7 @@ const styles = StyleSheet.create({
   result: { gap: spacing.lg, padding: spacing.lg },
   resultStore: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   resultText: { flex: 1, gap: spacing.sm, alignItems: 'flex-start' },
-  logo: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
   products: { gap: spacing.md },
   product: { width: 150, gap: spacing.xs },
   productImage: {
@@ -271,7 +328,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primary50,
     alignItems: 'center',
     justifyContent: 'center',
   },

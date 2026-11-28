@@ -1,20 +1,22 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
-import type { AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, LatLng, OptionGroup, Product, ProductOptionsInput, Vertical } from '@tawsela/shared';
+import type { AdminHomeSection, AdminProduct, AdminStore, Category, CreatedStore, Cuisine, HomeTile, LatLng, OptionGroup, Product, ProductOptionsInput, Vertical } from '@tawsela/shared';
 import { ApiException } from '../../common/api-exception.js';
 import { AddressesService } from '../addresses/addresses.service.js';
 import { hashPassword } from '../auth/password.js';
 import { generatePassword } from '../users/generated-password.js';
 import { toStaffAccount } from '../users/staff-account.js';
 import { UsersRepository } from '../users/users.repository.js';
-import { cuisines as cuisinesTable, type HomeTileRow, homeTiles as homeTilesTable, storeCategories as storeCategoriesTable, type StoreRow } from './catalog.schema.js';
+import { cuisines as cuisinesTable, type HomeSectionRow, homeSections as homeSectionsTable, type HomeTileRow, homeTiles as homeTilesTable, storeCategories as storeCategoriesTable, type StoreRow } from './catalog.schema.js';
 import { CatalogRepository, type Tx } from './catalog.repository.js';
 import type {
   CategoryDto,
   CreateProductDto,
   CreateStoreDto,
+  HomeSectionDto,
   HomeTileDto,
   NamedImageDto,
   UpdateCategoryDto,
+  UpdateHomeSectionDto,
   UpdateHomeTileDto,
   UpdateNamedImageDto,
   UpdateProductDto,
@@ -316,6 +318,58 @@ export class AdminCatalogService {
     return this.listHomeTiles();
   }
 
+  // Home sections (L1 #2)
+
+  async listHomeSections(): Promise<AdminHomeSection[]> {
+    const rows = await this.catalog.listHomeSections();
+    const storeIds = await this.catalog.homeSectionStoreIds(rows.map((r) => r.id));
+    return rows.map((r) => toAdminSection(r, storeIds.get(r.id) ?? []));
+  }
+
+  async createHomeSection(body: HomeSectionDto): Promise<AdminHomeSection> {
+    await this.storesOrThrow(body.storeIds);
+    const { storeIds, ...values } = body;
+    const id = await this.catalog.createHomeSection({ ...values, image: values.image ?? null }, storeIds);
+    return this.sectionView(id);
+  }
+
+  async updateHomeSection(id: number, body: UpdateHomeSectionDto): Promise<AdminHomeSection> {
+    await this.sectionOrThrow(id);
+    const { storeIds, ...values } = body;
+    if (storeIds) await this.storesOrThrow(storeIds);
+    await this.catalog.updateHomeSection(id, values, storeIds);
+    return this.sectionView(id);
+  }
+
+  async deleteHomeSection(id: number): Promise<void> {
+    await this.sectionOrThrow(id);
+    await this.catalog.deleteHomeSection(id);
+  }
+
+  async orderHomeSections(ids: number[]): Promise<AdminHomeSection[]> {
+    assertSameIds(
+      (await this.catalog.listHomeSections()).map((r) => r.id),
+      ids,
+    );
+    await this.catalog.setOrder(homeSectionsTable, ids);
+    return this.listHomeSections();
+  }
+
+  private async sectionView(id: number): Promise<AdminHomeSection> {
+    const row = (await this.catalog.findHomeSection(id))!;
+    return toAdminSection(row, (await this.catalog.homeSectionStoreIds([id])).get(id) ?? []);
+  }
+
+  private async sectionOrThrow(id: number): Promise<HomeSectionRow> {
+    const row = await this.catalog.findHomeSection(id);
+    if (!row) throw notFound('home section');
+    return row;
+  }
+
+  private async storesOrThrow(ids: number[]): Promise<void> {
+    for (const id of ids) await this.storeOrThrow(id);
+  }
+
   /** A tile opens exactly one vertical or one existing store (§8.2). */
   private async tileTarget(targetVertical: Vertical | null, targetStoreId: number | null) {
     if ((targetVertical === null) === (targetStoreId === null)) {
@@ -362,3 +416,13 @@ function assertSameIds(existing: number[], ids: number[]): void {
   const got = [...ids].sort((a, b) => a - b).join(',');
   if (want !== got) throw new BadRequestException('ids must list every row of the list exactly once');
 }
+
+const toAdminSection = (row: HomeSectionRow, storeIds: number[]): AdminHomeSection => ({
+  id: row.id,
+  title: row.title,
+  image: row.image,
+  background: row.background,
+  ink: row.ink,
+  sortOrder: row.sortOrder,
+  storeIds,
+});

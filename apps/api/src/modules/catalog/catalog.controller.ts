@@ -40,6 +40,12 @@ export class CatalogController {
     return this.catalog.search(me.id, query.q, query.scope, query.addressId);
   }
 
+  /** "الفيوم بتطلب إيه النهارده" (L1 #4). */
+  @Get('search/trending')
+  trending(): Promise<string[]> {
+    return this.catalog.trending();
+  }
+
   @Get('search/suggestions')
   suggestions(@CurrentUser() me: AuthUser, @Query() query: SearchQuery): Promise<SearchSuggestion[]> {
     return this.catalog.suggestions(me.id, query.q, query.scope, query.addressId);

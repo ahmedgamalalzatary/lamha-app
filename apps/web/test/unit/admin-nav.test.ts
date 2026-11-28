@@ -25,6 +25,7 @@ describe('ADMIN_NAV (Tawsilty admin sidebar, contract §11)', () => {
       '/products/inactive',
       '/catalog/cuisines',
       '/catalog/home-tiles',
+      '/catalog/home-sections',
     ]);
   });
 

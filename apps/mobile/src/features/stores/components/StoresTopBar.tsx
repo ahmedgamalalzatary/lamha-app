@@ -6,52 +6,47 @@ import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
 import { useDeliverTo } from '@/features/addresses/hooks/useDeliverTo';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fontSizes, sizes, spacing } from '@/core/theme';
 
 /**
- * A store list's top bar (contract §8.3): back, "التوصيل إلى <address>" (opens the saved addresses,
- * §8.9), the cart.
+ * A store list's top bar (lamha's, contract §8.3): back, the list's title with "التوصيل إلى <address> ▾"
+ * under it (opens the saved addresses, §8.9), and the cart.
  */
-export function StoresTopBar() {
+export function StoresTopBar({ title }: { title: string }) {
   const t = useT();
   const deliverTo = useDeliverTo();
   return (
     <View style={styles.bar}>
       <BackButton />
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel={`${t('home.deliverTo')} ${deliverTo.label}`}
-        onPress={deliverTo.press}
-        scaleTo={0.98}
-        style={styles.address}
-      >
-        <AppText color={colors.ink2} size={fontSizes.caption}>
-          {t('home.deliverTo')}
+      <View style={styles.titles}>
+        <AppText accessibilityRole="header" weight="semibold" size={fontSizes.topBar} numberOfLines={1}>
+          {title}
         </AppText>
-        <View style={styles.addressRow}>
-          <AppText weight="bold" size={fontSizes.listTitle} numberOfLines={1}>
-            {deliverTo.label}
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={`${t('home.deliverTo')} ${deliverTo.label}`}
+          onPress={deliverTo.press}
+          scaleTo={0.98}
+          style={styles.addressRow}
+        >
+          <AppText size={fontSizes.caption} color={colors.ink3} numberOfLines={1} style={styles.address}>
+            {`${t('home.deliverTo')} ${deliverTo.label}`}
           </AppText>
-          <ChevronDown size={16} color={colors.ink} />
-        </View>
-      </PressableScale>
+          <ChevronDown size={14} color={colors.ink3} />
+        </PressableScale>
+      </View>
       {deliverTo.sheet}
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel={t('tabs.cart')}
-        onPress={() => router.navigate('/customer/cart')}
-        scaleTo={0.9}
-        style={styles.cart}
-      >
-        <ShoppingBag size={22} color={colors.ink} fill={colors.ink} />
+      <PressableScale accessibilityRole="button" accessibilityLabel={t('tabs.cart')} onPress={() => router.navigate('/customer/cart')} scaleTo={0.9} style={styles.cart}>
+        <ShoppingBag size={22} color={colors.ink} />
       </PressableScale>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  address: { flex: 1, alignItems: 'flex-start' },
-  addressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  cart: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
+  bar: { height: 56, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.paper },
+  titles: { flex: 1, minWidth: 0 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start', maxWidth: '100%' },
+  address: { flexShrink: 1 },
+  cart: { width: sizes.icon, height: sizes.icon, borderRadius: sizes.icon / 2, alignItems: 'center', justifyContent: 'center' },
 });

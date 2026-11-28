@@ -76,7 +76,7 @@ describe('customer home (contract §8.2; real API)', () => {
     expect(await screen.findByText('اربح 300 ج.م عن كل صديق')).toBeTruthy();
     expect(screen.getByText('وصديقك يحصل على 25 ج.م فور تسجيله')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'إخفاء' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'اقفل' }));
     await waitFor(() => expect(screen.queryByText('اربح 300 ج.م عن كل صديق')).toBeNull());
     first.unmount();
 

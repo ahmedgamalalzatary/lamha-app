@@ -7,16 +7,18 @@ import { colors, spacing } from '@/core/theme';
 import { useHome } from '../api/home';
 import { BannerCarousel, BannerRail } from '../components/Banners';
 import { HomeHeader } from '../components/HomeHeader';
+import { HomeSections } from '../components/HomeSections';
 import { HomeTiles, HomeTilesSkeleton } from '../components/HomeTiles';
 import { InviteCard } from '../components/InviteCard';
+import { LiveOrderStrip } from '../components/LiveOrderStrip';
 import { OfferTiles } from '../components/OfferTiles';
 import { UseAndSave } from '../components/UseAndSave';
 import { useInviteDismissed } from '../hooks/invite-dismissed';
 
 /**
- * The customer's الرئيسية (contract §8.2): header with the address and search, the tiles, the invite
- * card, "العروض والكوبونات", "استخدم ووفر", the banner carousel and the rails (Phase 20).
- * [Open] Tawsilty's coloured store sections ("الأكثر طلبًا 🔥") are not built yet.
+ * The customer's الرئيسية in lamha's order (contract §8.2, L1): header with the address and search, the
+ * order on its way, نقاطي and المحفظة, the tiles, the banner carousel, the invite card, "العروض
+ * والكوبونات", the coloured store sections, then the rails.
  */
 export function HomeScreen() {
   const t = useT();
@@ -35,15 +37,17 @@ export function HomeScreen() {
         ) : home.isError ? (
           <View style={styles.errorBox}>
             <AppText color={colors.danger}>{errorMessage(home.error)}</AppText>
-            <Button label={t('common.retry')} variant="soft" onPress={() => void home.refetch()} />
+            <Button label={t('common.retry')} variant="secondary" onPress={() => void home.refetch()} />
           </View>
         ) : (
           <>
+            <LiveOrderStrip />
+            <UseAndSave />
             <HomeTiles tiles={home.data.tiles} />
+            <BannerCarousel banners={home.data.banners.filter((b) => b.place === 'carousel')} />
             {inviteDismissed === false ? <InviteCard rewards={home.data.invite} onClose={dismissInvite} /> : null}
             <OfferTiles />
-            <UseAndSave />
-            <BannerCarousel banners={home.data.banners.filter((b) => b.place === 'carousel')} />
+            <HomeSections sections={home.data.sections} />
             {home.data.banners
               .filter((b) => b.place === 'rail')
               .map((b) => (
@@ -57,7 +61,7 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xxl },
+  screen: { flex: 1, backgroundColor: colors.paper },
+  content: { paddingTop: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.xl },
   errorBox: { padding: spacing.lg, gap: spacing.md },
 });

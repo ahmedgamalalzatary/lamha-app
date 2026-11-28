@@ -15,6 +15,8 @@ export const colors = {
   bg: '#FFFFFF',
   /** lamha's paper: the page behind white sheets and cards. */
   paper: '#F5F5F5',
+  /** lamha's desk cream: the "اطلب من جديد" band. */
+  desk: '#F4EDE3',
   /** lamha's sheet: white cards, receipts, sheets. */
   sheet: '#FFFFFF',
   bgWarm: '#FBF7EE',
@@ -45,6 +47,8 @@ export const colors = {
   page: '#F5F5F5',
   /** See-through white on orange cards and the home header: icon tiles, tracks, ghost buttons. */
   glass: 'rgba(255,255,255,0.22)',
+  /** The see-through white ring round a home section's picture. */
+  glassRing: 'rgba(255,255,255,0.4)',
   /** Pale red tiles: deductions, sign-out, a blocked delivery man, a disabled account. */
   danger50: '#FAEBE9',
   /** Rating stars in store lists and headers. */
@@ -55,6 +59,10 @@ export const colors = {
   markerSoft: '#FEF2D7',
   /** The dark cocoa of the coupon tile and the mart banner title. */
   cocoa: '#411517',
+  /** The lighter end of the coupon tile's cocoa gradient. */
+  cocoa700: '#6B2A22',
+  /** The darker end of the delivery tile's green gradient. */
+  success700: '#037A29',
   /** The wallet icon's blue (محفظتي) and its pale tile (تواصل معنا). */
   blue: '#2F6FED',
   blue50: '#E6EEFC',

@@ -81,13 +81,13 @@ describe('offers on stores (contract §8.3, §8.4, §8.10; real API)', () => {
     await sql("UPDATE stores SET vertical = 'restaurant' WHERE id = ?", [mart]);
     await sql('UPDATE stores SET free_delivery_from = 0 WHERE id = ?', [other]);
     await renderApp(ROUTES, { initialUrl: '/stores/restaurant' });
-    expect(await screen.findByText('3 المتاجر')).toBeTruthy();
+    expect(await screen.findByText('3 محل')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'خصومات' }));
-    expect(await screen.findByText('1 المتاجر')).toBeTruthy();
+    expect(await screen.findByText('1 محل')).toBeTruthy();
     expect(screen.getByText('خصم 15 ج.م على منتجات')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'خصومات' }));
     await fireEvent.press(screen.getByRole('button', { name: 'عروض التوصيل' }));
-    expect(await screen.findByText('1 المتاجر')).toBeTruthy();
+    expect(await screen.findByText('1 محل')).toBeTruthy();
     expect(await screen.findByRole('button', { name: 'روزانا' })).toBeTruthy();
   });
 
@@ -143,7 +143,7 @@ describe('the offers screen (contract §8.10; real API)', () => {
     expect(await screen.findByText('توصيل مجاني أو بسعر أقل لحد باب بيتك')).toBeTruthy();
     expect(await screen.findByRole('button', { name: 'توصيلتي مارت' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('tab', { name: 'مطاعم' }));
-    expect(await screen.findByText('لا توجد متاجر متاحة')).toBeTruthy();
+    expect(await screen.findByText('مفيش محلات هنا لسه')).toBeTruthy();
   });
 });
 
@@ -152,7 +152,7 @@ describe('home banners (contract §8.2; real API)', () => {
     await sql("INSERT INTO banners (image, place, store_id, opens, sort_order) VALUES ('/uploads/catalog/a.jpg', 'carousel', ?, 'store', 0)", [kebab]);
     await sql("INSERT INTO banners (image, place, store_id, opens, sort_order) VALUES ('/uploads/catalog/b.jpg', 'rail', ?, 'products', 0)", [mart]);
     await renderApp(ROUTES, { initialUrl: '/customer' });
-    expect(await screen.findByText('العروض اللي تستاهل تجربها دلوووقتي ⚡')).toBeTruthy();
+    expect(await screen.findByText('العروض اللي تستاهل تجربها دلوقتي…')).toBeTruthy();
     const rail = screen.getByTestId('banner-rail');
     expect(within(rail).getByText('عرض الطماطم')).toBeTruthy();
     expect(within(rail).getByText('خيار')).toBeTruthy();

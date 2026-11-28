@@ -78,6 +78,57 @@ describe('cuisines, home tiles and uploads (e2e, contract §8.2, §8.3, §1.1 A1
     });
   });
 
+  describe('/v1/admin/home-sections (L1 #2, coloured store sections)', () => {
+    const section = (storeIds: number[], extra: Record<string, unknown> = {}) => ({
+      title: 'الأكثر طلباً 🔥',
+      image: null,
+      background: '#E8A33D',
+      ink: '#3A1E00',
+      storeIds,
+      ...extra,
+    });
+
+    it('adds sections at the end with their stores in order, edits, reorders and deletes them', async () => {
+      const [x, y] = [await insertStore({ name: 'شاورما الساقية' }), await insertStore({ name: 'كشري الحادقة' })];
+      const a = (await http().post('/v1/admin/home-sections').set(auth()).send(section([y, x])).expect(201)).body;
+      expect(a).toMatchObject({ title: 'الأكثر طلباً 🔥', background: '#E8A33D', ink: '#3A1E00', storeIds: [y, x], sortOrder: 0 });
+      const b = (await http().post('/v1/admin/home-sections').set(auth()).send(section([x], { title: 'الجديد' })).expect(201)).body;
+      expect(b.sortOrder).toBe(1);
+
+      const edited = (await http().patch(`/v1/admin/home-sections/${a.id}`).set(auth()).send({ storeIds: [x], ink: '#FFFFFF' }).expect(200)).body;
+      expect(edited).toMatchObject({ storeIds: [x], ink: '#FFFFFF', title: 'الأكثر طلباً 🔥' });
+
+      const ordered = await http().put('/v1/admin/home-sections/order').set(auth()).send({ ids: [b.id, a.id] }).expect(200);
+      expect(ordered.body.map((s: { title: string }) => s.title)).toEqual(['الجديد', 'الأكثر طلباً 🔥']);
+
+      await http().delete(`/v1/admin/home-sections/${b.id}`).set(auth()).expect(204);
+      expect((await http().get('/v1/admin/home-sections').set(auth()).expect(200)).body).toHaveLength(1);
+    });
+
+    it('refuses a missing store, a repeated store, a colour that is not #RRGGBB, and an unknown section', async () => {
+      const x = await insertStore();
+      await http().post('/v1/admin/home-sections').set(auth()).send(section([9999])).expect(404);
+      await http().post('/v1/admin/home-sections').set(auth()).send(section([x, x])).expect(400);
+      await http().post('/v1/admin/home-sections').set(auth()).send(section([])).expect(400);
+      await http().post('/v1/admin/home-sections').set(auth()).send(section([x], { background: 'orange' })).expect(400);
+      await http().patch('/v1/admin/home-sections/9999').set(auth()).send({ title: 'x' }).expect(404);
+    });
+
+    it('drops a deleted store from its sections', async () => {
+      const [x, y] = [await insertStore(), await insertStore()];
+      const a = (await http().post('/v1/admin/home-sections').set(auth()).send(section([x, y])).expect(201)).body;
+      await sql('DELETE FROM stores WHERE id = ?', [x]);
+      const [after] = (await http().get('/v1/admin/home-sections').set(auth()).expect(200)).body;
+      expect(after).toMatchObject({ id: a.id, storeIds: [y] });
+    });
+
+    it('is for admins only', async () => {
+      await insertUser('customer', '01000000002', PASSWORD);
+      const customer = (await http().post('/v1/auth/login').send({ phone: '01000000002', password: PASSWORD })).body.accessToken;
+      await http().get('/v1/admin/home-sections').set({ Authorization: `Bearer ${customer}` }).expect(403);
+    });
+  });
+
   describe('/v1/admin/uploads', () => {
     it('stores a photo as a JPEG no larger than 1600 px and returns its path', async () => {
       const png = await sharp({ create: { width: 2400, height: 1200, channels: 3, background: '#F68B1D' } }).png().toBuffer();

@@ -2,14 +2,14 @@ import { RATING_FLOORS, SEARCH_MAX_LENGTH, type StoreFilter, type StoreSort, STO
 import { useLocalSearchParams } from 'expo-router';
 import { Search, SearchX, Star } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { errorMessage } from '@/core/api/error-message';
 import { useLocale, useT, useTextStart } from '@/core/i18n';
-import { colors, fonts, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, fonts, fontSizes, radius, shadows, spacing } from '@/core/theme';
 import { useDeliveryScope } from '@/features/addresses/hooks/chosen-address';
 import { PharmacyRequestCard } from '@/features/pharmacy/components/RequestCard';
 import { useCuisines, useStores } from '../api/stores';
@@ -17,6 +17,7 @@ import { CuisineCircles } from '../components/CuisineCircles';
 import { FilterChips } from '../components/FilterChips';
 import { RadioSheet } from '../components/RadioSheet';
 import { StoreRow, StoreRowSkeleton } from '../components/StoreRow';
+import { OrderAgain } from '../components/OrderAgain';
 import { StoresTopBar } from '../components/StoresTopBar';
 
 const TYPING_MS = 300;
@@ -55,16 +56,19 @@ export function StoresScreen() {
   const scope = useDeliveryScope();
   const cuisines = useCuisines(vertical === 'restaurant');
   const count = stores.data?.length ?? 0;
+  const { width } = useWindowDimensions();
+  const filtered = q !== '' || cuisineId !== undefined || Object.values(filter).some((v) => v !== undefined && v !== false);
 
   const header = (
     <View style={styles.header}>
+      {vertical === 'restaurant' && !filtered && stores.data ? <OrderAgain stores={stores.data} width={width - spacing.lg * 2} /> : null}
       <View style={styles.search}>
-        <Search size={20} color={colors.ink2} />
+        <Search size={20} color={colors.ink3} />
         <TextInput
           value={text}
           onChangeText={setText}
           placeholder={t('stores.searchIn', { name: title })}
-          placeholderTextColor={colors.ink2}
+          placeholderTextColor={colors.ink3}
           maxLength={SEARCH_MAX_LENGTH}
           returnKeyType="search"
           style={[styles.input, { textAlign }]}
@@ -72,20 +76,23 @@ export function StoresScreen() {
       </View>
       {cuisines.data?.length ? <CuisineCircles cuisines={cuisines.data} selected={cuisineId} onSelect={setCuisineId} /> : null}
       {vertical === 'pharmacy' ? <PharmacyRequestCard /> : null}
-      <AppText weight="bold" size={fontSizes.sectionTitle} style={styles.count}>
-        {count ? t('stores.count', { count }) : t('stores.title')}
-      </AppText>
       <FilterChips filter={filter} onChange={setFilter} onSort={() => setSheet('sort')} onRating={() => setSheet('rating')} />
+      {count ? (
+        <AppText size={fontSizes.caption} color={colors.ink3} style={styles.count}>
+          {t('stores.count', { count })}
+        </AppText>
+      ) : null}
     </View>
   );
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
-      <StoresTopBar />
+      <StoresTopBar title={title} />
       <FlatList
         data={stores.isPending || scope.failed ? [] : (stores.data ?? [])}
         keyExtractor={(s) => String(s.id)}
         renderItem={({ item }) => <StoreRow store={item} />}
+        contentContainerStyle={styles.list}
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={stores.isRefetching && !stores.isPlaceholderData} onRefresh={() => void stores.refetch()} tintColor={colors.primary} />}
@@ -94,10 +101,10 @@ export function StoresScreen() {
             // Without the addresses the zone is unknown: never list every store (review F78).
             <View style={styles.errorBox}>
               <AppText color={colors.danger}>{t('address.loadFailed')}</AppText>
-              <Button label={t('common.retry')} variant="soft" onPress={scope.retry} />
+              <Button label={t('common.retry')} variant="secondary" onPress={scope.retry} />
             </View>
           ) : stores.isPending ? (
-            <View>
+            <View style={styles.skeletons}>
               {[0, 1, 2, 3].map((i) => (
                 <StoreRowSkeleton key={i} />
               ))}
@@ -105,8 +112,22 @@ export function StoresScreen() {
           ) : stores.isError ? (
             <View style={styles.errorBox}>
               <AppText color={colors.danger}>{errorMessage(stores.error)}</AppText>
-              <Button label={t('common.retry')} variant="soft" onPress={() => void stores.refetch()} />
+              <Button label={t('common.retry')} variant="secondary" onPress={() => void stores.refetch()} />
             </View>
+          ) : filtered ? (
+            <EmptyState
+              icon={SearchX}
+              title={t('stores.filtersEmpty')}
+              message={t('stores.filtersEmptyText')}
+              action={{
+                label: t('stores.clearFilters'),
+                onPress: () => {
+                  setFilter({});
+                  setCuisineId(undefined);
+                  setText('');
+                },
+              }}
+            />
           ) : (
             <EmptyState icon={SearchX} title={t('stores.emptyTitle')} message={t('stores.emptyText')} />
           )
@@ -136,21 +157,22 @@ export function StoresScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  header: { gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
+  screen: { flex: 1, backgroundColor: colors.paper },
+  header: { gap: spacing.lg, paddingBottom: spacing.xs },
+  list: { gap: spacing.md, paddingBottom: spacing.xxl },
+  skeletons: { gap: spacing.md },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginHorizontal: spacing.lg,
     paddingHorizontal: spacing.md,
-    height: 54,
+    height: 48,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.sheet,
+    ...shadows.sheet,
   },
-  input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSizes.listTitle, color: colors.ink },
+  input: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.ink },
   count: { paddingHorizontal: spacing.lg },
   errorBox: { padding: spacing.lg, gap: spacing.md },
 });

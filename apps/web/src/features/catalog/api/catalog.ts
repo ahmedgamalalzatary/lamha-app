@@ -9,6 +9,7 @@ import type {
   CreatedStore,
   Cuisine,
   GeneratedPassword,
+  AdminHomeSection,
   HomeTile,
   PartnerAccount,
   Product,
@@ -173,3 +174,19 @@ export const useSaveHomeTile = () =>
 export const useDeleteHomeTile = () => useCatalogMutation((id: number) => api.request<void>(`/admin/home-tiles/${id}`, { method: 'DELETE' }));
 
 export const useOrderHomeTiles = () => useCatalogMutation((ids: number[]) => api.request<HomeTile[]>('/admin/home-tiles/order', { method: 'PUT', body: { ids } }));
+
+export const useHomeSections = () => useQuery({ queryKey: key('sections'), queryFn: () => api.request<AdminHomeSection[]>('/admin/home-sections') });
+
+export type SectionFields = Pick<AdminHomeSection, 'title' | 'image' | 'background' | 'ink' | 'storeIds'>;
+
+export const useSaveHomeSection = () =>
+  useCatalogMutation(({ id, ...body }: SectionFields & { id?: number }) =>
+    id
+      ? api.request<AdminHomeSection>(`/admin/home-sections/${id}`, { method: 'PATCH', body })
+      : api.request<AdminHomeSection>('/admin/home-sections', { method: 'POST', body }),
+  );
+
+export const useDeleteHomeSection = () => useCatalogMutation((id: number) => api.request<void>(`/admin/home-sections/${id}`, { method: 'DELETE' }));
+
+export const useOrderHomeSections = () =>
+  useCatalogMutation((ids: number[]) => api.request<AdminHomeSection[]>('/admin/home-sections/order', { method: 'PUT', body: { ids } }));

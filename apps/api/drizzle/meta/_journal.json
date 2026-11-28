@@ -162,6 +162,20 @@
       "when": 1795698516607,
       "tag": "0022_driver_money",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1795865878265,
+      "tag": "0023_home_sections",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1795865997860,
+      "tag": "0024_search_logs",
+      "breakpoints": true
     }
   ]
 }

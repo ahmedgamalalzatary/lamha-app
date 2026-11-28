@@ -4,6 +4,7 @@ import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library'
 import { Text } from 'react-native';
 import { SEARCH_MAX_LENGTH } from '@tawsela/shared';
 import { session } from '@/core/auth/session';
+import { resetRecentSearches } from '@/features/search/hooks/recent-searches';
 import { SearchScreen } from '@/features/search/screens/SearchScreen';
 import { insertProduct, insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs } from '../utils/db';
@@ -22,12 +23,13 @@ function Opened() {
   const { product } = useLocalSearchParams<{ product?: string }>();
   return <Text>{product ? `opened product ${product}` : 'opened'}</Text>;
 }
-const ROUTES = { _layout: Root, search: SearchScreen, 'store/[id]': Opened };
+const ROUTES = { _layout: Root, search: SearchScreen, 'store/[id]': Opened, 'stores/[vertical]': () => <Text>courier list</Text> };
 
 let crinkle: number;
 let pizza: number;
 
 beforeEach(async () => {
+  resetRecentSearches();
   client = testQueryClient();
   await session.signOutLocally();
   await resetDb();
@@ -41,7 +43,7 @@ beforeEach(async () => {
 describe('search (contract §8.13; real API)', () => {
   it('suggests while typing, then shows each store with its matching products, by tab', async () => {
     await renderApp(ROUTES, { initialUrl: '/search' });
-    expect(screen.getByText('ابحث عن الأكلات والأماكن المفضلة 🍔')).toBeTruthy();
+    expect(await screen.findByText('دوّر على أي حاجة')).toBeTruthy();
 
     await fireEvent.changeText(screen.getByLabelText('بحث'), 'بيتزا');
     expect(await screen.findByRole('button', { name: 'ابحث عن «بيتزا»' })).toBeTruthy();
@@ -83,11 +85,32 @@ describe('search (contract §8.13; real API)', () => {
     expect(await screen.findByText(`opened product ${pizza}`)).toBeTruthy();
   });
 
-  it('says so when nothing matches', async () => {
+  it('says so when nothing matches, and offers a rider (L1 #4)', async () => {
     await renderApp(ROUTES, { initialUrl: '/search' });
     await fireEvent.changeText(screen.getByLabelText('بحث'), 'fish');
     await fireEvent(screen.getByLabelText('بحث'), 'submitEditing');
-    expect(await screen.findByText('لا توجد متاجر متاحة')).toBeTruthy();
-    expect(screen.getByText('لم نجد متاجر قريبة منك حالياً\nجرّب تغيير الموقع أو البحث مرة أخرى')).toBeTruthy();
+    expect(await screen.findByText('مفيش نتايج لـ «fish»')).toBeTruthy();
+    expect(screen.getByText('جرب كلمة أقصر أو اسم أكلة تانية، أو ابعت طيار يجيبهالك من أي مكان.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'ابعت طيار يجيبها' }));
+    expect(await screen.findByText('courier list')).toBeTruthy();
+  });
+
+  it('remembers what was searched on this phone, and lists what Fayoum searches (L1 #4)', async () => {
+    const first = await renderApp(ROUTES, { initialUrl: '/search' });
+    await fireEvent.changeText(screen.getByLabelText('بحث'), 'بيتزا');
+    await fireEvent(screen.getByLabelText('بحث'), 'submitEditing');
+    expect(await screen.findByRole('button', { name: 'كرينكل - CRINKLE' })).toBeTruthy();
+    first.unmount();
+    // A later visit: the trending list is fetched again (it is kept ten minutes).
+    client.removeQueries({ queryKey: ['trending'] });
+
+    await renderApp(ROUTES, { initialUrl: '/search' });
+    expect(await screen.findByText('بحثت قبل كده')).toBeTruthy();
+    expect(await screen.findByText('الفيوم بتطلب إيه النهارده')).toBeTruthy();
+    // Both lists offer بيتزا: the recent row and the trending chip.
+    expect(screen.getAllByRole('button', { name: 'بيتزا' })).toHaveLength(2);
+    await fireEvent.press(screen.getByRole('button', { name: 'امسح اللي بحثت عنه' }));
+    await waitFor(() => expect(screen.queryByText('بحثت قبل كده')).toBeNull());
+    expect(screen.getAllByRole('button', { name: 'بيتزا' })).toHaveLength(1);
   });
 });

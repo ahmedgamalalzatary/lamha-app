@@ -59,6 +59,8 @@ export const CATALOG = {
   descriptionMaxLength: 1000,
   unitMaxLength: 40,
   badgeMaxLength: 30,
+  /** Stores in one coloured home section (L1 #2). */
+  sectionMaxStores: 30,
   /** Uploaded images keep at most this many pixels on the longest side. */
   imagePx: 1600,
   /** Before resizing. */
@@ -240,6 +242,31 @@ export interface HomeScreen {
   invite: InviteRewards;
   /** The admin's banners in order: the carousel's slides and the rails (§8.2). */
   banners: HomeBanner[];
+  /** The coloured store sections in order, each with at least one store customers can see (L1 #2). */
+  sections: HomeSection[];
+}
+
+/** A coloured band on home ("الأكثر طلباً 🔥"): a title, a round picture and a sideways list of stores (L1 #2). */
+export interface HomeSection {
+  id: number;
+  title: string;
+  image: string | null;
+  /** The band's colour and its text colour, "#RRGGBB". */
+  background: string;
+  ink: string;
+  stores: CatalogStore[];
+}
+
+/** /v1/admin/home-sections: a section as the admin edits it. */
+export interface AdminHomeSection {
+  id: number;
+  title: string;
+  image: string | null;
+  background: string;
+  ink: string;
+  sortOrder: number;
+  /** In the order they show. */
+  storeIds: number[];
 }
 
 /** A home tile (§8.2): it opens a vertical's list or one pinned store. */

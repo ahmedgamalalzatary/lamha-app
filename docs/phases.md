@@ -52,7 +52,7 @@ The order in which the real product is built. Each phase points at the contract 
 | 25 | Admin: overview and reports | ⬜ | 9 (waiting on the admin screens and the scope) |
 | 26 | Release: hand the owner a signed IPA and AAB | ⬜ | none (the owner takes the builds from there) |
 | 27 | Codebase folder layout | ✅ done | none |
-| L0–L12 | Mobile UI moves to the lamha demo look (see "Lamha UI move" below) | 🟨 L0 built and green (2026-11-28); L1 next | none to start; #15 support chat open (L6); Google/Apple keys (L8, hidden until then) |
+| L0–L12 | Mobile UI moves to the lamha demo look (see "Lamha UI move" below) | 🟨 L0 done; L1 built and green (2026-11-28); L2 next | none to start; #15 support chat open (L6); Google/Apple keys (L8, hidden until then) |
 
 ---
 

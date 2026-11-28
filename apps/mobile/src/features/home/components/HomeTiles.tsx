@@ -45,12 +45,12 @@ function Tile({ tile, size }: { tile: HomeTile; size: number }) {
       </View>
       {tile.badge ? (
         <View style={styles.badge}>
-          <AppText weight="medium" color={colors.bg} size={11} numberOfLines={1}>
+          <AppText weight="semibold" color={colors.sheet} size={10} numberOfLines={1}>
             {tile.badge}
           </AppText>
         </View>
       ) : null}
-      <AppText weight="medium" size={fontSizes.body} numberOfLines={2} style={styles.label}>
+      <AppText weight="medium" size={fontSizes.caption} numberOfLines={2} style={styles.label}>
         {tile.label}
       </AppText>
     </PressableScale>
@@ -58,7 +58,7 @@ function Tile({ tile, size }: { tile: HomeTile; size: number }) {
 }
 
 /**
- * The home tiles (contract §8.2): a fixed first row, then a second row that scrolls sideways
+ * The home tiles (contract §8.2, lamha's look: rounded photos, a dark badge pill): a fixed first row, then a second row that scrolls sideways
  * and mixes verticals with pinned stores. Order and images come from the admin.
  */
 export function HomeTiles({ tiles }: { tiles: HomeTile[] }) {
@@ -92,7 +92,7 @@ export function HomeTilesSkeleton() {
     <View style={styles.fixed}>
       {Array.from({ length: PER_ROW }, (_, i) => (
         <View key={i} style={[styles.tile, { width: size }]}>
-          <Skeleton style={{ width: size, height: size, borderRadius: radius.lg }} />
+          <Skeleton style={{ width: size, height: size, borderRadius: 18 }} />
           <Skeleton style={{ width: size * 0.7, height: 12 }} />
         </View>
       ))}
@@ -101,28 +101,26 @@ export function HomeTilesSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  rows: { gap: spacing.xl },
-  fixed: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingHorizontal: spacing.lg, rowGap: spacing.xl },
+  rows: { gap: spacing.md },
+  fixed: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, rowGap: spacing.md },
   scroll: { gap: GAP, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  tile: { alignItems: 'center', gap: spacing.sm },
+  tile: { alignItems: 'center', gap: 6 },
   card: {
-    borderRadius: radius.lg,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.primary50,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   badge: {
     position: 'absolute',
-    top: -10,
+    top: -8,
     alignSelf: 'center',
-    maxWidth: '92%',
-    backgroundColor: colors.toastDark,
+    maxWidth: '95%',
+    backgroundColor: colors.ink,
     borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.bg,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },

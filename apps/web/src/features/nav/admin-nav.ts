@@ -48,6 +48,8 @@ export const ADMIN_NAV: NavGroup[] = [
       // [Client] A12: not in the Tawsilty photo; the names are ours [Open].
       { label: 'أنواع الأكل', href: '/catalog/cuisines' },
       { label: 'مربعات الرئيسية', href: '/catalog/home-tiles' },
+      // L1 #2: the coloured store sections on the app's home [Client, 2026-11-28].
+      { label: 'أقسام الرئيسية الملونة', href: '/catalog/home-sections' },
     ],
   },
   {

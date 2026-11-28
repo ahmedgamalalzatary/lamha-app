@@ -87,16 +87,16 @@ describe('نقاطي (contract §8.16; real API)', () => {
     expect(await screen.findByText('رصيد النقاط')).toBeTruthy();
   });
 
-  it('الرئيسية: "استخدم ووفر" opens نقاطي and المحفظة', async () => {
+  it('الرئيسية: the المحفظة shortcut shows the balance and opens the wallet (L1 #1)', async () => {
     await renderApp(ROUTES, { initialUrl: '/customer' });
-    expect(await screen.findByText('استخدم ووفر')).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'المحفظة' }));
+    fireEvent.press(await screen.findByRole('button', { name: 'المحفظة، 0.00 ج.م' }));
     expect(await screen.findByText('wallet opened')).toBeTruthy();
   });
 
-  it('الرئيسية: نقاطي opens the points screen', async () => {
+  it('الرئيسية: the نقاطي shortcut shows the balance and opens the points screen (L1 #1)', async () => {
+    await move('add', 35, 'هدية');
     await renderApp(ROUTES, { initialUrl: '/customer' });
-    fireEvent.press(await screen.findByRole('button', { name: 'نقاطي' }));
+    fireEvent.press(await screen.findByRole('button', { name: 'نقاطي، 35 نقطة' }));
     expect(await screen.findByText('رصيد النقاط')).toBeTruthy();
   });
 });

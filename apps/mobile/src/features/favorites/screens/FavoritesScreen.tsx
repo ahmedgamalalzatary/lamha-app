@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
   },
   title: { flex: 1, textAlign: 'center' },
   side: { width: 26 },
-  list: { flexGrow: 1, backgroundColor: colors.surface },
+  list: { flexGrow: 1, gap: spacing.md, paddingVertical: spacing.md, backgroundColor: colors.paper },
   errorBox: { padding: spacing.lg, gap: spacing.md },
 });

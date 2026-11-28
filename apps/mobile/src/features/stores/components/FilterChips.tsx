@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { useT } from '@/core/i18n';
-import { colors, fontSizes, radius, spacing } from '@/core/theme';
+import { colors, radius, spacing } from '@/core/theme';
 
 function Chip({ icon: Icon, label, on, menu, onPress }: { icon: LucideIcon; label: string; on: boolean; menu?: boolean; onPress: () => void }) {
   const tint = on ? colors.primary : colors.ink;
@@ -17,7 +17,7 @@ function Chip({ icon: Icon, label, on, menu, onPress }: { icon: LucideIcon; labe
       style={[styles.chip, on && styles.chipOn]}
     >
       <Icon size={16} color={tint} fill={Icon === Star || Icon === Zap ? tint : 'transparent'} />
-      <AppText weight="medium" color={tint} size={fontSizes.body}>
+      <AppText weight="medium" color={tint} size={13.5}>
         {label}
       </AppText>
       {menu ? <ChevronDown size={14} color={tint} /> : null}
@@ -26,7 +26,7 @@ function Chip({ icon: Icon, label, on, menu, onPress }: { icon: LucideIcon; labe
 }
 
 /**
- * The filter chips (contract §6.3): رتب حسب ▾ · التقييم ▾ · توصيل سريع · الاستلام · خصومات · عروض التوصيل.
+ * The filter chips (lamha's look, contract §6.3): رتب حسب ▾ · التقييم ▾ · توصيل سريع · الاستلام · خصومات · عروض التوصيل.
  */
 export function FilterChips({
   filter,
@@ -58,12 +58,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    height: 44,
-    paddingHorizontal: spacing.lg,
+    height: 36,
+    paddingHorizontal: 14,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.sheet,
   },
   chipOn: { borderColor: colors.primary, backgroundColor: colors.primary50 },
 });

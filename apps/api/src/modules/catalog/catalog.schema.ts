@@ -179,6 +179,43 @@ export const homeTiles = mysqlTable('home_tiles', {
   targetStoreId: int('target_store_id', { unsigned: true }).references(() => stores.id, { onDelete: 'cascade' }),
 });
 
+/** Coloured store sections on home ("الأكثر طلباً 🔥", L1 #2), in the admin's order. */
+export const homeSections = mysqlTable('home_sections', {
+  id: int('id', { unsigned: true }).autoincrement().primaryKey(),
+  title: varchar('title', { length: 120 }).notNull(),
+  image: varchar('image', { length: 255 }),
+  /** "#RRGGBB": the band and its text. */
+  background: varchar('background', { length: 7 }).notNull(),
+  ink: varchar('ink', { length: 7 }).notNull(),
+  sortOrder: int('sort_order').notNull().default(0),
+});
+
+/** A section's stores, in order. A deleted store or section takes its rows with it. */
+export const homeSectionStores = mysqlTable(
+  'home_section_stores',
+  {
+    sectionId: int('section_id', { unsigned: true })
+      .notNull()
+      .references(() => homeSections.id, { onDelete: 'cascade' }),
+    storeId: int('store_id', { unsigned: true })
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    sortOrder: int('sort_order').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.sectionId, t.storeId] }), index('home_section_stores_store_idx').on(t.storeId)],
+);
+
+/** Words customers searched that found something (L1 #4, "الفيوم بتطلب إيه النهارده"). Who searched is not kept; rows go after 30 days. */
+export const searchLogs = mysqlTable(
+  'search_logs',
+  {
+    id: int('id', { unsigned: true }).autoincrement().primaryKey(),
+    term: varchar('term', { length: 100 }).notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('search_logs_created_idx').on(t.createdAt)],
+);
+
 export type StoreRow = typeof stores.$inferSelect;
 export type NewStore = typeof stores.$inferInsert;
 export type CategoryRow = typeof storeCategories.$inferSelect;
@@ -188,3 +225,4 @@ export type OptionGroupRow = typeof productOptionGroups.$inferSelect;
 export type OptionRow = typeof productOptions.$inferSelect;
 export type IngredientRow = typeof productIngredients.$inferSelect;
 export type HomeTileRow = typeof homeTiles.$inferSelect;
+export type HomeSectionRow = typeof homeSections.$inferSelect;

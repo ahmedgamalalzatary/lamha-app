@@ -5,6 +5,7 @@ import {
   type Cuisine,
   hasOffer,
   type HomeScreen,
+  type HomeSection,
   inSearchScope,
   type OffersQuery,
   type LatLng,
@@ -26,6 +27,12 @@ import { feeFrom, toCatalogStore, toCategory, toCuisine, toHomeTile } from './st
 
 /** Suggestions shown while typing. */
 const SUGGESTIONS = 8;
+
+const TRENDING_DAYS = 7;
+const TRENDING_COUNT = 8;
+
+/** One spelling per word: trimmed, single spaces, lower case. */
+export const searchTerm = (q: string) => q.trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 100);
 
 /**
  * What the apps read (contract §8.2–§8.4): active stores, their categories and the products
@@ -77,7 +84,15 @@ export class CatalogService {
     const stores = (await this.toStores(await this.catalog.listStores({ ids: [...ids], zoneId, activeOnly: true }), from)).filter((s) =>
       inSearchScope(s.vertical, scope),
     );
-    return stores.map((store) => ({ store, products: products.filter((p) => p.storeId === store.id) }));
+    const results = stores.map((store) => ({ store, products: products.filter((p) => p.storeId === store.id) }));
+    // Only the "all" tab counts: switching tabs is the same search (L1 #4).
+    if (scope === 'all' && results.length) await this.catalog.logSearch(searchTerm(q));
+    return results;
+  }
+
+  /** "الفيوم بتطلب إيه النهارده" (L1 #4): the week's most searched words that found something. */
+  async trending(): Promise<string[]> {
+    return this.catalog.topSearches(new Date(Date.now() - TRENDING_DAYS * 24 * 3600_000), TRENDING_COUNT);
   }
 
   /** Product names while typing, from the stores that deliver to the chosen address (review F32). */
@@ -149,7 +164,25 @@ export class CatalogService {
         products: banner.place === 'rail' ? await this.catalog.withChoices(await this.offers.railProducts(store.id)) : [],
       })),
     );
-    return { tiles, invite: await this.invites.rewards(), banners };
+    return { tiles, invite: await this.invites.rewards(), banners, sections: await this.homeSections() };
+  }
+
+  /** The coloured sections (L1 #2), each with its stores customers can see, in order; empty ones are left out. */
+  private async homeSections(): Promise<HomeSection[]> {
+    const rows = await this.catalog.listHomeSections();
+    const storeIds = await this.catalog.homeSectionStoreIds(rows.map((r) => r.id));
+    const all = await this.storesByIds([...new Set([...storeIds.values()].flat())]);
+    const byId = new Map(all.map((s) => [s.id, s]));
+    return rows
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        image: r.image,
+        background: r.background,
+        ink: r.ink,
+        stores: (storeIds.get(r.id) ?? []).flatMap((id) => byId.get(id) ?? []),
+      }))
+      .filter((s) => s.stores.length > 0);
   }
 
   async cuisines(): Promise<Cuisine[]> {

@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetSession } from '@/core/api/client';
 import { CuisinesPage } from '@/features/catalog/screens/CuisinesPage';
+import { HomeSectionsPage } from '@/features/catalog/screens/HomeSectionsPage';
 import { HomeTilesPage } from '@/features/catalog/screens/HomeTilesPage';
 import { insertStore } from '../utils/catalog';
 import { insertUser, resetDb, signInAs, sql } from '../utils/db';
@@ -106,5 +107,46 @@ describe('مربعات الرئيسية: home tiles (contract §8.2, §1.1 A12; 
     await user.click(within(await itemOf('الصف الأول (ثابت)', 'صيدليات')).getByRole('button', { name: 'حذف' }));
     await user.click(within(await screen.findByRole('dialog', { name: 'حذف المربع' })).getByRole('button', { name: 'تأكيد' }));
     await vi.waitFor(async () => expect(await sql<unknown[]>('SELECT id FROM home_tiles')).toHaveLength(1));
+  });
+});
+
+describe('أقسام الرئيسية الملونة: coloured home sections (L1 #2; real API)', () => {
+  it('lists the sections in order with their stores', async () => {
+    const [a, b] = [await insertStore({ name: 'شاورما الساقية' }), await insertStore({ name: 'كشري الحادقة' })];
+    await sql("INSERT INTO home_sections (id, title, background, ink, sort_order) VALUES (1, 'الأكثر طلباً', '#E8A33D', '#3A1E00', 0)");
+    await sql('INSERT INTO home_section_stores (section_id, store_id, sort_order) VALUES (1, ?, 0), (1, ?, 1)', [b, a]);
+    renderWith(<HomeSectionsPage />);
+    const item = await itemOf('أقسام الرئيسية', 'الأكثر طلباً');
+    expect(within(item).getByText('كشري الحادقة، شاورما الساقية')).toBeInTheDocument();
+  });
+
+  it('adds a section with its colours and stores in order, then deletes it', async () => {
+    const [a, b] = [await insertStore({ name: 'شاورما الساقية' }), await insertStore({ name: 'كشري الحادقة' })];
+    renderWith(<HomeSectionsPage />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'إضافة قسم' }));
+    const dialog = await screen.findByRole('dialog', { name: 'إضافة قسم' });
+    await user.type(within(dialog).getByLabelText('العنوان'), 'الجديد');
+    fireEvent.input(within(dialog).getByLabelText('لون القسم'), { target: { value: '#4e9a82' } });
+    fireEvent.input(within(dialog).getByLabelText('لون العنوان'), { target: { value: '#ffffff' } });
+    // Save waits for at least one store.
+    expect(within(dialog).getByRole('button', { name: 'حفظ' })).toBeDisabled();
+    await user.selectOptions(within(dialog).getByLabelText('إضافة متجر'), String(b));
+    await user.selectOptions(within(dialog).getByLabelText('إضافة متجر'), String(a));
+    expect(within(within(dialog).getByRole('list', { name: 'متاجر القسم' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      expect.stringContaining('كشري الحادقة'),
+      expect.stringContaining('شاورما الساقية'),
+    ]);
+    await user.click(within(dialog).getByRole('button', { name: 'حفظ' }));
+    expect(await itemOf('أقسام الرئيسية', 'الجديد')).toBeInTheDocument();
+    const [row] = await sql<{ id: number; background: string; ink: string }[]>("SELECT id, background, ink FROM home_sections WHERE title = 'الجديد'");
+    expect(row).toMatchObject({ background: '#4E9A82', ink: '#FFFFFF' });
+    const stores = await sql<{ store_id: number }[]>('SELECT store_id FROM home_section_stores WHERE section_id = ? ORDER BY sort_order', [row!.id]);
+    expect(stores.map((s) => s.store_id)).toEqual([b, a]);
+
+    await user.click(within(await itemOf('أقسام الرئيسية', 'الجديد')).getByRole('button', { name: 'حذف' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'حذف القسم' })).getByRole('button', { name: 'تأكيد' }));
+    await vi.waitFor(async () => expect(await sql<unknown[]>('SELECT id FROM home_sections')).toHaveLength(0));
   });
 });

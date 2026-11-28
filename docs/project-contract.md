@@ -142,7 +142,7 @@ Every feature module of the product. Each one is detailed in the section shown a
 | A9 | المندوبين | Fines | Add a fine with a reason; driver sees it | Client | 24 |
 | A10 | المنتجات والكتالوج | Store products | Products per store, categories, images, prices | Tawsilty | 4 |
 | A11 | المنتجات والكتالوج | Inactive products | منتجات غير فعالة: switched-off products | Tawsilty | 4 |
-| A12 | المنتجات والكتالوج | Home tiles and cuisines | Vertical tiles (order, image, badge), cuisine circles | Client | 4 |
+| A12 | المنتجات والكتالوج | Home tiles, sections and cuisines | Vertical tiles (order, image, badge), coloured store sections (title, picture, colours, stores; L1 #2), cuisine circles | Client, Demo | 4, L1 |
 | A13 | التسويق والعروض | Interactive notifications | الإشعارات التفاعلية: push campaigns | Tawsilty | 16 |
 | A14 | التسويق والعروض | Banners | Offer banners, the mart banner and its target store | Client | 20 |
 | A15 | التسويق والعروض | Coupons and offers | Coupons, exclusive offers, delivery offers | Client | 20 |
@@ -357,6 +357,12 @@ Built in Phase 5: the header, the rotating search (every 3 seconds), the two til
 - The invite rewards are Tawsilty's 300 and 25 ج.م until Phase 19 makes them admin settings.
 - The search box opens the search screen in Phase 6, and the invite card opens ادعُ أصدقاءك in Phase 19.
 
+Rebuilt in L1 in the lamha look and order (2026-11-28): header (address, a heart for المفضلة, the search box with "ابحث عن" and a word changing every 2.2 seconds: المطاعم · البقالة · الأكلات المفضلة · أفضل العروض · الصيدليات · قهوة), the order on its way, نقاطي and المحفظة, the tiles, "العروض اللي تستاهل تجربها دلوقتي…", the invite card (✕ "اقفل"), "العروض والكوبونات", the coloured store sections, then the rails.
+
+- [Demo, L1 #1] The نقاطي and المحفظة shortcuts show the balance under the name ("340 نقطة", "85.00 ج.م"); "استخدم ووفر" is gone.
+- [Demo, L1 #2] **Coloured store sections** are built: the admin's page المنتجات والكتالوج › أقسام الرئيسية الملونة sets each section's title, optional round picture, band and title colours (#RRGGBB) and up to 30 stores in order, and the sections' order. `GET /v1/catalog/home` gives `sections`, each with its stores customers can see; a section with none is left out. Each band shows its stores three to a column, scrolling sideways: picture ("مغلق" over a closed store), name, rating, minutes ("35 د").
+- [Demo, L1 #3] **The order on its way**: the newest order not yet delivered, rejected or cancelled shows as a receipt stub under the header: store logo, "طلب #506898 • <store>", where it is ("طلبك اتبعت للمحل", "طلبك بيتجهز", "طلبك جاهز وهيتحرك" or "طلبك جاهز للاستلام", "الطيار في الطريق") with its stamp, "تابع طلبك ›", and a bar filling a quarter per step. It opens the order. No cancel countdown (not picked).
+
 ### 8.3 Store lists (per vertical) [Tawsilty]
 
 - Top bar: back, "التوصيل إلى <address>", cart button.
@@ -373,6 +379,11 @@ Built in Phase 6: the list, opened from a home tile, with the tile's label as it
 - [Open] **توصيل سريع** means delivery in 30 minutes or less (`FAST_DELIVERY_MINUTES`). Tawsilty does not say.
 - **الأقرب إليك** sorts by straight-line distance from the chosen address; stores with no location go last (§8.9).
 - Lists and search show only the stores of the chosen address's zone (§8.9). With no address saved, every store shows.
+
+Rebuilt in L1 in the lamha look (2026-11-28): the top bar shows the list's title with "التوصيل إلى <address> ▾" under it, and the cart; the search box, cuisine circles, chips, then the count ("12 محل") and the stores as white cards: picture with the logo on its corner, name, rating, time and fee, then the offers or, while closed, "مقفول دلوقتي • بيفتح 11:00 ص، تقدر تجدول طلبك". A heart on each card adds or removes المفضلة.
+
+- [Tawsilty, built in L1] "اطلب من جديد" on the restaurants list: up to four restaurants of this list the customer got delivered orders from, newest first, as compact cards on a cream band; hidden while searching or filtering.
+- With a search, a cuisine or a chip on and nothing found: "مفيش نتايج بالفلاتر دي — شيل فلتر أو اتنين وهتلاقي اختيارات أكتر." with "امسح الفلاتر". With nothing at all: "مفيش محلات هنا لسه".
 - New stores show "جديد", so every rating floor leaves them out until ratings exist (Phase 15).
 - The "خصومات" and "عروض التوصيل" chips and the offer badges on the rows came with Phase 20.
 - "اطلب من جديد" arrives once customers have past orders.
@@ -544,6 +555,11 @@ Built in Phase 6, from the home search box. A store matches by its name or by on
 - [Tawsilty, `search-suggestions-in-stores-basket.png`] A suggestion from a restaurant reads "في المطاعم" with the cutlery icon; from any other store type "في المتاجر" with a basket.
 - Product prices use two decimals ("110.00 ج.م", §7), where Tawsilty's search shows "110.0".
 - A product opens its store until the product sheet arrives (Phase 7). [Open] Search results show no voucher yet.
+
+Rebuilt in L1 in the lamha look (2026-11-28): the box is white with a pen edge and "أكلة، محل، منتج، أو دوا".
+
+- [Demo, L1 #4] Before typing: "بحثت قبل كده" with the last six searches (kept on the phone only; "امسح" clears them), then "الفيوم بتطلب إيه النهارده": up to eight words most searched this week, as chips. `GET /v1/catalog/search/trending`. The server keeps each word searched on the الكل tab that found something, with its time and nothing about who searched, for 30 days.
+- [Demo, L1 #4] Nothing found: "مفيش نتايج لـ «…» — جرب كلمة أقصر أو اسم أكلة تانية، أو ابعت طيار يجيبهالك من أي مكان." with "ابعت طيار يجيبها", which opens the send-anything list (L7 makes it a form). No voice search (owner).
 
 ### 8.14 Account (حسابي) [Tawsilty]
 
@@ -888,6 +904,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | §6, §15.1 #8: the app is وصّل / Wassal, `com.wassal.app`; the owner's logo and its rust replace Tawsilty's orange in the app and the dashboard. The English logo and a vector file are still to come (owner). |
 | 2026-11-26 | §10: captured Tawsilty's driver side from a Fayoum delivery man's account, off shift: home (location off, نشط, empty), current orders, account, notifications, نقاطي, shifts, history and details, complaint and suggestion forms, profile with documents, notification settings. The offer card and the in-shift screens stay [Open]. |
 | 2026-11-28 | Rule 4 and §6: the mobile app's look moves to the lamha demo (client: the demo looks far better than the APK). §6 now lists lamha's colours with the rust as pen, Noto Sans Arabic, and lamha's parts (receipt, stamp, top bar, tab bar, stepper, segmented tabs, switch, sheet, toast, empty state). Flows and rules still follow Tawsilty; the web dashboard keeps its look. Plan: `docs/phases.md` L0–L12. |
+| 2026-11-28 | L1: home, store lists and search in the lamha look and words (§8.2, §8.3, §8.13). Built: the balance on the نقاطي and المحفظة shortcuts, the coloured store sections with their admin page (out of §18), the order on its way on home, recent and trending searches with "ابعت طيار يجيبها", and "اطلب من جديد" on the restaurants list; a heart on store cards. |
 
 ---
 
@@ -895,6 +912,5 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 
 These show in Tawsilty but no phase in `docs/phases.md` builds them. Each needs the owner to place it in a phase (or drop it).
 
-- **Coloured store sections on الرئيسية** (§8.2; `customer/home/home-section-*.png`): full-width coloured bands, each with a title, an emoji and a round image ("الجديد على توصيلتي", "الأكثر طلبًا 🔥", "جرب طعم المتعه", "دور ع اللي فايتك", "استمتع باختيارك 😍"), holding a sideways pager of three store cards per column (cover with "مغلق" when closed, the lime "عروض" tag, name, rating, count, minutes). Admin-managed. Phase 20 left them out.
 - **Titled product rails on الرئيسية** (`customer/home/home-section-new-and-product-rail.png`): a heading with a subtitle and an arrow ("فطارك جاهز علي ذوقك ❤️" / "اختيارك بقى أسهل") over a row of products with "+", including "السعر حسب الاختيار". Phase 20 built only the banner-headed rail.
 - **The market's themed rails** on the store page (§8.4): still not built.

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Ingredient, OptionGroup, Product, ProductOptionsInput, SearchScope, Vertical } from '@tawsela/shared';
-import { and, asc, count, eq, inArray, isNull, like, max, min, ne, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, like, max, min, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { MySqlTable } from 'drizzle-orm/mysql-core';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { zones } from '../addresses/addresses.schema.js';
@@ -8,6 +8,10 @@ import { carts } from '../cart/cart.schema.js';
 import { type NewUser, users } from '../users/users.schema.js';
 import {
   cuisines,
+  homeSections,
+  homeSectionStores,
+  searchLogs,
+  type HomeSectionRow,
   homeTiles,
   type HomeTileRow,
   type NewStore,
@@ -23,7 +27,7 @@ import {
 } from './catalog.schema.js';
 import { toProduct } from './store-view.js';
 
-type Sortable = typeof storeCategories | typeof cuisines | typeof homeTiles;
+type Sortable = typeof storeCategories | typeof cuisines | typeof homeTiles | typeof homeSections;
 /** A transaction's handle; repository methods that take one run inside it. */
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
@@ -419,6 +423,79 @@ export class CatalogRepository {
 
   async deleteHomeTile(id: number): Promise<void> {
     await this.db.delete(homeTiles).where(eq(homeTiles.id, id));
+  }
+
+  // Home sections
+
+  async listHomeSections(): Promise<HomeSectionRow[]> {
+    return this.db.select().from(homeSections).orderBy(asc(homeSections.sortOrder), asc(homeSections.id));
+  }
+
+  async findHomeSection(id: number): Promise<HomeSectionRow | undefined> {
+    const [row] = await this.db.select().from(homeSections).where(eq(homeSections.id, id));
+    return row;
+  }
+
+  /** Each section's store ids, in order. */
+  async homeSectionStoreIds(sectionIds: number[]): Promise<Map<number, number[]>> {
+    const out = new Map<number, number[]>(sectionIds.map((id) => [id, []]));
+    if (!sectionIds.length) return out;
+    const rows = await this.db
+      .select()
+      .from(homeSectionStores)
+      .where(inArray(homeSectionStores.sectionId, sectionIds))
+      .orderBy(asc(homeSectionStores.sortOrder));
+    for (const r of rows) out.get(r.sectionId)?.push(r.storeId);
+    return out;
+  }
+
+  async createHomeSection(values: Omit<typeof homeSections.$inferInsert, 'sortOrder'>, storeIds: number[]): Promise<number> {
+    return this.db.transaction(async (tx) => {
+      const sortOrder = await this.nextSortOrder(homeSections, undefined, tx);
+      const [row] = await tx
+        .insert(homeSections)
+        .values({ ...values, sortOrder })
+        .$returningId();
+      await this.writeSectionStores(tx, row!.id, storeIds);
+      return row!.id;
+    });
+  }
+
+  /** `storeIds` replaces the section's stores when given. */
+  async updateHomeSection(id: number, values: Partial<typeof homeSections.$inferInsert>, storeIds?: number[]): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      if (Object.keys(values).length) await tx.update(homeSections).set(values).where(eq(homeSections.id, id));
+      if (storeIds) {
+        await tx.delete(homeSectionStores).where(eq(homeSectionStores.sectionId, id));
+        await this.writeSectionStores(tx, id, storeIds);
+      }
+    });
+  }
+
+  async deleteHomeSection(id: number): Promise<void> {
+    await this.db.delete(homeSections).where(eq(homeSections.id, id));
+  }
+
+  private async writeSectionStores(tx: Tx, sectionId: number, storeIds: number[]): Promise<void> {
+    if (storeIds.length) await tx.insert(homeSectionStores).values(storeIds.map((storeId, sortOrder) => ({ sectionId, storeId, sortOrder })));
+  }
+
+  // Search words (L1 #4)
+
+  async logSearch(term: string): Promise<void> {
+    await this.db.insert(searchLogs).values({ term });
+  }
+
+  /** The most searched words since `since`, most first. */
+  async topSearches(since: Date, limit: number): Promise<string[]> {
+    const rows = await this.db
+      .select({ term: searchLogs.term, n: count() })
+      .from(searchLogs)
+      .where(gte(searchLogs.createdAt, since))
+      .groupBy(searchLogs.term)
+      .orderBy(desc(count()), asc(searchLogs.term))
+      .limit(limit);
+    return rows.map((r) => r.term);
   }
 
   // Order

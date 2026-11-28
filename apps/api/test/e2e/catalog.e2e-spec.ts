@@ -173,6 +173,40 @@ describe('/v1/catalog (e2e, what the apps read; contract §8.2–§8.4)', () => 
     expect(res.body.tiles[1]).toMatchObject({ targetStoreId: shown, targetVertical: null });
   });
 
+  it("lists the week's most searched words that found something, most first (L1 #4)", async () => {
+    const store = await insertStore({ name: 'شاورما الساقية' });
+    const cat = await insertCategory(store);
+    await insertProduct(store, cat, 'شاورما فراخ', 85);
+    await insertProduct(store, cat, 'كنافة', 40);
+    const search = (q: string, scope = '') => get(`/v1/catalog/search?q=${encodeURIComponent(q)}${scope}`).expect(200);
+    await search('شاورما');
+    await search('  شاورما ');
+    await search('كنافة');
+    await search('شاورما', '&scope=restaurants'); // a tab switch is not a new search
+    await search('بيتزا'); // found nothing
+    await sql("INSERT INTO search_logs (term, created_at) VALUES ('قديمة', NOW() - INTERVAL 8 DAY)");
+    const res = await get('/v1/catalog/search/trending').expect(200);
+    expect(res.body).toEqual(['شاورما', 'كنافة']);
+    // Nothing about who searched is kept.
+    expect(Object.keys((await sql<Record<string, unknown>[]>('SELECT * FROM search_logs LIMIT 1'))[0]!).sort()).toEqual(['created_at', 'id', 'term']);
+  });
+
+  it('gives the coloured store sections in order, each with its visible stores in order; empty ones are left out (L1 #2)', async () => {
+    const [x, y, hidden] = [await insertStore({ name: 'شاورما الساقية' }), await insertStore({ name: 'كشري الحادقة' }), await insertStore({ active: false })];
+    await sql(
+      `INSERT INTO home_sections (id, title, image, background, ink, sort_order) VALUES
+       (1, 'الجديد', NULL, '#4E9A82', '#FFFFFF', 1), (2, 'الأكثر طلباً', '/uploads/sections/hot.webp', '#E8A33D', '#3A1E00', 0), (3, 'فاضي', NULL, '#000000', '#FFFFFF', 2)`,
+    );
+    await sql('INSERT INTO home_section_stores (section_id, store_id, sort_order) VALUES (1, ?, 0), (2, ?, 1), (2, ?, 0), (3, ?, 0)', [x, x, y, hidden]);
+    const res = await get('/v1/catalog/home').expect(200);
+    expect(res.body.sections.map((s: { title: string; stores: { name: string }[] }) => [s.title, s.stores.map((st) => st.name)])).toEqual([
+      ['الأكثر طلباً', ['كشري الحادقة', 'شاورما الساقية']],
+      ['الجديد', ['شاورما الساقية']],
+    ]);
+    expect(res.body.sections[0]).toMatchObject({ image: '/uploads/sections/hot.webp', background: '#E8A33D', ink: '#3A1E00' });
+    expect(res.body.sections[0].stores[0]).toHaveProperty('rating');
+  });
+
   it("gives the invite card's rewards with the home screen (§8.2: 300 for you, 25 for your friend)", async () => {
     const res = await get('/v1/catalog/home').expect(200);
     expect(res.body.invite).toEqual({ reward: 300, friendReward: 25 });
