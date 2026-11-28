@@ -1,5 +1,5 @@
 import type { Role } from '@tawsela/shared';
-import { Bike, ClipboardList, House, type LucideIcon, Package, ShoppingCart, User, Users } from 'lucide-react-native';
+import { Bike, ClipboardList, Home, type LucideIcon, Package, ReceiptText, ShoppingBag, UserRound, Users } from 'lucide-react-native';
 import type { TranslationKey } from '../i18n';
 
 export interface TabSpec {
@@ -10,30 +10,30 @@ export interface TabSpec {
 }
 
 const TABS: Record<Role, TabSpec[]> = {
-  // Contract §6.3.
+  // Contract §6.3; lamha's icons.
   customer: [
-    { name: 'index', label: 'tabs.home', icon: House },
-    { name: 'cart', label: 'tabs.cart', icon: ShoppingCart },
-    { name: 'orders', label: 'tabs.orders', icon: ClipboardList },
-    { name: 'account', label: 'tabs.account', icon: User },
+    { name: 'index', label: 'tabs.home', icon: Home },
+    { name: 'cart', label: 'tabs.cart', icon: ShoppingBag },
+    { name: 'orders', label: 'tabs.orders', icon: ReceiptText },
+    { name: 'account', label: 'tabs.account', icon: UserRound },
   ],
   // Contract §9, from the partner app photos.
   partner: [
-    { name: 'index', label: 'tabs.home', icon: House },
+    { name: 'index', label: 'tabs.home', icon: Home },
     { name: 'orders', label: 'tabs.partnerOrders', icon: ClipboardList },
     { name: 'products', label: 'tabs.products', icon: Package },
-    { name: 'account', label: 'tabs.account', icon: User },
+    { name: 'account', label: 'tabs.account', icon: UserRound },
   ],
   // Contract §10, from the driver app screenshots.
   driver: [
-    { name: 'index', label: 'tabs.home', icon: House },
+    { name: 'index', label: 'tabs.home', icon: Home },
     { name: 'current', label: 'tabs.currentOrders', icon: Bike },
-    { name: 'account', label: 'tabs.account', icon: User },
+    { name: 'account', label: 'tabs.account', icon: UserRound },
   ],
   // Contract §11.2: an admin gets the accounts area, plus حسابي to sign out like every role.
   admin: [
     { name: 'index', label: 'tabs.accounts', icon: Users },
-    { name: 'account', label: 'tabs.account', icon: User },
+    { name: 'account', label: 'tabs.account', icon: UserRound },
   ],
 };
 

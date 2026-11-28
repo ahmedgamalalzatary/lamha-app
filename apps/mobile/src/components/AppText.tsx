@@ -9,7 +9,7 @@ interface Props extends TextProps {
   color?: string;
 }
 
-/** Text in Alexandria. Every screen uses this instead of a bare <Text>. */
+/** Text in Noto Sans Arabic. Every screen uses this instead of a bare <Text>. */
 export function AppText({ weight = 'regular', size = fontSizes.body, color = colors.ink, style, ...rest }: Props) {
   return <Text {...rest} style={[styles.base, { fontFamily: fonts[weight], fontSize: size, color }, style]} />;
 }

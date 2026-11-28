@@ -1,10 +1,10 @@
 import {
-  Alexandria_400Regular,
-  Alexandria_500Medium,
-  Alexandria_600SemiBold,
-  Alexandria_700Bold,
+  NotoSansArabic_400Regular,
+  NotoSansArabic_500Medium,
+  NotoSansArabic_600SemiBold,
+  NotoSansArabic_700Bold,
   useFonts,
-} from '@expo-google-fonts/alexandria';
+} from '@expo-google-fonts/noto-sans-arabic';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { reloadAppAsync } from 'expo';
 import { LocaleProvider, Stack } from 'expo-router';
@@ -35,10 +35,10 @@ async function restoreSessionAndLocale() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Alexandria_400Regular,
-    Alexandria_500Medium,
-    Alexandria_600SemiBold,
-    Alexandria_700Bold,
+    NotoSansArabic_400Regular,
+    NotoSansArabic_500Medium,
+    NotoSansArabic_600SemiBold,
+    NotoSansArabic_700Bold,
   });
   const status = useSession((s) => s.status);
   const locale = useLocale();

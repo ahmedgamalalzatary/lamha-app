@@ -12,7 +12,7 @@ import { Package } from 'lucide-react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import RootLayout from '@/app/_layout';
 
-jest.mock('@expo-google-fonts/alexandria', () => ({
+jest.mock('@expo-google-fonts/noto-sans-arabic', () => ({
   useFonts: () => [true, null],
 }));
 

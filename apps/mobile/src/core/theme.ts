@@ -1,24 +1,36 @@
-// Tawsilty's design tokens (contract §6), measured from the real app, with the owner's brand colours
-// (وصّل's rust, 2026-11-26) in place of Tawsilty's orange.
+// The lamha demo's design tokens (contract §6, `apps/demo/src/app/globals.css`), with the owner's
+// rust (وصّل's logo, 2026-11-26) in the pen role where lamha has its orange.
 
 export const colors = {
+  /** lamha's "pen": buttons, active tab, links, prices to act on. */
   primary: '#B44A0E',
   primary700: '#8F3A0B',
+  primary900: '#6E2C07',
   primary400: '#CB6B34',
   primary100: '#F3DCCB',
   primary50: '#FAF0E8',
-  headerFrom: '#C65F22',
-  headerTo: '#B0450D',
+  /** Home header, top to bottom: pen fading lighter. */
+  headerFrom: '#B44A0E',
+  headerTo: '#C9652C',
   bg: '#FFFFFF',
+  /** lamha's paper: the page behind white sheets and cards. */
+  paper: '#F5F5F5',
+  /** lamha's sheet: white cards, receipts, sheets. */
+  sheet: '#FFFFFF',
   bgWarm: '#FBF7EE',
   surface: '#F9FAFB',
   input: '#F2F3F7',
-  ink: '#1F1F1F',
-  ink2: '#8A8A8A',
-  line: '#ECECEC',
-  success: '#46B66F',
-  success50: '#E8F6ED',
-  danger: '#F44336',
+  ink: '#262626',
+  ink2: '#6B6B6B',
+  /** lamha's rule: hairlines, borders, perforations. */
+  line: '#E5E5E5',
+  /** The dotted leader between a receipt label and its amount. */
+  leader: '#BFBFBF',
+  /** lamha's stamp green: done, free, delivered. */
+  success: '#05A437',
+  success50: '#EBF4E5',
+  /** lamha's void red: errors, cancelled, delete. */
+  danger: '#C01B21',
   /** The store page's info row values: "30 دقيقة", "توصيلتي". */
   info: '#1E5BD8',
   /** "مطلوب" tag and the selected sub-category ring. */
@@ -30,13 +42,19 @@ export const colors = {
   pillDark: 'rgba(0,0,0,0.75)',
   toastDark: '#2B2B2B',
   /** The pale grey page behind white cards (wallet, points' lists, invite, notifications, profile). */
-  page: '#F5F6FA',
+  page: '#F5F5F5',
   /** See-through white on orange cards and the home header: icon tiles, tracks, ghost buttons. */
   glass: 'rgba(255,255,255,0.22)',
   /** Pale red tiles: deductions, sign-out, a blocked delivery man, a disabled account. */
-  danger50: '#FDEDED',
+  danger50: '#FAEBE9',
   /** Rating stars in store lists and headers. */
-  star: '#F5A623',
+  star: '#EAA407',
+  /** The highlighter stroke behind totals, and the star's fill. */
+  marker: '#CFFF00',
+  /** The soft promo tag on store rows. */
+  markerSoft: '#FEF2D7',
+  /** The dark cocoa of the coupon tile and the mart banner title. */
+  cocoa: '#411517',
   /** The wallet icon's blue (محفظتي) and its pale tile (تواصل معنا). */
   blue: '#2F6FED',
   blue50: '#E6EEFC',
@@ -62,7 +80,7 @@ export const colors = {
   /** Every drop shadow; see `shadows` for the shared presets. */
   shadow: '#000',
   /** Grey labels and icons on the profile page's sections and the unselected gender. */
-  ink3: '#5B5F6B',
+  ink3: '#767675',
   /** The value inside a locked field. */
   lockedText: '#55575E',
   /** A locked field's grey fill. */
@@ -101,25 +119,26 @@ export const colors = {
 /** The welcome page's pastel card tints, in order. */
 export const welcomeTints = ['#FFF1E0', '#F1E8F8', '#E6F6EC', '#E3F3FB', '#FDECEC', '#FFF7E0'] as const;
 
-/** Alexandria weights, loaded in the root layout. */
+/** Noto Sans Arabic weights (lamha's font; it covers Latin and digits too), loaded in the root layout. */
 export const fonts = {
-  regular: 'Alexandria_400Regular',
-  medium: 'Alexandria_500Medium',
-  semibold: 'Alexandria_600SemiBold',
-  bold: 'Alexandria_700Bold',
+  regular: 'NotoSansArabic_400Regular',
+  medium: 'NotoSansArabic_500Medium',
+  semibold: 'NotoSansArabic_600SemiBold',
+  bold: 'NotoSansArabic_700Bold',
 } as const;
 
-/** Sizes seen in the app (contract §6.2). */
+/** lamha's sizes (contract §6.2): top bar 17, section 18, card title 16, body 14, caption 12.5. */
 export const fontSizes = {
   screenTitle: 24,
-  sectionTitle: 19,
+  sectionTitle: 18,
+  topBar: 17,
   listTitle: 16,
   body: 14,
-  caption: 12,
+  caption: 12.5,
 } as const;
 
 /** `xl`: the big orange cards (wallet, points, invite) and the outline dialog. */
-export const radius = { sm: 8, md: 12, lg: 16, xl: 24, pill: 999 } as const;
+export const radius = { sm: 8, md: 12, card: 14, lg: 16, sheet: 22, xl: 24, pill: 999 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 
@@ -132,4 +151,10 @@ export const shadows = {
   card: { shadowColor: colors.shadow, shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   /** The wide soft glow under the welcome sheet and the empty store card. */
   soft: { shadowColor: colors.shadow, shadowOpacity: 0.06, shadowRadius: 24, elevation: 3 },
+  /** lamha's sheet shadow: white cards on paper. */
+  sheet: { shadowColor: colors.ink, shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  /** lamha's lift: floating bars and the cart button. */
+  lift: { shadowColor: colors.ink, shadowOpacity: 0.22, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
+  /** Under a receipt (lamha's receipt-shadow). */
+  receipt: { shadowColor: colors.ink, shadowOpacity: 0.12, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
 } as const;

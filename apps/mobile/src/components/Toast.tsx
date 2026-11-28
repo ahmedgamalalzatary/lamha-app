@@ -1,12 +1,13 @@
+import { CircleAlert, CircleCheck } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 import { EASE_OUT } from '@/core/motion/motion';
-import { colors, radius, spacing } from '@/core/theme';
+import { colors, radius, shadows, spacing } from '@/core/theme';
 import { AppText } from './AppText';
 
-/** Red pill for errors, green for success, dark for hints (contract §6.3). */
+/** lamha's toast: a dark ink card at the top; errors and successes add a coloured icon (contract §6.3). */
 export type ToastKind = 'error' | 'success' | 'hint';
 
 interface Shown {
@@ -16,9 +17,8 @@ interface Shown {
 }
 
 const SHOW_MS = 3000;
-const TOAST_IN = FadeInDown.duration(260).easing(EASE_OUT);
-const TOAST_OUT = FadeOutDown.duration(200).easing(EASE_OUT);
-const BG: Record<ToastKind, string> = { error: colors.danger, success: colors.success, hint: colors.toastDark };
+const TOAST_IN = FadeInUp.duration(260).easing(EASE_OUT);
+const TOAST_OUT = FadeOutUp.duration(200).easing(EASE_OUT);
 
 const useToastStore = create<{ current: Shown | null }>(() => ({ current: null }));
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -51,15 +51,17 @@ export function ToastHost() {
       entering={TOAST_IN}
       exiting={TOAST_OUT}
       pointerEvents="none"
-      style={[styles.wrap, { bottom: insets.bottom + 90 }]}
+      style={[styles.wrap, { top: insets.top + spacing.lg }]}
     >
       <Animated.View
         accessible
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"
-        style={[styles.pill, { backgroundColor: BG[current.kind] }]}
+        style={styles.card}
       >
-        <AppText weight="medium" color={colors.bg} style={styles.text}>
+        {current.kind === 'success' ? <CircleCheck size={18} color={colors.marker} /> : null}
+        {current.kind === 'error' ? <CircleAlert size={18} color={colors.primary100} /> : null}
+        <AppText weight="medium" color={colors.sheet} style={styles.text}>
           {current.message}
         </AppText>
       </Animated.View>
@@ -69,6 +71,6 @@ export function ToastHost() {
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', start: spacing.lg, end: spacing.lg, alignItems: 'center', zIndex: 100 },
-  pill: { borderRadius: radius.pill, paddingVertical: spacing.md, paddingHorizontal: spacing.xl },
-  text: { textAlign: 'center' },
+  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, maxWidth: 400, borderRadius: radius.card, paddingVertical: spacing.md, paddingHorizontal: spacing.lg, backgroundColor: colors.ink, ...shadows.lift },
+  text: { flexShrink: 1, textAlign: 'center' },
 });

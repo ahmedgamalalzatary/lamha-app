@@ -47,6 +47,7 @@ apps/*/uploads/
 # design review screenshots (the phone ones show personal data)
 .impeccable/review/
 .impeccable/phone/
+.impeccable/lamha/
 
 # client WhatsApp export: private, never commit
 whatsapp-export/

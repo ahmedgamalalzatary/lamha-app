@@ -7,7 +7,7 @@ This is the single source of truth for what Tawsela is, what it does and how it 
 1. Anything new (a feature, screen, endpoint, table, rule or tool) is added here **before** it is built, or in the same commit.
 2. If the code and this file disagree, this file wins. Either fix the code, or change this file on purpose in the same commit.
 3. Removing or changing an agreed item means editing it here and adding a line to the [change log](#17-change-log).
-4. **Tawsilty is the reference.** The look, the flows and the rules follow the Tawsilty (توصيلتي) apps by ZTechX exactly. We do not invent features. The only additions are the ones the client asked for (tagged [Client]).
+4. **Tawsilty is the reference for flows and rules.** The flows and the rules follow the Tawsilty (توصيلتي) apps by ZTechX. The mobile app's look follows the lamha demo (§6). We do not invent features. The only additions are the ones the client asked for (tagged [Client]).
 5. Source tags used below:
    - **[Tawsilty]**: seen in the real Tawsilty app (screenshots in `.impeccable/phone/`, git-ignored because they show personal data)
    - **[Client]**: asked for by the client on WhatsApp (22–23 Nov 2026)
@@ -112,7 +112,7 @@ Every feature module of the product. Each one is detailed in the section shown a
 
 | # | Module | What it covers | Phase |
 |---|---|---|---|
-| S1 | App shell | Role-based tabs after sign-in (customer, partner, driver, admin), splash, theme tokens, Alexandria font | 0 |
+| S1 | App shell | Role-based tabs after sign-in (customer, partner, driver, admin), splash, theme tokens, Noto Sans Arabic font (lamha, §6) | 0, L0 |
 | S2 | Language | Arabic RTL default, English LTR, formatters | 0, 9 |
 | S3 | Live updates | socket.io for order status and driver location | 12 |
 | S4 | Push | Push tokens and delivery | 16 |
@@ -249,51 +249,52 @@ The same setup as the owner's Maqar project, so both are run the same way.
 
 ## 6. Brand and design
 
-**Everything visual follows Tawsilty** (decided 2026-11-23): colours, type, spacing, components and flows. Exception [Owner, 2026-11-26]: the brand. The app is **وصّل** (English **Wassal**), its logo is in `docs/brand/`, and the logo's rust replaces Tawsilty's orange in the app and the dashboard (the `primary` rows and `bg-warm` below); layouts stay Tawsilty's. The values below were measured from the real app's screenshots. A value marked "verify" is checked against the app again before Phase 0 ends.
+**The mobile app looks like the lamha demo** (`apps/demo`'s customer and rider screens; owner, 2026-11-28, after the client said the demo looks far better than the APK). Brand [Owner, 2026-11-26]: the app is **وصّل** (English **Wassal**), its logo is in `docs/brand/`, and the logo's rust takes lamha's pen role in place of lamha's orange `#F55905`. The web dashboard keeps its current look. Reference shots: `.impeccable/lamha/` (git-ignored). The tokens live in `apps/mobile/src/core/theme.ts`.
 
-### 6.1 Colours [Tawsilty]
+### 6.1 Colours [Demo]
 
 | Token | Value | Used for |
 |---|---|---|
-| `primary` | `#B44A0E` (logo rust; Tawsilty's was `#F68B1D`) | Buttons, active tab, links, prices in the cart, selected radio |
-| `primary-700` | `#8F3A0B` | Pressed state, active tab icon |
-| `primary-400` | `#CB6B34` | Header gradient start, search icon tile, empty-state icons |
-| `primary-50` | `#FAF0E8` | Soft cards (invite card), icon tiles |
-| `primary-100` | `#F3DCCB` | Soft card borders |
-| `header` | gradient `#C65F22` → `#B0450D` | Home header behind the address and search |
-| `bg` | `#FFFFFF` | Screens |
-| `bg-warm` | `#FBF7EE` (the logo's cream) | Cart "قد تعجبك أيضًا" band (wavy top edge) |
-| `surface` | `#F9FAFB` | Cards on white (wallet, points tiles) |
-| `input` | `#F2F3F7` | Text fields, search box on inner pages |
-| `ink` | `#1F1F1F` | Titles, prices |
-| `ink-2` | `#8A8A8A` | Secondary text, placeholders |
-| `success` | `#46B66F` | "التوصيل متاح لهذا الموقع", verified phone, wallet additions |
-| `danger` | `#F44336` | Error toast, delete actions, account delete, validation messages |
-| `info` | blue (verify) | Values in the store info row (time, "توصيلتي") |
-| `chip-selected` | dark navy (verify) | Selected address type chip |
+| `primary` (pen) | `#B44A0E`; `primary-700` `#8F3A0B`, `primary-900` `#6E2C07` | Buttons, active tab and its ink line, links, stepper signs |
+| `primary-100` / `primary-50` | `#F3DCCB` / `#FAF0E8` | Secondary buttons, icon tiles, empty-state tile, segmented track, photo placeholder |
+| `header` | `#B44A0E` → `#C9652C` | Home header, top to bottom |
+| `paper` / `page` | `#F5F5F5` | The page behind cards |
+| `sheet` | `#FFFFFF` | Cards, receipts, sheets, tab bar |
+| `ink` / `ink-2` / `ink-3` | `#262626` / `#6B6B6B` / `#767675` | Text, secondary text, captions and grey icons |
+| `line` (rule) | `#E5E5E5` | Hairlines, borders, perforations, the off switch |
+| `leader` | `#BFBFBF` | The dotted leader on receipt rows |
+| `success` (stamp) | `#05A437`, pale `#EBF4E5` | Free, done, delivered, the on switch |
+| `danger` (void) | `#C01B21`, pale `#FAEBE9` | Errors, cancelled, delete, struck prices |
+| `marker` | `#CFFF00`; soft `#FEF2D7` | The highlighter behind totals, the star's fill; soft promo tags |
+| `star` | `#EAA407` | Rating stars |
+| `cocoa` | `#411517` | The coupon tile and the mart banner title |
 
-Dark mode: Tawsilty has none; Tawsela has none.
+Dark mode: none.
 
-### 6.2 Type [Tawsilty]
+### 6.2 Type [Demo]
 
-- Arabic font: **Alexandria** (geometric, squarish; verify against the app's font file). Latin digits are used for prices and phone numbers ("285.00 ج.م", "01554459196").
-- Sizes seen: screen titles ~24, section titles ~19, list titles ~16, body ~14, captions ~12.
+- Font: **Noto Sans Arabic** (it covers Latin and digits too). Weights 400, 500, 600, 700.
+- Sizes: top bar title 17, section titles 18, sheet titles 19, card titles 16, body 14, captions 12.5, tab labels 11.5.
 
-### 6.3 Components and patterns [Tawsilty]
+### 6.3 Components and patterns [Demo]
 
-- **Tab bar**, 4 tabs for customers: الرئيسية · السلة · طلباتي · حسابي. Active tab is `primary` icon and label.
-- **Bottom sheets** with a grabber: address list, sort, rating filter, contact us, note, complaint type, e-wallet amount, pharmacy picker.
-- **Radio sheets** for sort and rating filters (checked radio is a filled orange circle with a tick).
-- **Filter chips** row, scrollable: رتب حسب ▾ · خصومات · عروض التوصيل · التقييم ▾ · توصيل سريع · الاستلام.
-- **Empty states**: two soft-orange circles (pale outer, light inner) with an orange icon, a bold title and a grey line. Used for no stores, no orders, empty cart, no favourites, no notifications, wallet tabs, points tabs.
-- **Primary button**: full-width, rounded, orange; disabled state is a faded orange (OTP) or grey (map confirm).
-- **Toasts**: red pill for errors ("عذراً الخدمة مغلقة الآن", "يرجى رفع صورة او كتابة طلبك"), green pill for success ("تم حذف العنوان"), dark pill with the app icon for hints ("من فضلك أدخل الكوبون أولا").
-- **Badges on store rows**: lime pill "خصم 30 ج.م على منتجات" (product discount), green outline "توصيل مجاني للطلبات من 300 ج.م" (free delivery over an amount), cream pill with a purple "قسيمة" tag "خصم 6 ج.م على 150 ج.م" (voucher), struck-through fee + green "مجاني" (free delivery).
-- **Product cards**: lime "وفر 60.0 ج.م" (save) tag on the image, red price with the old price struck through, "+" to add (or "‹" when the item has options), "السعر حسب الاختيار" when the price depends on a choice, "قابل للتخصيص" under customizable items.
-- **Loading**: grey skeleton blocks in the shape of the content.
-- **Confirm dialog**: white card, bold title, message, an action button and a "إلغاء" text button. Three looks: the cart's "حذف المنتج" is a rounded card with a red pill "حذف" and an orange "إلغاء"; the address's "حذف العنوان" is a square card with an orange rounded "تأكيد" and a red "إلغاء". A third look, sign-out's "هل أنت متأكد من تسجيل الخروج": a centred question over a line, an orange "تأكيد" pill and a red-outlined "إلغاء" pill of the same width.
-- **Store "closed"** state: greyscale cover and a dark "مغلق" pill.
-- **Footer credit** on the account screen: "تمت البرمجة بواسطة شركة ZTechX". Tawsela replaces it with its own (see §15.1 #8).
+- **Receipt**: a white slip with a torn zigzag bottom edge (both edges for a ripped slip) and a soft shadow. Rows read label · dotted leader · amount, an old amount struck in red before a new one, a grey note under the row. Sections are split by a dashed perforation. Totals sit on a lime highlighter stroke.
+- **Stamp**: a tilted (−7°) double-ruled label in green, red, pen or ink ("وصل", "اتلغى", "مسترد"); it drops in like a rubber stamp.
+- **Top bar**: 56 high, back chevron in a 40 round hit area, 17pt title with a grey subtitle, actions on the far side; on paper, on pen, or clear over a photo.
+- **Tab bar**: white with a hairline on top; the active tab has a short pen line on its top edge, a bolder pen icon and a semibold pen label; counts are pen circles with a white ring. Customer icons: home, shopping bag, receipt, user.
+- **Buttons**: pen fill (48 high, 16 corners, medium 15pt label); secondary (pale pen, pen text), ghost, danger (pale red, red text), ink, outline (white with a hairline); sizes 36 / 48 / 56.
+- **Stepper**: a white pill with + count −; at one, when it can go to zero, the minus is a red bin.
+- **Segmented tabs**: a pale pen track; the chosen tab is a raised white chip with pen text.
+- **Switch**: green when on, grey when off, white knob.
+- **Bottom sheet**: white, 22 corners on top, a grabber, a 19pt title with an optional grey line and a round grey close button.
+- **Toast**: a dark ink card at the top of the screen; success adds a lime tick, an error a pale alert icon.
+- **Empty state**: a 64pt pale pen tile with the pen icon, an 18pt semibold title, a grey line, and an optional button.
+- **Section**: an 18pt title with an optional action on the far side.
+- **Rating**: a lime-filled gold star, the value with one decimal, the count in brackets ("(2.1k)").
+- **Store logo**: a rounded square (30% corners) with a white ring; the first letter on a pale pen tile when there is no logo.
+- **Photo**: a pale pen tile until the picture loads. Closed stores' pictures are greyscale.
+- **Press**: cards and buttons shrink to 0.97 under the finger; with reduce motion on they dim instead.
+- **Footer credit** on the account screen: Tawsela's own (see §15.1 #8).
 
 ---
 
@@ -886,6 +887,7 @@ REST under `/v1`, Swagger at `/docs`, socket.io for live order status (no driver
 | 2026-11-26 | §10: فواتيري is his net earnings; the admin adds and deletes fines; speed points are paid out in cash by "تم الصرف" (owner). Phase 24 built, migration 0022. |
 | 2026-11-26 | §6, §15.1 #8: the app is وصّل / Wassal, `com.wassal.app`; the owner's logo and its rust replace Tawsilty's orange in the app and the dashboard. The English logo and a vector file are still to come (owner). |
 | 2026-11-26 | §10: captured Tawsilty's driver side from a Fayoum delivery man's account, off shift: home (location off, نشط, empty), current orders, account, notifications, نقاطي, shifts, history and details, complaint and suggestion forms, profile with documents, notification settings. The offer card and the in-shift screens stay [Open]. |
+| 2026-11-28 | Rule 4 and §6: the mobile app's look moves to the lamha demo (client: the demo looks far better than the APK). §6 now lists lamha's colours with the rust as pen, Noto Sans Arabic, and lamha's parts (receipt, stamp, top bar, tab bar, stepper, segmented tabs, switch, sheet, toast, empty state). Flows and rules still follow Tawsilty; the web dashboard keeps its look. Plan: `docs/phases.md` L0–L12. |
 
 ---
 

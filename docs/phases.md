@@ -8,7 +8,7 @@ The order in which the real product is built. Each phase points at the contract 
 
 1. **Database (when the phase changes the schema):** the Drizzle schema is changed and a migration generated (`db:generate`). The migration runs on an empty database and on the previous one.
 2. **API:** endpoints work as listed, with role guards and validated input; Swagger is updated; unit tests cover every business rule; e2e tests cover the main flow, including forbidden and invalid cases.
-3. **Mobile:** screens match Tawsilty (contract §6, §8–§10) and the approved demo; Arabic RTL and English LTR both work; loading, empty and error states use Tawsilty's patterns; data comes from the real API.
+3. **Mobile:** screens follow the lamha look (contract §6) with the content of §8–§10; Arabic RTL and English LTR both work; loading, empty and error states use the shared parts (§6.3); data comes from the real API.
 4. **Dashboard:** pages match the Tawsilty admin layout (contract §11); Arabic RTL.
 5. **Green:** `pnpm build lint typecheck test test:e2e` passes at the repo root.
 6. **Tests, written first, only where they matter:** business rules, formatters, guards, data rules and each screen's main flow. Not plumbing.
@@ -45,13 +45,14 @@ The order in which the real product is built. Each phase points at the contract 
 | 18 | Points | 🔍 in-verify | none (movement rows and the checkout row marked [Open]) |
 | 19 | Invite friends | 🔍 in-verify | none (friends' rows and the share message marked [Open]) |
 | 20 | Offers, coupons and banners | 🔍 in-verify | none (dashboard pages and code error texts marked [Open]) |
-| 21 | Lucky wheel | ⛔ excluded for now | 10 |
+| 21 | Lucky wheel | ⛔ out of scope (owner, 2026-11-28) | none |
 | 22 | Pharmacy: prescriptions and product photos | 🔍 in-verify | none (the partner side and the notice wording marked [Open]) |
 | 23 | Send anything (اطلب دليفري) | 🔍 in-verify | none (the customer's first status marked [Derived]) |
 | 24 | Driver: history and fines | 🔍 in-verify | none (history rebuilt from the 2026-11-26 captures; the dashboard pages marked [Open]) |
-| 25 | Admin: overview and reports | ⬜ | 9 (no admin overview or reports screens yet) |
-| 26 | Release | ⬜ | 8 |
+| 25 | Admin: overview and reports | ⬜ | 9 (waiting on the admin screens and the scope) |
+| 26 | Release: hand the owner a signed IPA and AAB | ⬜ | none (the owner takes the builds from there) |
 | 27 | Codebase folder layout | ✅ done | none |
+| L0–L12 | Mobile UI moves to the lamha demo look (see "Lamha UI move" below) | 🟨 L0 built and green (2026-11-28); L1 next | none to start; #15 support chat open (L6); Google/Apple keys (L8, hidden until then) |
 
 ---
 
@@ -741,6 +742,58 @@ Contract §5, Code layout. Use the existing test suites after all four steps. Th
 4. Shared. Move unit tests to `test/unit/` and keep the build scoped to `src/`.
 
 Build, lint, typecheck and all 346 unit tests passed. The mobile and dashboard end-to-end suites passed. The API run passed 207 of 208 tests, with one five-second timeout. All four tests in that file passed on an isolated retry with the original timeout. Verification for this phase was automated.
+
+## Lamha UI move (L0–L12)
+
+The client saw the APK and said the lamha demo looks far better (2026-11-28). The mobile app's UI moves to the look of `apps/demo`'s lamha screens (the customer and rider screens, and the partner menu, reports and account): paper background, receipt cards with torn edges, dashed perforations, dotted leaders, highlighter totals, stamps, the pen/stamp/void colour roles and **Noto Sans Arabic**. Where a lamha screen exists, its Arabic wording replaces ours. The main colour stays the logo's rust `#B44A0E` (lamha's `#F55905` is not used). **Scope:** the mobile app only, all four roles; the web dashboard keeps its look. Features stay as built; demo-only features are added only when the owner picks them.
+
+**Reference shots:** `.impeccable/lamha/` (git-ignored), phone width 390, named `c*` customer, `r*` rider, `p*` partner. The demo runs with `pnpm --filter ./apps/demo dev` (port 3001); delete `apps/demo/AGENTS.md` afterwards.
+
+**Each phase:** shoot the demo pages in the phase (plus any sheet or state not yet shot) and our matching screens; list the differences per screen (layout, parts, words); rebuild on real data; change the Arabic strings to lamha's and update the tests and contract text that quote the old ones; English strings follow the new Arabic meaning; full green; one commit; the phase stays 🔍 until checked on the phone.
+
+| # | Phase | Our screens | Lamha source |
+|---|---|---|---|
+| L0 | Foundation | shared components, tab bars, theme, font | `globals.css`, `components/ui/*`, `tab-bar.tsx` |
+| L1 | Home, store lists, search | `customer/index`, `stores/[vertical]`, `search` | `c02`, `c03`, `c04`, `c02b` address sheet |
+| L2 | Store page and product sheet | `store/[id]` (index, products, category, search) | `c05`, item sheet |
+| L3 | Carts and checkout | `customer/cart`, `cart/[storeId]`, `checkout` | `c06` |
+| L4 | Orders and rating | `customer/orders`, `order/[id]`, `rate/[id]` | `c07`, `c19` |
+| L5 | Account, profile, addresses, favourites, notifications | `customer/account`, `profile`, `address/*`, `favorites`, `notifications`, `notification-settings` | `c12`, `c13`, `c14`, `c11`, `c16` |
+| L6 | Wallet, points, invite, offers, support | `wallet`, `points`, `invite`, `offers`, `support/[type]`, `support-orders` | `c18`, `c15`, `c08`, `c17` |
+| L7 | Pharmacy, send anything | `pharmacy-request`, the send-anything store | `c09`, `c10` |
+| L8 | Welcome and sign-in | `(auth)/*` (8 screens) | `c01*` (only welcome and the code step have a twin) |
+| L9 | Driver | `driver/*`, `driver-*` (10 screens) | `r00`–`r05` |
+| L10 | Partner | `partner/*`, `partner-order/[id]` | `p03`–`p05` (orders have no lamha twin) |
+| L11 | Admin mobile | `admin/*` | none: built from lamha's parts |
+| L12 | English LTR pass, APK, phone check | every screen | |
+
+**Demo features added (owner's picks, 2026-11-28).** Each is built inside its L phase, in the lamha look, with API, tests and contract entries like any feature.
+
+| Phase | # | Feature | Decided |
+|---|---|---|---|
+| L1 | 1 | Points and wallet shortcut cards on home | |
+| L1 | 2 | Coloured store sections on home | Managed from a new web-dashboard page (current dashboard look) |
+| L1 | 3 | Strip for the order in progress on home | With the free-cancel countdown only if a cancel feature exists (it does not; #10 was not picked) |
+| L1 | 4 | Search: recent searches, "what Fayoum orders today", "send a rider" on no results | No voice search |
+| L2 | 5 | Store page: share link, info sheet, reviews list | A review shows first name, stars, date, text and the store's reply |
+| L2 | 6 | Note to the store per item | |
+| L3 | 7 | Cart: "add X and delivery is free" bar | |
+| L3 | 8 | Rider tip at checkout | 5 / 10 / 20 ج.م, any amount, or "لأ شكراً"; added to the cash collected; 100% to the rider |
+| L4 | 13 | Complaint: pick the problem items and attach photos | |
+| L5 | 20 | Notification sound switch | |
+| L6 | 15 | Live support chat and FAQ | **Open** (owner flagged, keep open) |
+| L7 | 18 | Send anything as a real form | Pickup and drop-off, item type, size; price from an admin zone-to-zone table plus a size extra; the sender pays cash at pickup |
+| L7, L10 | 19 | Pharmacy prices the prescription | The pharmacy prices it in the partner app, the customer approves; auto-cancelled after 30 minutes (customer notified, can send to another pharmacy) |
+| L8 | 17 | Intro slides, browsing without an account, area pick, Google and Apple sign-in | Guests sign in at checkout and keep their cart. Google and Apple are built but hidden until the owner provides the Google OAuth client and Apple developer access |
+| L9 | 26 | Rider earnings | Today's statement and tips only (no bonus, no cash pay-in) |
+| L10 | 21 | "Busy" store status | The partner types the extra minutes added to the delivery time |
+| L10 | 22 | Partner reports | Order counts, top items, peak hours, reviews; statement per day/week/month: sales, the 10% commission, net already received from drivers (no bank payouts) |
+| L10 | 23 | Reply to reviews | Shown under the review on the store page |
+| L10 | 24 | Edit a product's price from the app | Live at once; each change logged for the admin |
+
+Not taken: 9 (points at checkout already exist), 10–12, 14, 16, 25, 27, 28; and the lucky wheel, customer live tracking, card payment and top-up, the single-cart conflict sheet and partner sign-up.
+
+**L0 detail.** `theme.ts` gets lamha's roles: `paper #F5F5F5`, `sheet #FFFFFF`, `ink #262626`, `ink2 #6B6B6B`, `ink3 #767675`, `rule #E5E5E5`, `leader #BFBFBF`, `pen` = rust with its 700/900/100/50 shades, `stamp #05A437`/`#EBF4E5`, `void #C01B21`/`#FAEBE9`, `marker #CFFF00`, `markerSoft #FEF2D7`, `cocoa #411517`, `gold #EAA407`; card radius 14; the sheet and lift shadows. Font: Noto Sans Arabic (`@expo-google-fonts/noto-sans-arabic`) replaces Alexandria. Shared parts rebuilt: receipt card with a torn edge (SVG), perforation, leader, highlighter, stamp with its drop-in, top bar, stepper, segmented tabs, switch, empty state, section header, photo, store letter-logo, rating, button, sheet, toast, press-scale, and the tab bars with lamha's ink line. Contract §6 and rule 4, and rules 3–4 above, stop saying "match Tawsilty's look".
 
 ## Rework from the capture 2026-11-26
 
